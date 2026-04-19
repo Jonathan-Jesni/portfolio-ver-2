@@ -1,66 +1,77 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useRef } from "react";
+
+const sections = [
+  {
+    tag: "SYSTEM://INITIALIZE",
+    heading: "Neural\nData Stream",
+    body: "Fly through 10,000 reactive particles. Move your mouse to shatter the field. Scroll to travel deeper.",
+  },
+  {
+    tag: "MODULE://ABOUT",
+    heading: "Built for\nthe Edge",
+    body: "High-performance WebGL shaders running fluid dynamics at 60fps. Every particle responds to your presence in real time.",
+  },
+  {
+    tag: "MODULE://TECHNOLOGY",
+    heading: "GLSL\nCompute",
+    body: "Custom vertex and fragment shaders with 3D simplex noise, mouse-driven repulsion fields, and vortex swirl dynamics — all on the GPU.",
+  },
+  {
+    tag: "MODULE://EXPERIENCE",
+    heading: "Scroll\nHijacked",
+    body: "Lenis smooth scrolling synced to GSAP ScrollTrigger drives the camera through the particle tunnel. Pure, unbroken immersion.",
+  },
+  {
+    tag: "SYSTEM://TERMINATE",
+    heading: "End of\nTransmission",
+    body: "You've reached the end of the data stream. The particles will remember your trajectory.",
+  },
+];
 
 export default function Home() {
+  const sectionRefs = useRef([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    sectionRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main>
+      {sections.map((section, i) => (
+        <section key={i} className="section">
+          <div
+            className="section__inner fade-up"
+            ref={(el) => (sectionRefs.current[i] = el)}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <p className="heading-sm">{section.tag}</p>
+            <hr className="divider" />
+            <h2
+              className="heading-xl gap-sm"
+              style={{ whiteSpace: "pre-line" }}
+            >
+              {section.heading}
+            </h2>
+            <p className="body-text gap-md">{section.body}</p>
+          </div>
+        </section>
+      ))}
+    </main>
   );
 }
