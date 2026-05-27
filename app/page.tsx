@@ -4,7 +4,9 @@ import { useRef } from "react";
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import HeroSection from "../components/HeroSection";
-import GravityPit from "../components/GravityPit";
+import dynamic from "next/dynamic";
+
+const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 
 /* ============================================================
    DATA — extracted from index-old.html
@@ -63,7 +65,7 @@ const PROJECTS = [
   },
 ] as const;
 
-type Project = (typeof PROJECTS)[number];
+
 
 const BUILDING = [
   {
@@ -339,8 +341,11 @@ export default function Home() {
             <span className="section-title sp-reveal">skills.list</span>
             <span className="section-line"></span>
           </div>
+          <p className="sp-reveal" style={{ color: 'var(--gray-400)', marginBottom: '32px' }}>
+            Core technologies and frameworks I use to engineer robust, scalable systems.
+          </p>
           <p className="sp-reveal" style={{ color: "var(--gray-500)", fontSize: "13px", fontFamily: "var(--font-jetbrains), monospace", marginBottom: "24px" }}>
-            // drag the pills around
+            {`// drag the pills around`}
           </p>
           <GravityPit />
         </div>

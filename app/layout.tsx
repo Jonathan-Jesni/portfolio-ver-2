@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "Jonathan | AI & Systems Developer",
   description:
     "Jonathan's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software projects.",
+  openGraph: {
+    title: "Jonathan | AI & Systems Developer",
+    description: "Jonathan's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software projects.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

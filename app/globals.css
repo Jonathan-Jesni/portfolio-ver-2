@@ -507,6 +507,8 @@ img {
   border-radius: 12px;
   overflow: hidden;            /* pills that fall in from above stay hidden until inside */
   background: rgba(255, 255, 255, 0.015);
+  background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
   cursor: grab;
   /* Lenis: let the pit container capture its own pointer events */
   user-select: none;
