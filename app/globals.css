@@ -285,16 +285,8 @@ img {
 }
 
 /* ============================================================
-   HERO
+   HERO TEXT UTILITIES (Used by HeroSection)
    ============================================================ */
-.hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 120px 0 80px;
-}
-
 .hero-greeting {
   font-family: var(--font-jetbrains), monospace;
   font-size: 14px;
@@ -303,18 +295,6 @@ img {
   letter-spacing: 0.02em;
 }
 
-.hero-name {
-  font-size: clamp(48px, 8vw, 80px);
-  font-weight: 700;
-  color: var(--white);
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin-bottom: 8px;
-}
-
-.hero-name .accent {
-  color: var(--gray-500);
-}
 
 .hero-tagline {
   font-size: clamp(18px, 3vw, 24px);
@@ -380,6 +360,60 @@ img {
 }
 
 /* ============================================================
+   HERO SECTION — cinematic runway + sticky tunnel
+   ============================================================ */
+
+/* 300 vh scroll runway — gives scrub:2 tunnel plenty of deceleration room */
+.hero-runway {
+  position: relative;
+  height: 300vh;
+}
+
+/* Viewport-height sticky shell — everything centred inside */
+.hero-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ---- JONATHAN split heading ---- */
+.hero-name-split {
+  display: flex;         /* keeps JONA + THAN inline */
+  flex-wrap: nowrap;
+  gap: 0;                /* no gap — looks like one word */
+  font-size: clamp(72px, 13vw, 168px);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  color: var(--white);
+  margin-bottom: 32px;
+}
+
+/* Each half animates independently on scroll */
+.hero-char-group {
+  display: inline-flex;
+  will-change: transform;
+}
+
+/* Individual characters respond to mouse proximity */
+.hero-char {
+  display: inline-block;
+  will-change: transform;
+  cursor: default;
+  /* Prevent text selection during magnetic hover */
+  user-select: none;
+}
+
+/* Sub-content (tagline, buttons) fades out as the tunnel opens */
+.hero-sub-content {
+  will-change: opacity, transform;
+}
+
+/* ============================================================
    SPATIAL CARD — cinematic Z-axis fly-through
    ============================================================ */
 
@@ -422,6 +456,89 @@ img {
 .sc-text > * {
   /* Each child clips independently */
   overflow: hidden;
+}
+
+/* ============================================================
+   SPATIAL SECTION — clip-from-bottom section reveal
+   ============================================================ */
+
+/* 250 vh scroll runway for each major section */
+.sp-runway {
+  position: relative;
+  height: 250vh;
+}
+
+/* Viewport-height sticky shell — section content locks in viewport centre */
+.sp-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  /* overflow: visible so GravityPit pills don't get clipped */
+  overflow: visible;
+}
+
+/* Content wrapper — gets the clip-path reveal animation.
+   No overflow constraints here — clip-path works without them and
+   we don't want an internal scrollbar inside the sticky shell. */
+.sp-content {
+  width: 100%;
+  will-change: opacity, clip-path;
+}
+
+/* Elements that receive the individual wipe-in animation */
+.sp-reveal {
+  /* clip-path animation is applied by GSAP; we just declare overflow:hidden
+     on the element itself so the wipe clips correctly */
+  overflow: hidden;
+  will-change: clip-path, transform;
+}
+
+/* ============================================================
+   GRAVITY PIT — Matter.js DOM-based physics playground
+   ============================================================ */
+
+.gravity-pit {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  overflow: hidden;            /* pills that fall in from above stay hidden until inside */
+  background: rgba(255, 255, 255, 0.015);
+  cursor: grab;
+  /* Lenis: let the pit container capture its own pointer events */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gravity-pit:active {
+  cursor: grabbing;
+}
+
+/* Each skill is a DOM div whose position is driven by the physics body */
+.gravity-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* dimensions set dynamically in useEffect */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 100px;         /* full pill */
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  pointer-events: none;         /* mouse handled by Matter.js MouseConstraint */
+  will-change: transform;
+  /* Subtle inner glow for premium feel */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 /* ============================================================

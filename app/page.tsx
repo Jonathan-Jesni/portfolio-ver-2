@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import SpatialCard from "../components/SpatialCard";
+import SpatialSection from "../components/SpatialSection";
+import HeroSection from "../components/HeroSection";
+import GravityPit from "../components/GravityPit";
 
 /* ============================================================
    DATA — extracted from index-old.html
@@ -81,83 +84,14 @@ const BUILDING = [
   },
 ];
 
-const SKILLS = [
-  {
-    category: "Languages",
-    status: "CORE",
-    items: [
-      { name: "Python", tag: "core" },
-      { name: "Java", tag: "oop" },
-      { name: "C / C++", tag: "systems" },
-      { name: "Dart", tag: "ui" },
-      { name: "Flask", tag: "api" },
-      { name: "Flutter", tag: "mobile" },
-    ],
-  },
-  {
-    category: "Libraries & Tools",
-    status: "LOADED",
-    items: [
-      { name: "PyTorch", tag: "training" },
-      { name: "TensorFlow", tag: "models" },
-      { name: "OpenCV", tag: "vision" },
-      { name: "NumPy", tag: "compute" },
-      { name: "Pandas", tag: "data" },
-    ],
-  },
-  {
-    category: "AI / Machine Learning",
-    status: "ACTIVE",
-    items: [
-      { name: "Machine Learning", tag: "pipelines" },
-      { name: "Deep Learning", tag: "cnn" },
-      { name: "Computer Vision", tag: "analysis" },
-      { name: "Recommender Systems", tag: "matching" },
-      { name: "YOLO", tag: "real-time" },
-    ],
-  },
-  {
-    category: "Cybersecurity",
-    status: "SECURE",
-    items: [
-      { name: "Threat Detection", tag: "real-time" },
-      { name: "Phishing Analysis", tag: "nlp/cv" },
-      { name: "Network Security", tag: "monitoring" },
-    ],
-  },
-  {
-    category: "Graphics / Simulation",
-    status: "RENDER",
-    items: [
-      { name: "Blender", tag: "bpy" },
-      { name: "Synthetic Data", tag: "generation" },
-    ],
-  },
-  {
-    category: "Systems Engineering",
-    status: "ONLINE",
-    items: [
-      { name: "System Architecture", tag: "design" },
-      { name: "Pipeline Design", tag: "etl" },
-      { name: "Performance Optimization", tag: "optimization" },
-      { name: "GPU Computing", tag: "cuda" },
-    ],
-  },
-];
 
 /* ============================================================
-   SVG ICONS
+   SVG ICONS  (only those still used in this file)
    ============================================================ */
 
 function GitHubIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
     </svg>
   );
@@ -165,13 +99,7 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 
 function LinkedInIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
     </svg>
   );
@@ -179,36 +107,9 @@ function LinkedInIcon({ size = 16 }: { size?: number }) {
 
 function MailIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-}
-
-function ArrowUpRightIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="7" y1="17" x2="17" y2="7" />
-      <polyline points="7 7 17 7 17 17" />
     </svg>
   );
 }
@@ -218,29 +119,8 @@ function ArrowUpRightIcon({ size = 14 }: { size?: number }) {
    ============================================================ */
 
 export default function Home() {
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    // Intersection Observer for fade-in animations
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
-    );
-
-    document.querySelectorAll(".fade-in").forEach((el) => {
-      observerRef.current?.observe(el);
-    });
-
-    return () => observerRef.current?.disconnect();
-  }, []);
 
   function toggleMobileMenu() {
     mobileMenuRef.current?.classList.toggle("open");
@@ -321,57 +201,13 @@ export default function Home() {
       </nav>
 
       {/* ===== HERO ===== */}
-      <section className="hero" id="hero">
-        <div className="container">
-          <p className="hero-greeting fade-in">Hi, my name is</p>
-          <h1 className="hero-name fade-in fade-in-delay-1">
-            Jonathan<span className="accent">.</span>
-          </h1>
-          <p className="hero-building mono fade-in fade-in-delay-2" style={{ color: "var(--gray-500)", fontSize: "14px", marginBottom: "24px" }}>
-            &gt; currently.building: smarter tools for real-world problems
-          </p>
-          <h2 className="hero-tagline fade-in fade-in-delay-3">
-            I build AI-powered tools and systems
-            <br />
-            that solve real-world problems.
-          </h2>
-          <p className="hero-sub fade-in fade-in-delay-4">
-            Computer Science student focused on AI, cybersecurity, and scalable
-            systems.
-          </p>
-          <p className="hero-impact mono fade-in fade-in-delay-5" style={{ color: "var(--gray-400)", fontSize: "14px", marginBottom: "48px", maxWidth: "600px" }}>
-            Built and deployed 4 real-world systems across AI, cybersecurity, and large-scale data processing.
-          </p>
-          <div className="hero-buttons fade-in fade-in-delay-6">
-            <a
-              href="https://github.com/Jonathan-Jesni"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-              id="hero-github-btn"
-            >
-              <GitHubIcon size={18} />
-              View My Work
-            </a>
-            <a
-              href="/assets/Jonathan_Resume.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline"
-              id="hero-resume-btn"
-            >
-              View Resume ↗
-            </a>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       <hr className="section-divider" />
 
-      {/* ===== PROJECTS ===== */}
       <section className="projects" id="projects">
         <div className="container">
-          <div className="section-label fade-in">
+          <div className="section-label">
             <span className="section-number">01</span>
             <span className="section-title">Featured Projects</span>
             <span className="section-line"></span>
@@ -394,7 +230,7 @@ export default function Home() {
             />
           ))}
 
-          <div className="projects-cta fade-in">
+          <div className="projects-cta">
             <p>Want to explore more?</p>
             <a
               href="https://github.com/Jonathan-Jesni?tab=repositories"
@@ -412,36 +248,36 @@ export default function Home() {
       <hr className="section-divider" />
 
       {/* ===== ABOUT ===== */}
-      <section className="about" id="about">
+      <SpatialSection id="about">
         <div className="container">
-          <div className="section-label fade-in">
-            <span className="section-number">02</span>
-            <span className="section-title">&gt; about.me</span>
+          <div className="section-label">
+            <span className="section-number sp-reveal">02</span>
+            <span className="section-title sp-reveal">&gt; about.me</span>
             <span className="section-line"></span>
           </div>
 
-          <div className="about-content fade-in">
+          <div className="about-content">
             <div className="about-text">
-              <p>
+              <p className="sp-reveal">
                 I&apos;m a 3rd-year Computer Science student at IIIT Pune who builds
                 real tools — not just coursework. My focus areas are{" "}
                 <strong>AI</strong>, <strong>cybersecurity</strong>, and{" "}
                 <strong>systems design</strong>, and I gravitate toward projects
                 that solve practical, tangible problems.
               </p>
-              <p>
+              <p className="sp-reveal">
                 Whether it&apos;s building a multimodal phishing detector as a browser
                 extension, generating synthetic training data in Blender, or
                 engineering a deterministic document converter — I focus on
                 software that <strong>works in the real world</strong>.
               </p>
-              <p>
+              <p className="sp-reveal">
                 I&apos;m always working on something new. Currently leveling up and
                 looking for opportunities to build at scale.
               </p>
             </div>
 
-            <div className="about-snippet" id="about-code-snippet">
+            <div className="about-snippet sp-reveal" id="about-code-snippet">
               <div className="snippet-header">
                 <span className="snippet-dot"></span>
                 <span className="snippet-dot"></span>
@@ -460,33 +296,29 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </SpatialSection>
 
       <hr className="section-divider" />
 
       {/* ===== CURRENTLY BUILDING ===== */}
-      <section className="building" id="currently-building">
+      <SpatialSection id="currently-building">
         <div className="container">
-          <div className="section-label fade-in">
-            <span className="section-number">03</span>
-            <span className="section-title">&gt; currently.building</span>
+          <div className="section-label">
+            <span className="section-number sp-reveal">03</span>
+            <span className="section-title sp-reveal">&gt; currently.building</span>
             <span className="section-line"></span>
           </div>
 
           <div className="building-grid">
-            {BUILDING.map((item, i) => (
-              <div
-                key={item.id}
-                className={`building-card fade-in fade-in-delay-${i + 1}`}
-                id={item.id}
-              >
-                <div className="building-status">
+            {BUILDING.map((item) => (
+              <div key={item.id} className="building-card" id={item.id}>
+                <div className="building-status sp-reveal">
                   <span className="status-dot"></span>
                   <span className="mono">{item.status}</span>
                 </div>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-                <div className="project-tags">
+                <h3 className="sp-reveal">{item.title}</h3>
+                <p className="sp-reveal">{item.description}</p>
+                <div className="project-tags sp-reveal">
                   {item.tags.map((tag) => (
                     <span key={tag} className="project-tag">{tag}</span>
                   ))}
@@ -495,98 +327,58 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </SpatialSection>
 
       <hr className="section-divider" />
 
-      {/* ===== SKILLS ===== */}
-      <section className="skills" id="skills">
+      {/* ===== SKILLS — Matter.js Gravity Pit ===== */}
+      <SpatialSection id="skills">
         <div className="container">
-          <div className="section-label fade-in">
-            <span className="section-number">04</span>
-            <span className="section-title">Skills</span>
+          <div className="section-label">
+            <span className="section-number sp-reveal">04</span>
+            <span className="section-title sp-reveal">skills.list</span>
             <span className="section-line"></span>
           </div>
-
-          <div className="skills-grid">
-            {SKILLS.map((group, i) => (
-              <div
-                key={group.category}
-                className={`fade-in fade-in-delay-${Math.min(i + 1, 6)}`}
-              >
-                <h3 className="skill-category-title">
-                  <span className="skill-status">[ {group.status} ]</span>
-                  {group.category}
-                </h3>
-                <ul className="skill-list">
-                  {group.items.map((skill) => (
-                    <li key={skill.name} className="skill-item">
-                      <span className="skill-name">{skill.name}</span>
-                      <span className="skill-tag">({skill.tag})</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <p className="sp-reveal" style={{ color: "var(--gray-500)", fontSize: "13px", fontFamily: "var(--font-jetbrains), monospace", marginBottom: "24px" }}>
+            // drag the pills around
+          </p>
+          <GravityPit />
         </div>
-      </section>
+      </SpatialSection>
 
       <hr className="section-divider" />
 
       {/* ===== CONTACT ===== */}
-      <section className="contact" id="contact">
+      <SpatialSection id="contact">
         <div className="container">
-          <div className="contact-inner fade-in">
-            <span className="section-number">05 — What&apos;s Next?</span>
-            <h2 className="contact-heading">Get In Touch</h2>
-            <p className="contact-text">
+          <div className="contact-inner">
+            <span className="section-number sp-reveal">05 — What&apos;s Next?</span>
+            <h2 className="contact-heading sp-reveal">Get In Touch</h2>
+            <p className="contact-text sp-reveal">
               I&apos;m actively looking for internships and opportunities to
               build impactful systems. Whether you have a question, a project
               idea, or just want to connect — my inbox is always open.
             </p>
-            <div className="contact-links">
-              <a
-                href="mailto:jonathanjesni@gmail.com"
-                className="contact-link"
-                id="contact-email-btn"
-              >
+            <div className="contact-links sp-reveal">
+              <a href="mailto:jonathanjesni@gmail.com" className="contact-link" id="contact-email-btn">
                 <MailIcon />
                 Email
               </a>
-              <a
-                href="https://github.com/Jonathan-Jesni"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contact-link"
-                id="contact-github-btn"
-              >
+              <a href="https://github.com/Jonathan-Jesni" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-github-btn">
                 <GitHubIcon />
                 GitHub
               </a>
-              <a
-                href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contact-link"
-                id="contact-linkedin-btn"
-              >
+              <a href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-linkedin-btn">
                 <LinkedInIcon />
                 LinkedIn
               </a>
-              <a
-                href="/assets/Jonathan_Resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contact-link"
-                id="contact-resume-btn"
-              >
+              <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-resume-btn">
                 Resume ↗
               </a>
             </div>
           </div>
         </div>
-      </section>
+      </SpatialSection>
 
       {/* ===== FOOTER ===== */}
       <footer className="footer" id="footer">
