@@ -1,4 +1,24 @@
 /* ============================================================
+   LENIS — prevent native scroll from clashing
+   ============================================================ */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ============================================================
    GLOBALS — Hyper-minimalist portfolio design system
    Background: #000000 | Fonts: Inter + JetBrains Mono
    ============================================================ */
@@ -360,6 +380,51 @@ img {
 }
 
 /* ============================================================
+   SPATIAL CARD — cinematic Z-axis fly-through
+   ============================================================ */
+
+/* 250vh scroll runway — gives the ScrollTrigger scrub room to breathe */
+.sc-runway {
+  position: relative;
+  height: 250vh;
+}
+
+/* Viewport-height sticky shell — card lives here and locks to center */
+.sc-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Prevent the sticky shell from stacking scroll contexts */
+  pointer-events: none;
+}
+
+/* The card itself — GPU-promoted for buttery blur/scale performance */
+.sc-card {
+  pointer-events: all;
+  will-change: transform, filter, opacity;
+  width: min(720px, 88vw);
+  /* Override the grid-driven max-width from .project-card */
+  max-width: none;
+}
+
+/* Text block — children have clip-path wipe applied via GSAP */
+.sc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden; /* clip-path needs overflow:hidden on the parent */
+}
+
+.sc-text > * {
+  /* Each child clips independently */
+  overflow: hidden;
+}
+
+/* ============================================================
    PROJECTS
    ============================================================ */
 .projects {
@@ -500,6 +565,230 @@ img {
   font-family: var(--font-jetbrains), monospace;
   font-size: 13px;
   color: var(--gray-500);
+}
+
+/* ---------- Project Image ---------- */
+.project-image-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+  background: var(--gray-900);
+}
+
+.project-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+.project-card:hover .project-image {
+  opacity: 1;
+}
+
+/* ---------- Pipeline Placeholder ---------- */
+.project-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  background: var(--gray-900);
+  border-radius: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+
+.pipeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipeline-step {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  color: var(--gray-300);
+  padding: 4px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pipeline-arrow {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  color: var(--gray-600);
+}
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+.about {
+  padding: var(--section-padding);
+}
+
+@media (max-width: 767px) {
+  .about {
+    padding: var(--section-padding-mobile);
+  }
+}
+
+.about-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .about-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+  }
+}
+
+.about-text {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.about-text p {
+  font-size: 15px;
+  color: var(--gray-400);
+  line-height: 1.8;
+}
+
+.about-text strong {
+  color: var(--gray-200);
+  font-weight: 500;
+}
+
+/* Terminal / code snippet */
+.about-snippet {
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.snippet-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.snippet-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gray-700);
+  flex-shrink: 0;
+}
+
+.snippet-dot:nth-child(1) { background: #ff5f57; }
+.snippet-dot:nth-child(2) { background: #febc2e; }
+.snippet-dot:nth-child(3) { background: #28c840; }
+
+.snippet-filename {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-left: 8px;
+}
+
+.snippet-body {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--gray-300);
+  padding: 24px;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ============================================================
+   CURRENTLY BUILDING
+   ============================================================ */
+.building {
+  padding: var(--section-padding);
+}
+
+@media (max-width: 767px) {
+  .building {
+    padding: var(--section-padding-mobile);
+  }
+}
+
+.building-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 640px) {
+  .building-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.building-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.building-card:hover {
+  border-color: var(--border-hover);
+  background: var(--glow-hover);
+}
+
+.building-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 6px rgba(40, 200, 64, 0.6);
+  flex-shrink: 0;
+}
+
+.building-status .mono {
+  font-size: 12px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.building-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white);
+  letter-spacing: -0.02em;
+}
+
+.building-card p {
+  font-size: 14px;
+  color: var(--gray-400);
+  line-height: 1.7;
 }
 
 /* ============================================================

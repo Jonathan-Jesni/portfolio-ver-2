@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import SpatialCard from "../components/SpatialCard";
 
 /* ============================================================
    DATA — extracted from index-old.html
@@ -16,6 +17,8 @@ const PROJECTS = [
     tech: "Python, Scikit-learn, Implicit ALS, Steam API",
     tags: ["Machine Learning", "Recommendation Systems", "Python"],
     github: "https://github.com/Jonathan-Jesni/Ludex",
+    image: "/assets/ludex-recommendations.png",
+    imageAlt: "Ludex personalized game recommendations interface",
   },
   {
     id: "file-converter",
@@ -26,6 +29,9 @@ const PROJECTS = [
     tech: "Python, Two-Pass Architecture",
     tags: ["Python", "Document Processing", "Systems Design"],
     github: "https://github.com/Jonathan-Jesni/pdf_converter",
+    image: null,
+    imageAlt: null,
+    pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
   },
   {
     id: "webguardian",
@@ -36,6 +42,8 @@ const PROJECTS = [
     tech: "Python, Char-CNN + LSTM, MobileNetV2, Chrome Extension",
     tags: ["Deep Learning", "Cybersecurity", "Computer Vision"],
     github: "https://github.com/Jonathan-Jesni",
+    image: "/assets/webguardian-phishing.png",
+    imageAlt: "Phishing detection warning overlay",
   },
   {
     id: "synthetic-data",
@@ -47,6 +55,29 @@ const PROJECTS = [
     tags: ["Computer Vision", "Synthetic Data", "Deep Learning"],
     github:
       "https://github.com/Jonathan-Jesni/synthetic-data-object-detection",
+    image: "/assets/object-detection-main.png",
+    imageAlt: "Synthetic object detection with bounding boxes",
+  },
+] as const;
+
+type Project = (typeof PROJECTS)[number];
+
+const BUILDING = [
+  {
+    id: "building-converter-v2",
+    status: "In Progress",
+    title: "Document Processing Suite",
+    description:
+      "Expanding the File Converter into a full document processing system with multi-format conversion, document compression, and extended format support.",
+    tags: ["Python", "Document Processing", "Pipeline"],
+  },
+  {
+    id: "building-exploration",
+    status: "Exploring",
+    title: "New Projects",
+    description:
+      "Researching next areas — interested in LLM tooling, automated security auditing, and distributed systems.",
+    tags: ["LLMs", "Security", "Research"],
   },
 ];
 
@@ -236,11 +267,14 @@ export default function Home() {
               <a href="#skills">Skills</a>
             </li>
             <li>
+              <a href="#about">About</a>
+            </li>
+            <li>
               <a href="#contact">Contact</a>
             </li>
           </ul>
           <a
-            href="/Jonathan_Resume.pdf"
+            href="/assets/Jonathan_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="nav-resume"
@@ -269,11 +303,14 @@ export default function Home() {
           <a href="#skills" onClick={closeMobileMenu}>
             Skills
           </a>
+          <a href="#about" onClick={closeMobileMenu}>
+            About
+          </a>
           <a href="#contact" onClick={closeMobileMenu}>
             Contact
           </a>
           <a
-            href="/Jonathan_Resume.pdf"
+            href="/assets/Jonathan_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
             onClick={closeMobileMenu}
@@ -317,7 +354,7 @@ export default function Home() {
               View My Work
             </a>
             <a
-              href="/Jonathan_Resume.pdf"
+              href="/assets/Jonathan_Resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline"
@@ -340,45 +377,22 @@ export default function Home() {
             <span className="section-line"></span>
           </div>
 
-          <div className="projects-grid">
-            {PROJECTS.map((project, i) => (
-              <article
-                key={project.id}
-                className={`project-card fade-in fade-in-delay-${i + 1}`}
-                id={`project-${project.id}`}
-              >
-                <span className="project-overline">Featured Project</span>
-                <h3 className="project-title">
-                  {project.title}{" "}
-                  <span className="project-subtitle">
-                    — {project.subtitle}
-                  </span>
-                </h3>
-                <p className="project-description">{project.description}</p>
-                <p className="project-tech">Built with: {project.tech}</p>
-                <div className="project-tags">
-                  {project.tags.map((tag) => (
-                    <span key={tag} className="project-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="project-links">
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="project-link"
-                    id={`${project.id}-github`}
-                  >
-                    <GitHubIcon />
-                    Source
-                    <ArrowUpRightIcon />
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
+          {/* Spatial fly-through — one per project, stacked vertically */}
+          {PROJECTS.map((project) => (
+            <SpatialCard
+              key={project.id}
+              id={project.id}
+              title={project.title}
+              subtitle={project.subtitle}
+              description={project.description}
+              tech={project.tech}
+              tags={project.tags}
+              github={project.github}
+              image={'image' in project ? project.image : null}
+              imageAlt={'imageAlt' in project ? project.imageAlt : null}
+              pipeline={'pipeline' in project ? (project.pipeline as readonly string[]) : undefined}
+            />
+          ))}
 
           <div className="projects-cta fade-in">
             <p>Want to explore more?</p>
@@ -397,11 +411,99 @@ export default function Home() {
 
       <hr className="section-divider" />
 
+      {/* ===== ABOUT ===== */}
+      <section className="about" id="about">
+        <div className="container">
+          <div className="section-label fade-in">
+            <span className="section-number">02</span>
+            <span className="section-title">&gt; about.me</span>
+            <span className="section-line"></span>
+          </div>
+
+          <div className="about-content fade-in">
+            <div className="about-text">
+              <p>
+                I&apos;m a 3rd-year Computer Science student at IIIT Pune who builds
+                real tools — not just coursework. My focus areas are{" "}
+                <strong>AI</strong>, <strong>cybersecurity</strong>, and{" "}
+                <strong>systems design</strong>, and I gravitate toward projects
+                that solve practical, tangible problems.
+              </p>
+              <p>
+                Whether it&apos;s building a multimodal phishing detector as a browser
+                extension, generating synthetic training data in Blender, or
+                engineering a deterministic document converter — I focus on
+                software that <strong>works in the real world</strong>.
+              </p>
+              <p>
+                I&apos;m always working on something new. Currently leveling up and
+                looking for opportunities to build at scale.
+              </p>
+            </div>
+
+            <div className="about-snippet" id="about-code-snippet">
+              <div className="snippet-header">
+                <span className="snippet-dot"></span>
+                <span className="snippet-dot"></span>
+                <span className="snippet-dot"></span>
+                <span className="snippet-filename">developer.js</span>
+              </div>
+              <pre className="snippet-body">{
+`const developer = {
+  current: "B.Tech CSE, IIIT Pune",
+  year: "3rd Year",
+  location: "Pune, India / Muscat, Oman",
+  focus: ["AI", "Systems", "Security"],
+  status: "open to internships"
+};`
+              }</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr className="section-divider" />
+
+      {/* ===== CURRENTLY BUILDING ===== */}
+      <section className="building" id="currently-building">
+        <div className="container">
+          <div className="section-label fade-in">
+            <span className="section-number">03</span>
+            <span className="section-title">&gt; currently.building</span>
+            <span className="section-line"></span>
+          </div>
+
+          <div className="building-grid">
+            {BUILDING.map((item, i) => (
+              <div
+                key={item.id}
+                className={`building-card fade-in fade-in-delay-${i + 1}`}
+                id={item.id}
+              >
+                <div className="building-status">
+                  <span className="status-dot"></span>
+                  <span className="mono">{item.status}</span>
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <div className="project-tags">
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="project-tag">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <hr className="section-divider" />
+
       {/* ===== SKILLS ===== */}
       <section className="skills" id="skills">
         <div className="container">
           <div className="section-label fade-in">
-            <span className="section-number">02</span>
+            <span className="section-number">04</span>
             <span className="section-title">Skills</span>
             <span className="section-line"></span>
           </div>
@@ -436,7 +538,7 @@ export default function Home() {
       <section className="contact" id="contact">
         <div className="container">
           <div className="contact-inner fade-in">
-            <span className="section-number">03 — What&apos;s Next?</span>
+            <span className="section-number">05 — What&apos;s Next?</span>
             <h2 className="contact-heading">Get In Touch</h2>
             <p className="contact-text">
               I&apos;m actively looking for internships and opportunities to
@@ -473,7 +575,7 @@ export default function Home() {
                 LinkedIn
               </a>
               <a
-                href="/Jonathan_Resume.pdf"
+                href="/assets/Jonathan_Resume.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="contact-link"
