@@ -4,6 +4,7 @@ import { useRef } from "react";
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import HeroSection from "../components/HeroSection";
+import AboutSection from "../components/AboutSection";
 import dynamic from "next/dynamic";
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
@@ -250,55 +251,7 @@ export default function Home() {
       <hr className="section-divider" />
 
       {/* ===== ABOUT ===== */}
-      <SpatialSection id="about">
-        <div className="container">
-          <div className="section-label">
-            <span className="section-number sp-reveal">02</span>
-            <span className="section-title sp-reveal">&gt; about.me</span>
-            <span className="section-line"></span>
-          </div>
-
-          <div className="about-content">
-            <div className="about-text">
-              <p className="sp-reveal">
-                I&apos;m a 3rd-year Computer Science student at IIIT Pune who builds
-                real tools — not just coursework. My focus areas are{" "}
-                <strong>AI</strong>, <strong>cybersecurity</strong>, and{" "}
-                <strong>systems design</strong>, and I gravitate toward projects
-                that solve practical, tangible problems.
-              </p>
-              <p className="sp-reveal">
-                Whether it&apos;s building a multimodal phishing detector as a browser
-                extension, generating synthetic training data in Blender, or
-                engineering a deterministic document converter — I focus on
-                software that <strong>works in the real world</strong>.
-              </p>
-              <p className="sp-reveal">
-                I&apos;m always working on something new. Currently leveling up and
-                looking for opportunities to build at scale.
-              </p>
-            </div>
-
-            <div className="about-snippet sp-reveal" id="about-code-snippet">
-              <div className="snippet-header">
-                <span className="snippet-dot"></span>
-                <span className="snippet-dot"></span>
-                <span className="snippet-dot"></span>
-                <span className="snippet-filename">developer.js</span>
-              </div>
-              <pre className="snippet-body">{
-`const developer = {
-  current: "B.Tech CSE, IIIT Pune",
-  year: "3rd Year",
-  location: "Pune, India / Muscat, Oman",
-  focus: ["AI", "Systems", "Security"],
-  status: "open to internships"
-};`
-              }</pre>
-            </div>
-          </div>
-        </div>
-      </SpatialSection>
+      <AboutSection />
 
       <hr className="section-divider" />
 

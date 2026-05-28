@@ -744,47 +744,86 @@ img {
 }
 
 /* ============================================================
-   ABOUT
+   ABOUT — Scroll-Scrub Text Reveal Layout
    ============================================================ */
-.about {
-  padding: var(--section-padding);
+
+/* 250vh scroll runway (matches the sticky animation range) */
+.about-runway {
+  position: relative;
 }
 
-@media (max-width: 767px) {
-  .about {
-    padding: var(--section-padding-mobile);
-  }
+/* Sticky viewport shell — centres the two-column layout */
+.about-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 }
 
-.about-content {
+/* Inner two-column grid */
+.about-split-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 24px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 48px;
-  align-items: start;
+  align-items: center;
 }
 
-@media (min-width: 900px) {
-  .about-content {
-    grid-template-columns: 1fr 1fr;
-    gap: 64px;
+@media (min-width: 768px) {
+  .about-split-container {
+    padding: 0 48px;
   }
 }
 
-.about-text {
+@media (min-width: 900px) {
+  .about-split-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+  }
+}
+
+/* Left column — section header + bio */
+.about-split-text {
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
-.about-text p {
-  font-size: 15px;
-  color: var(--gray-400);
-  line-height: 1.8;
+/* Bio paragraphs */
+.about-bio {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.about-text strong {
-  color: var(--gray-200);
-  font-weight: 500;
+.about-bio-para {
+  font-size: clamp(15px, 1.5vw, 17px);
+  line-height: 1.85;
+  /* Words start dim; GSAP will drive them to white */
+  color: transparent; /* text colour is entirely on the spans */
+}
+
+.about-bio-para strong {
+  /* Inherit the span color so GSAP controls bolds too */
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Individual animatable word units */
+.reveal-word {
+  display: inline;
+  color: rgba(255, 255, 255, 0.15);
+  transition: color 0.1s ease;
+  will-change: color;
+}
+
+/* Right column — terminal container (parallax target) */
+.about-terminal-wrap {
+  will-change: transform;
 }
 
 /* Terminal / code snippet */
@@ -793,6 +832,10 @@ img {
   border-radius: 10px;
   overflow: hidden;
   background: #0d0d0d;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .snippet-header {
@@ -1074,6 +1117,131 @@ img {
   border: none;
   max-width: var(--container-max);
   margin: 0 auto;
+}
+
+/* ============================================================
+   TERMINAL BLOCK — animated typewriter terminal
+   ============================================================ */
+
+/* Outer shell */
+.term-shell {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid var(--gray-800);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 64px rgba(0, 0, 0, 0.7),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Title bar */
+.term-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #111111;
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.term-dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.term-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.term-dot--red    { background: rgba(239, 68, 68, 0.85); }
+.term-dot--yellow { background: rgba(234, 179, 8, 0.85); }
+.term-dot--green  { background: rgba(34, 197, 94, 0.85); }
+
+.term-title {
+  margin-left: 16px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* Body */
+.term-body {
+  padding: 20px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+/* A single prompt line */
+.term-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray-300);
+}
+
+.term-line--mt {
+  margin-top: 16px;
+}
+
+/* Prompt decorations */
+.term-prompt-arrow {
+  color: #4ade80; /* green-400 equivalent */
+  flex-shrink: 0;
+}
+
+.term-prompt-dir {
+  color: #60a5fa; /* blue-400 equivalent */
+  flex-shrink: 0;
+}
+
+.term-typed {
+  color: var(--gray-200);
+}
+
+/* Output pre block */
+.term-output {
+  margin: 12px 0 0;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: pre;
+  color: var(--gray-300);
+}
+
+/* Syntax-highlight tokens */
+.term-key   { color: #82aaff; } /* blue  — JSON keys   */
+.term-str   { color: #c3e88d; } /* green — string vals */
+.term-punct { color: #6b7280; } /* grey  — {}[],: etc  */
+
+/* Blinking cursor */
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background: var(--gray-400);
+  border-radius: 1px;
+  animation: blink 1s step-end infinite;
+  flex-shrink: 0;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Fast fade-in for the output block */
+.fade-in-fast {
+  animation: fadeInFast 0.3s ease-out forwards;
+}
+
+@keyframes fadeInFast {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
 /* ============================================================
