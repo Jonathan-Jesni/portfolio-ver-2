@@ -39,7 +39,6 @@ export default function AboutSection() {
   const runwayRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const textColRef = useRef<HTMLDivElement>(null);
-  const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const runway = runwayRef.current;
@@ -76,15 +75,6 @@ export default function AboutSection() {
         );
       }
 
-      /* ---- Terminal parallax: subtle float (px not %, avoids drift) ---- */
-      if (terminalRef.current) {
-        tl.fromTo(
-          terminalRef.current,
-          { y: 10 },
-          { y: -10, ease: "none" },
-          0 // run in parallel with the word reveal
-        );
-      }
     }, runway);
 
     return () => ctx.revert();
@@ -121,7 +111,7 @@ export default function AboutSection() {
           </div>
 
           {/* ===== RIGHT: Animated terminal ===== */}
-          <div ref={terminalRef} className="about-terminal-wrap">
+          <div className="about-terminal-wrap">
             <TerminalBlock />
           </div>
 

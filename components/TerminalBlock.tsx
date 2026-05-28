@@ -86,7 +86,7 @@ export default function TerminalBlock() {
         // Pause 500 ms, then reveal the output block
         setTimeout(() => setShowOutput(true), 500);
       }
-    }, 55); // ~55 ms per character — feels natural
+    }, 95); // ~95 ms per character — deliberate, readable pace
 
     return () => clearInterval(interval);
   }, [started]);
@@ -104,7 +104,7 @@ export default function TerminalBlock() {
       </div>
 
       {/* ---- Body ---- */}
-      <div className="term-body">
+      <div className={`term-body${showOutput ? " is-expanded" : ""}`}>
         {/* Command line being typed */}
         <div className="term-line">
           <span className="term-prompt-arrow">➜</span>
