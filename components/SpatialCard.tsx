@@ -76,6 +76,7 @@ export default function SpatialCard({
         scale: 0.8,
         filter: "blur(12px)",
         opacity: 0,
+        y: -60,
       });
 
       const tl = gsap.timeline({
@@ -87,14 +88,15 @@ export default function SpatialCard({
         },
       });
 
-      // 0 → 35%: Approach — card rushes towards viewer from deep space
+      // 0 → 35%: Approach — card rushes from deep space and locks into place
       tl.to(
         cardRef.current,
         {
           scale: 1,
+          y: 0,
           filter: "blur(0px)",
           opacity: 1,
-          ease: "power2.out",
+          ease: "back.out(1.4)",
           duration: 0.35,
         },
         0

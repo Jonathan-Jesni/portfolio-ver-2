@@ -3,8 +3,9 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Draggable from "gsap/Draggable";
+import ScrollTrigger from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(Draggable);
+gsap.registerPlugin(Draggable, ScrollTrigger);
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import HeroSection from "../components/HeroSection";
@@ -244,57 +245,103 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
     return () => instances.forEach((d) => d.kill());
   }, []);
 
-  /* ── Effect 4: Scrubbable playhead per card ── */
+  /* ── Effect 4: Playhead Draggable + auto-sweep on reading plateau ── */
   useEffect(() => {
     const cards = Array.from(
       gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card") ?? []
     );
     if (!cards.length) return;
 
-    const draggables: Draggable[] = [];
+    const draggables:     Draggable[]     = [];
+    const scrollTriggers: ScrollTrigger[] = [];
 
     cards.forEach((card) => {
       const row      = card.querySelector<HTMLElement>(".pipe-steps-row");
       const playhead = card.querySelector<HTMLElement>(".pipeline-playhead");
       if (!row || !playhead) return;
 
-      const steps     = Array.from(row.querySelectorAll<HTMLElement>(".pipe-step"));
-      let lastHitIdx  = -1;
+      const steps    = Array.from(row.querySelectorAll<HTMLElement>(".pipe-step"));
+      let lastHitIdx = -1;
 
+      /* ── Shared hit-test — called by both Draggable.onDrag and auto-run onUpdate ── */
+      function runHitTest() {
+        const phR  = playhead!.getBoundingClientRect();
+        const phCX = (phR.left + phR.right) / 2;
+
+        let newHit = -1;
+        steps.forEach((step, i) => {
+          const sr       = step.getBoundingClientRect();
+          const isPassed = phCX >= sr.left;
+          const isHit    = phCX >= sr.left && phCX <= sr.right;
+          
+          step.querySelector<HTMLElement>(".pipe-step-label")
+            ?.classList.toggle("pipe-step--lit", isPassed);
+            
+          if (isHit) newHit = i;
+        });
+
+        if (newHit !== -1 && newHit !== lastHitIdx) {
+          card.classList.remove("pipeline-card--executing");
+          void card.offsetWidth; // reflow — restarts CSS animation
+          card.classList.add("pipeline-card--executing");
+        }
+        lastHitIdx = newHit;
+      }
+
+      /* ── Draggable (manual control) ── */
       const drags = Draggable.create(playhead, {
         type: "x",
         bounds: row,
-        onDrag() {
-          const phR = playhead.getBoundingClientRect();
-          const phCX = (phR.left + phR.right) / 2;
-
-          let newHit = -1;
-          steps.forEach((step, i) => {
-            const sr    = step.getBoundingClientRect();
-            const isHit = phCX >= sr.left && phCX <= sr.right;
-            step.querySelector<HTMLElement>(".pipe-step-label")
-              ?.classList.toggle("pipe-step--lit", isHit);
-            if (isHit) newHit = i;
-          });
-
-          // Fire border pulse only when landing on a new step
-          if (newHit !== -1 && newHit !== lastHitIdx) {
-            card.classList.remove("pipeline-card--executing");
-            void card.offsetWidth; // reflow — restarts CSS animation
-            card.classList.add("pipeline-card--executing");
-          }
-          lastHitIdx = newHit;
-        },
+        onDrag: runHitTest,
         onDragEnd() {
           card.classList.remove("pipeline-card--executing");
           lastHitIdx = -1;
         },
       });
-
       draggables.push(...drags);
+
+      /* ── ScrollTrigger auto-sweep on reading plateau entry ── */
+      // Walk up to the .sp-runway so we can key off the section's own
+      // scroll progress ("35% top" = the reading plateau start).
+      const runway = card.closest<HTMLElement>(".sp-runway") ?? card;
+
+      const st = ScrollTrigger.create({
+        trigger: runway,
+        start: "35% top",
+        once: true,
+        onEnter() {
+          // Exact travel distance — stops flush with the row right edge
+          const maxX = row!.offsetWidth - playhead!.offsetWidth;
+
+          // Reset playhead + step states before sweeping
+          gsap.set(playhead, { x: 0 });
+          lastHitIdx = -1;
+          steps.forEach((step) =>
+            step.querySelector<HTMLElement>(".pipe-step-label")
+              ?.classList.remove("pipe-step--lit")
+          );
+
+          gsap.to(playhead, {
+            x: maxX,
+            duration: 4.0,
+            ease: "power2.inOut",
+            onUpdate: runHitTest,
+            onComplete() {
+              card.classList.remove("pipeline-card--executing");
+              // Sync Draggable's internal x cache so manual grab
+              // continues from the landed position, not from 0
+              Draggable.get(playhead!)?.update();
+            },
+          });
+        },
+      });
+      scrollTriggers.push(st);
     });
 
-    return () => draggables.forEach((d) => d.kill());
+    return () => {
+      draggables.forEach((d) => d.kill());
+      scrollTriggers.forEach((st) => st.kill());
+    };
   }, []);
 
   return (
