@@ -1,6 +1,10 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import gsap from "gsap";
+import Draggable from "gsap/Draggable";
+
+gsap.registerPlugin(Draggable);
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import HeroSection from "../components/HeroSection";
@@ -97,88 +101,200 @@ const BUILDING = [
 type BuildingItem = (typeof BUILDING)[number];
 
 function PipelineGrid({ items }: { items: BuildingItem[] }) {
-  const gridRef    = useRef<HTMLDivElement>(null);
-  const lineRef    = useRef<SVGLineElement>(null);
-  const packetRef  = useRef<SVGCircleElement>(null);
+  const gridRef          = useRef<HTMLDivElement>(null);
+  const lineRef          = useRef<SVGLineElement>(null);
+  const packetRef        = useRef<SVGCircleElement>(null);
+  // Shared dragging flags so the tilt effect yields during card drag
+  const draggingFlags    = useRef<boolean[]>([]);
 
-  /* ── Wire SVG connector to real card bounding rects ── */
+  /* ── Reads refs only — safe to call from any effect ── */
+  function updateConnector() {
+    const wrapper = gridRef.current;
+    const line    = lineRef.current;
+    const packet  = packetRef.current;
+    if (!wrapper || !line || !packet) return;
+
+    const svgEl = wrapper.querySelector<SVGSVGElement>(".pipeline-connector-svg");
+    if (!svgEl) return;
+
+    const cards = wrapper.querySelectorAll<HTMLElement>(".pipeline-card");
+    if (cards.length < 2) return;
+
+    const r0 = cards[0].getBoundingClientRect();
+    const r1 = cards[1].getBoundingClientRect();
+    // Two-col check with tolerance for sub-pixel rounding
+    if (Math.abs(r0.top - r1.top) > 10) {
+      line.style.display = packet.style.display = "none";
+      return;
+    }
+    line.style.display = packet.style.display = "";
+
+    const wr = svgEl.getBoundingClientRect();
+    const y  = r0.top  + r0.height / 2 - wr.top;
+    const x1 = r0.right  - wr.left;
+    const x2 = r1.left   - wr.left;
+
+    line.setAttribute("x1", String(x1));
+    line.setAttribute("y1", String(y));
+    line.setAttribute("x2", String(x2));
+    line.setAttribute("y2", String(y));
+    packet.setAttribute("cy", String(y));
+    packet.setAttribute("cx", String(x1));
+    wrapper.style.setProperty("--pipe-gap", `${x2 - x1}px`);
+  }
+
+  /* ── Effect 1: ResizeObserver → SVG connector ── */
   useEffect(() => {
     const wrapper = gridRef.current;
     if (!wrapper) return;
-
-    function updateConnector() {
-      const svgEl  = wrapper!.querySelector<SVGSVGElement>(".pipeline-connector-svg");
-      const line   = lineRef.current;
-      const packet = packetRef.current;
-      if (!svgEl || !line || !packet) return;
-
-      const cards = wrapper!.querySelectorAll<HTMLElement>(".pipeline-card");
-      if (cards.length < 2) return;
-
-      // Only draw the connector when both cards are side-by-side (desktop ≥ 640px)
-      const isTwoCol = cards[0].getBoundingClientRect().top ===
-                       cards[1].getBoundingClientRect().top;
-      if (!isTwoCol) { line.style.display = "none"; packet.style.display = "none"; return; }
-      line.style.display   = "";
-      packet.style.display = "";
-
-      const wrapRect = svgEl.getBoundingClientRect();
-      const r0       = cards[0].getBoundingClientRect();
-      const r1       = cards[1].getBoundingClientRect();
-
-      // Midpoint Y of the first card, converted to SVG-local coords
-      const y = (r0.top + r0.height / 2) - wrapRect.top;
-      const x1 = r0.right  - wrapRect.left;
-      const x2 = r1.left   - wrapRect.left;
-
-      line.setAttribute("x1",  String(x1));
-      line.setAttribute("y1",  String(y));
-      line.setAttribute("x2",  String(x2));
-      line.setAttribute("y2",  String(y));
-      packet.setAttribute("cy", String(y));
-      packet.setAttribute("cx", String(x1));
-      // Expose gap to CSS keyframe animation
-      wrapper!.style.setProperty("--pipe-gap", `${x2 - x1}px`);
-    }
-
     const ro = new ResizeObserver(updateConnector);
     ro.observe(wrapper);
     updateConnector();
     return () => ro.disconnect();
   }, []);
 
-  /* ── Sequential step illumination via IntersectionObserver ── */
+  /* ── Effect 2: Gyroscopic 3D tilt + inner Z-layer parallax ── */
   useEffect(() => {
-    const cards = gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card");
-    if (!cards) return;
+    const cards = Array.from(
+      gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card") ?? []
+    );
+    if (!cards.length) return;
 
-    const observers: IntersectionObserver[] = [];
+    const cleanups: (() => void)[] = [];
 
-    cards.forEach((card) => {
-      const steps = card.querySelectorAll<HTMLElement>(".pipe-step-label");
-      let timer: ReturnType<typeof setTimeout> | null = null;
+    cards.forEach((card, ci) => {
+      function onMouseMove(e: MouseEvent) {
+        if (draggingFlags.current[ci]) return;
+        const r  = card.getBoundingClientRect();
+        const nx = (e.clientX - r.left - r.width  / 2) / (r.width  / 2);
+        const ny = (e.clientY - r.top  - r.height / 2) / (r.height / 2);
 
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.intersectionRatio >= 0.55) {
-            steps.forEach((s) => s.classList.remove("pipe-step--lit"));
-            if (timer) clearTimeout(timer);
-            steps.forEach((s, i) => {
-              timer = setTimeout(() => s.classList.add("pipe-step--lit"), i * 320);
-            });
-          } else {
-            if (timer) clearTimeout(timer);
-            steps.forEach((s) => s.classList.remove("pipe-step--lit"));
-          }
-        },
-        { threshold: 0.55 }
-      );
+        // 3D tilt on the card itself
+        gsap.to(card, {
+          rotateY:  nx * 10,
+          rotateX: -ny * 10,
+          duration: 0.25,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
 
-      obs.observe(card);
-      observers.push(obs);
+        // Parallax shift on floated inner layers
+        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+          gsap.to(el, { x: nx * 7, y: ny * 7, duration: 0.3, ease: "power2.out", overwrite: "auto" })
+        );
+      }
+
+      function onMouseLeave() {
+        if (draggingFlags.current[ci]) return;
+        gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" });
+        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+          gsap.to(el, { x: 0, y: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" })
+        );
+      }
+
+      card.addEventListener("mousemove", onMouseMove);
+      card.addEventListener("mouseleave", onMouseLeave);
+
+      cleanups.push(() => {
+        card.removeEventListener("mousemove", onMouseMove);
+        card.removeEventListener("mouseleave", onMouseLeave);
+        gsap.killTweensOf(card, "rotateX,rotateY");
+        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+          gsap.killTweensOf(el, "x,y")
+        );
+      });
     });
 
-    return () => observers.forEach((o) => o.disconnect());
+    return () => cleanups.forEach((fn) => fn());
+  }, []);
+
+  /* ── Effect 3: GSAP Draggable cards + elastic SVG wire ── */
+  useEffect(() => {
+    const cards = Array.from(
+      gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card") ?? []
+    );
+    if (!cards.length) return;
+
+    const instances: Draggable[] = [];
+
+    cards.forEach((card, ci) => {
+      const drags = Draggable.create(card, {
+        type: "x,y",
+        inertia: false,
+        bounds: { minX: -40, maxX: 40, minY: -40, maxY: 40 },
+        onDragStart() {
+          draggingFlags.current[ci] = true;
+        },
+        onDrag() {
+          updateConnector();
+        },
+        onDragEnd() {
+          draggingFlags.current[ci] = false;
+          gsap.to(card, {
+            x: 0, y: 0,
+            ease: "elastic.out(1, 0.3)",
+            duration: 1.2,
+            onUpdate: updateConnector,
+          });
+        },
+      });
+      instances.push(...drags);
+    });
+
+    return () => instances.forEach((d) => d.kill());
+  }, []);
+
+  /* ── Effect 4: Scrubbable playhead per card ── */
+  useEffect(() => {
+    const cards = Array.from(
+      gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card") ?? []
+    );
+    if (!cards.length) return;
+
+    const draggables: Draggable[] = [];
+
+    cards.forEach((card) => {
+      const row      = card.querySelector<HTMLElement>(".pipe-steps-row");
+      const playhead = card.querySelector<HTMLElement>(".pipeline-playhead");
+      if (!row || !playhead) return;
+
+      const steps     = Array.from(row.querySelectorAll<HTMLElement>(".pipe-step"));
+      let lastHitIdx  = -1;
+
+      const drags = Draggable.create(playhead, {
+        type: "x",
+        bounds: row,
+        onDrag() {
+          const phR = playhead.getBoundingClientRect();
+          const phCX = (phR.left + phR.right) / 2;
+
+          let newHit = -1;
+          steps.forEach((step, i) => {
+            const sr    = step.getBoundingClientRect();
+            const isHit = phCX >= sr.left && phCX <= sr.right;
+            step.querySelector<HTMLElement>(".pipe-step-label")
+              ?.classList.toggle("pipe-step--lit", isHit);
+            if (isHit) newHit = i;
+          });
+
+          // Fire border pulse only when landing on a new step
+          if (newHit !== -1 && newHit !== lastHitIdx) {
+            card.classList.remove("pipeline-card--executing");
+            void card.offsetWidth; // reflow — restarts CSS animation
+            card.classList.add("pipeline-card--executing");
+          }
+          lastHitIdx = newHit;
+        },
+        onDragEnd() {
+          card.classList.remove("pipeline-card--executing");
+          lastHitIdx = -1;
+        },
+      });
+
+      draggables.push(...drags);
+    });
+
+    return () => draggables.forEach((d) => d.kill());
   }, []);
 
   return (
@@ -194,24 +310,22 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
         <rect width="100%" height="100%" fill="url(#pipeline-dot-grid)" />
       </svg>
 
-      {/* ── SVG orchestration connector (desktop only) ── */}
+      {/* ── SVG orchestration connector ── */}
       <svg
         className="pipeline-connector-svg"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}
+        style={{
+          position: "absolute",
+          top: 0, left: 0,
+          width: "100%", height: "100%",
+          overflow: "visible",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
       >
-        <line
-          ref={lineRef}
-          className="pipeline-connector-line"
-          x1="0" y1="0" x2="0" y2="0"
-        />
-        <circle
-          ref={packetRef}
-          className="pipeline-packet"
-          r="3"
-          cx="0" cy="0"
-        />
+        <line ref={lineRef} className="pipeline-connector-line" x1="0" y1="0" x2="0" y2="0" />
+        <circle ref={packetRef} className="pipeline-packet" r="3" cx="0" cy="0" />
       </svg>
 
       {/* ── Card grid ── */}
@@ -234,11 +348,12 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
               </span>
             </div>
 
-            {/* Title */}
-            <h3 className="pipeline-title">{item.title}</h3>
+            {/* Title — floats above card plane on tilt */}
+            <h3 className="pipeline-title pipeline-z">{item.title}</h3>
 
-            {/* Step matrix */}
-            <div className="pipe-steps-row" aria-label="Pipeline steps">
+            {/* Step matrix — Z-layer with scrub playhead */}
+            <div className="pipe-steps-row pipeline-z" aria-label="Pipeline steps">
+              <div className="pipeline-playhead" aria-hidden="true" />
               {item.steps.map((step, si) => (
                 <span key={step} className="pipe-step">
                   <span className="pipe-step-label mono">[{step}]</span>
@@ -249,11 +364,11 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
               ))}
             </div>
 
-            {/* Description */}
-            <p className="pipeline-desc">{item.description}</p>
+            {/* Description — Z-layer */}
+            <p className="pipeline-desc pipeline-z">{item.description}</p>
 
-            {/* Tags */}
-            <div className="project-tags">
+            {/* Tags — Z-layer */}
+            <div className="project-tags pipeline-z">
               {item.tags.map((tag) => (
                 <span key={tag} className="project-tag">{tag}</span>
               ))}

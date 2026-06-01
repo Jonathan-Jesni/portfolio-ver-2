@@ -955,13 +955,16 @@ img {
   100% { transform: translateX(var(--pipe-gap, 24px));  opacity: 0; }
 }
 
-/* ── Card grid ───────────────────────────────────────────────── */
+/* ── Card grid ──────────────────────────────────────────── */
 .building-grid {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
+  /* 3D perspective context for card tilt */
+  perspective: 1200px;
+  perspective-origin: 50% 40%;
 }
 
 @media (min-width: 640px) {
@@ -971,7 +974,7 @@ img {
   }
 }
 
-/* ── Individual pipeline card ────────────────────────────────── */
+/* ── Individual pipeline card ──────────────────────────────── */
 .building-card {
   background: #000000;
   border: 1px solid var(--border-subtle);
@@ -984,7 +987,11 @@ img {
   -webkit-backdrop-filter: blur(12px);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
   position: relative;
-  overflow: hidden;
+  /* preserve-3d so rotateX/Y look real under perspective */
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* overflow must be visible for preserve-3d children to pop out */
+  overflow: visible;
 }
 
 /* Faint top-edge highlight for depth */
@@ -1082,6 +1089,9 @@ img {
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 6px;
+  /* Positioning context for the draggable playhead */
+  position: relative;
+  overflow: visible;
 }
 
 .pipe-step {
@@ -1119,11 +1129,77 @@ img {
   color: var(--gray-600);
 }
 
-/* ── Description ─────────────────────────────────────────────── */
+/* ── Description ─────────────────────────────────────────── */
 .pipeline-desc {
   font-size: 13px;
   color: var(--gray-500);
   line-height: 1.7;
+}
+
+/* ── Z-layer parallax utility ───────────────────────────────── */
+/* Applied to inner elements so they visually "float" above the card
+   surface during GSAP-driven gyroscopic tilt. The static translateZ
+   primes the 3D stack; GSAP drives x/y parallax on top of it.     */
+.pipeline-z {
+  position: relative;
+  will-change: transform;
+  transform: translateZ(40px);
+}
+
+/* ── Draggable scrub playhead ──────────────────────────────── */
+.pipeline-playhead {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 2px;
+  background: rgba(0, 210, 240, 0.9);
+  border-radius: 2px;
+  cursor: grab;
+  z-index: 10;
+  touch-action: none;
+  user-select: none;
+  box-shadow:
+    0 0  6px rgba(0, 210, 240, 0.55),
+    0 0 16px rgba(0, 210, 240, 0.2);
+  /* Subtle entrance fade */
+  opacity: 0.6;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pipeline-playhead:hover,
+.pipeline-playhead:active {
+  cursor: grabbing;
+  opacity: 1;
+  box-shadow:
+    0 0  8px rgba(0, 210, 240, 0.75),
+    0 0 22px rgba(0, 210, 240, 0.35);
+}
+
+/* ── Border-pulse when the playhead hits a new step ───────────── */
+.pipeline-card--executing {
+  animation: cardExecute 0.55s ease-out forwards;
+}
+
+@keyframes cardExecute {
+  0% {
+    border-color: rgba(0, 210, 240, 0.55);
+    box-shadow:
+      0 0 0 1px rgba(0, 210, 240, 0.25),
+      0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+  45% {
+    border-color: rgba(0, 210, 240, 0.2);
+    box-shadow:
+      0 0 0 2px rgba(0, 210, 240, 0.1),
+      0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+  100% {
+    border-color: var(--border-subtle);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 8px 32px rgba(0, 0, 0, 0.6);
+  }
 }
 
 /* ============================================================
