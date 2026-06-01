@@ -93,7 +93,36 @@ export default function HeroSection() {
   }, []);
 
   /* ======================================================
-     2.  SCROLL TUNNEL  (runway → sticky, scrub: 2)
+     2.  INTRO DROP-IN  (plays immediately on mount, no ScrollTrigger)
+         Every hero block slams in from above with back-ease snap.
+  ====================================================== */
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from(
+        [
+          ".hero-greeting",
+          ".hero-name-split",
+          ".hero-building",
+          ".hero-tagline",
+          ".hero-sub",
+          ".hero-impact",
+          ".hero-buttons",
+        ],
+        {
+          y: -100,
+          opacity: 0,
+          ease: "back.out(1.5)",
+          duration: 1.2,
+          stagger: 0.1,
+        }
+      );
+    }, runwayRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  /* ======================================================
+     3.  SCROLL TUNNEL  (runway → sticky, scrub: 2)
          TOP chars   → fly upward   (-120 vh)
          BOTTOM chars → fly downward (+120 vh)
          Greeting + sub-content fade out quickly
@@ -126,12 +155,12 @@ export default function HeroSection() {
       <div className="hero-sticky" id="hero">
         <div className="container">
 
-          <p ref={greetingRef} className="hero-greeting mono">
+          <p ref={greetingRef} className="hero-greeting mono" data-hero-intro>
             Hi, my name is
           </p>
 
           {/* ---- The massive JONATHAN split heading ---- */}
-          <h1 className="hero-name-split" aria-label="Jonathan">
+          <h1 className="hero-name-split" aria-label="Jonathan" data-hero-intro>
             {/* TOP half — flies up on scroll */}
             <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
               {TOP.map((ch, i) => (
@@ -164,17 +193,18 @@ export default function HeroSection() {
             <p
               className="hero-building mono"
               style={{ color: "var(--gray-500)", fontSize: "14px", marginBottom: "24px" }}
+              data-hero-intro
             >
               &gt; currently.building: smarter tools for real-world problems
             </p>
 
-            <h2 className="hero-tagline">
+            <h2 className="hero-tagline" data-hero-intro>
               I build AI-powered tools and systems
               <br />
               that solve real-world problems.
             </h2>
 
-            <p className="hero-sub">
+            <p className="hero-sub" data-hero-intro>
               Computer Science student focused on AI, cybersecurity, and scalable systems.
             </p>
 
@@ -186,11 +216,12 @@ export default function HeroSection() {
                 marginBottom: "48px",
                 maxWidth: "600px",
               }}
+              data-hero-intro
             >
               Built and deployed 4 real-world systems across AI, cybersecurity, and large-scale data processing.
             </p>
 
-            <div className="hero-buttons">
+            <div className="hero-buttons" data-hero-intro>
               <a
                 href="https://github.com/Jonathan-Jesni"
                 target="_blank"
