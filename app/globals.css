@@ -823,7 +823,12 @@ img {
 
 /* Right column — terminal container (parallax target) */
 .about-terminal-wrap {
-  will-change: transform;
+  /* Fixed-height cage — terminal expands inside without shifting the grid */
+  display: flex;
+  align-items: center;
+  min-height: 450px;
+  width: 100%;
+  will-change: transform, opacity;
 }
 
 /* Terminal / code snippet */

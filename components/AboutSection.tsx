@@ -39,6 +39,7 @@ export default function AboutSection() {
   const runwayRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const textColRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const runway = runwayRef.current;
@@ -71,6 +72,16 @@ export default function AboutSection() {
               from: "start",
             },
           },
+          0
+        );
+      }
+
+      /* ---- Terminal: scrubbed slide-in (reverses on scroll-back) ---- */
+      if (terminalRef.current) {
+        tl.fromTo(
+          terminalRef.current,
+          { y: 150, opacity: 0 },
+          { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
           0
         );
       }
@@ -110,8 +121,8 @@ export default function AboutSection() {
             </div>
           </div>
 
-          {/* ===== RIGHT: Animated terminal ===== */}
-          <div className="about-terminal-wrap">
+          {/* ===== RIGHT: Animated terminal cage ===== */}
+          <div ref={terminalRef} className="about-terminal-wrap">
             <TerminalBlock />
           </div>
 
