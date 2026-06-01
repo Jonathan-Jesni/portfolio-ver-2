@@ -883,78 +883,246 @@ img {
 }
 
 /* ============================================================
-   CURRENTLY BUILDING
+   CURRENTLY BUILDING — Agentic Automation Pipeline
    ============================================================ */
-.building {
-  padding: var(--section-padding);
+
+/* ── Outer wrapper (position context for SVG overlays) ──────── */
+.pipeline-wrapper {
+  position: relative;
+  padding: 32px 0 40px;
 }
 
-@media (max-width: 767px) {
-  .building {
-    padding: var(--section-padding-mobile);
+/* ── Dot-grid SVG background ─────────────────────────────────── */
+.pipeline-grid-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 16px;
+  opacity: 0.6;
+}
+
+/* ── SVG connector between the two cards (desktop only) ──────── */
+.pipeline-connector-svg {
+  display: none;
+  position: absolute;
+  /* sits in the vertical midline of the card grid */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+@media (min-width: 640px) {
+  .pipeline-connector-svg {
+    display: block;
   }
 }
 
+.pipeline-connector-line {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+  transition: stroke 0.35s ease;
+}
+
+/* When any pipeline-card is hovered, illuminate the connector */
+.pipeline-wrapper:has(.pipeline-card:hover) .pipeline-connector-line {
+  stroke: var(--border-hover);
+}
+
+/* Animated data packet that travels the connector line */
+.pipeline-packet {
+  fill: rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  filter: blur(0.5px);
+}
+
+.pipeline-wrapper:has(.pipeline-card:hover) .pipeline-packet {
+  opacity: 1;
+  animation: packetTravel 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes packetTravel {
+  0%   { transform: translateX(0px);                   opacity: 0; }
+  8%   { transform: translateX(0px);                   opacity: 1; }
+  92%  { transform: translateX(var(--pipe-gap, 24px));  opacity: 1; }
+  100% { transform: translateX(var(--pipe-gap, 24px));  opacity: 0; }
+}
+
+/* ── Card grid ───────────────────────────────────────────────── */
 .building-grid {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
 @media (min-width: 640px) {
   .building-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
   }
 }
 
+/* ── Individual pipeline card ────────────────────────────────── */
 .building-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
-  padding: 28px;
+  background: #000000;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 28px 28px 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  gap: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Faint top-edge highlight for depth */
+.building-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .building-card:hover {
   border-color: var(--border-hover);
-  background: var(--glow-hover);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(255, 255, 255, 0.03);
 }
 
+/* ── Status row ──────────────────────────────────────────────── */
 .building-status {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Radar-pulse status dot */
 .status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #28c840;
-  box-shadow: 0 0 6px rgba(40, 200, 64, 0.6);
+  position: relative;
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
 }
 
-.building-status .mono {
-  font-size: 12px;
+.status-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #28c840;
+  box-shadow: 0 0 6px rgba(40, 200, 64, 0.7);
+}
+
+/* Expanding radar ring */
+.status-dot-pulse {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid rgba(40, 200, 64, 0.5);
+  animation: radarPulse 2s ease-out infinite;
+}
+
+@keyframes radarPulse {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  70%  { transform: scale(2.4); opacity: 0;   }
+  100% { transform: scale(2.4); opacity: 0;   }
+}
+
+.building-status-label {
+  font-size: 11px;
   color: var(--gray-500);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pipeline-node-id {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--gray-700);
   letter-spacing: 0.06em;
 }
 
-.building-card h3 {
+/* ── Pipeline title ──────────────────────────────────────────── */
+.pipeline-title {
   font-size: 18px;
   font-weight: 600;
   color: var(--white);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
 }
 
-.building-card p {
-  font-size: 14px;
-  color: var(--gray-400);
+/* ── Step matrix row ─────────────────────────────────────────── */
+.pipe-steps-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 2px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.pipe-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Default dim step label */
+.pipe-step-label {
+  font-size: 10px;
+  color: var(--gray-700);
+  letter-spacing: 0.05em;
+  transition:
+    color 0.35s ease,
+    text-shadow 0.35s ease;
+}
+
+/* Illuminated state — fires sequentially via JS IntersectionObserver */
+.pipe-step-label.pipe-step--lit {
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.35),
+    0 0 16px rgba(255, 255, 255, 0.15);
+}
+
+.pipe-arrow {
+  font-size: 10px;
+  color: var(--gray-800);
+  transition: color 0.35s ease;
+}
+
+/* Illuminate arrows when preceding step is lit */
+.pipe-step:has(.pipe-step--lit) + .pipe-step .pipe-arrow {
+  color: var(--gray-600);
+}
+
+/* ── Description ─────────────────────────────────────────────── */
+.pipeline-desc {
+  font-size: 13px;
+  color: var(--gray-500);
   line-height: 1.7;
 }
 

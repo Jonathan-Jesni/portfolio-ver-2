@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import HeroSection from "../components/HeroSection";
@@ -76,6 +76,7 @@ const BUILDING = [
     description:
       "Expanding the File Converter into a full document processing system with multi-format conversion, document compression, and extended format support.",
     tags: ["Python", "Document Processing", "Pipeline"],
+    steps: ["INGEST", "PARSE", "STRUCTURE", "COMPRESS", "RENDER"],
   },
   {
     id: "building-exploration",
@@ -84,9 +85,185 @@ const BUILDING = [
     description:
       "Researching next areas — interested in LLM tooling, automated security auditing, and distributed systems.",
     tags: ["LLMs", "Security", "Research"],
+    steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
 ];
 
+
+/* ============================================================
+   PIPELINE GRID — Agentic Automation Pipeline layout
+   ============================================================ */
+
+type BuildingItem = (typeof BUILDING)[number];
+
+function PipelineGrid({ items }: { items: BuildingItem[] }) {
+  const gridRef    = useRef<HTMLDivElement>(null);
+  const lineRef    = useRef<SVGLineElement>(null);
+  const packetRef  = useRef<SVGCircleElement>(null);
+
+  /* ── Wire SVG connector to real card bounding rects ── */
+  useEffect(() => {
+    const wrapper = gridRef.current;
+    if (!wrapper) return;
+
+    function updateConnector() {
+      const svgEl  = wrapper!.querySelector<SVGSVGElement>(".pipeline-connector-svg");
+      const line   = lineRef.current;
+      const packet = packetRef.current;
+      if (!svgEl || !line || !packet) return;
+
+      const cards = wrapper!.querySelectorAll<HTMLElement>(".pipeline-card");
+      if (cards.length < 2) return;
+
+      // Only draw the connector when both cards are side-by-side (desktop ≥ 640px)
+      const isTwoCol = cards[0].getBoundingClientRect().top ===
+                       cards[1].getBoundingClientRect().top;
+      if (!isTwoCol) { line.style.display = "none"; packet.style.display = "none"; return; }
+      line.style.display   = "";
+      packet.style.display = "";
+
+      const wrapRect = svgEl.getBoundingClientRect();
+      const r0       = cards[0].getBoundingClientRect();
+      const r1       = cards[1].getBoundingClientRect();
+
+      // Midpoint Y of the first card, converted to SVG-local coords
+      const y = (r0.top + r0.height / 2) - wrapRect.top;
+      const x1 = r0.right  - wrapRect.left;
+      const x2 = r1.left   - wrapRect.left;
+
+      line.setAttribute("x1",  String(x1));
+      line.setAttribute("y1",  String(y));
+      line.setAttribute("x2",  String(x2));
+      line.setAttribute("y2",  String(y));
+      packet.setAttribute("cy", String(y));
+      packet.setAttribute("cx", String(x1));
+      // Expose gap to CSS keyframe animation
+      wrapper!.style.setProperty("--pipe-gap", `${x2 - x1}px`);
+    }
+
+    const ro = new ResizeObserver(updateConnector);
+    ro.observe(wrapper);
+    updateConnector();
+    return () => ro.disconnect();
+  }, []);
+
+  /* ── Sequential step illumination via IntersectionObserver ── */
+  useEffect(() => {
+    const cards = gridRef.current?.querySelectorAll<HTMLElement>(".pipeline-card");
+    if (!cards) return;
+
+    const observers: IntersectionObserver[] = [];
+
+    cards.forEach((card) => {
+      const steps = card.querySelectorAll<HTMLElement>(".pipe-step-label");
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.intersectionRatio >= 0.55) {
+            steps.forEach((s) => s.classList.remove("pipe-step--lit"));
+            if (timer) clearTimeout(timer);
+            steps.forEach((s, i) => {
+              timer = setTimeout(() => s.classList.add("pipe-step--lit"), i * 320);
+            });
+          } else {
+            if (timer) clearTimeout(timer);
+            steps.forEach((s) => s.classList.remove("pipe-step--lit"));
+          }
+        },
+        { threshold: 0.55 }
+      );
+
+      obs.observe(card);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach((o) => o.disconnect());
+  }, []);
+
+  return (
+    <div className="pipeline-wrapper" ref={gridRef}>
+
+      {/* ── Dot-grid background ── */}
+      <svg className="pipeline-grid-bg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <pattern id="pipeline-dot-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+            <circle cx="0.5" cy="0.5" r="0.5" fill="rgba(255,255,255,0.07)" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pipeline-dot-grid)" />
+      </svg>
+
+      {/* ── SVG orchestration connector (desktop only) ── */}
+      <svg
+        className="pipeline-connector-svg"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}
+      >
+        <line
+          ref={lineRef}
+          className="pipeline-connector-line"
+          x1="0" y1="0" x2="0" y2="0"
+        />
+        <circle
+          ref={packetRef}
+          className="pipeline-packet"
+          r="3"
+          cx="0" cy="0"
+        />
+      </svg>
+
+      {/* ── Card grid ── */}
+      <div className="building-grid">
+        {items.map((item, idx) => (
+          <div
+            key={item.id}
+            id={item.id}
+            className="building-card pipeline-card sp-reveal"
+            data-pipeline-index={idx}
+          >
+            {/* Status row */}
+            <div className="building-status">
+              <span className="status-dot" aria-hidden="true">
+                <span className="status-dot-pulse" />
+              </span>
+              <span className="mono building-status-label">{item.status}</span>
+              <span className="pipeline-node-id mono">
+                node_{String(idx).padStart(2, "0")}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h3 className="pipeline-title">{item.title}</h3>
+
+            {/* Step matrix */}
+            <div className="pipe-steps-row" aria-label="Pipeline steps">
+              {item.steps.map((step, si) => (
+                <span key={step} className="pipe-step">
+                  <span className="pipe-step-label mono">[{step}]</span>
+                  {si < item.steps.length - 1 && (
+                    <span className="pipe-arrow mono" aria-hidden="true">→</span>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* Description */}
+            <p className="pipeline-desc">{item.description}</p>
+
+            {/* Tags */}
+            <div className="project-tags">
+              {item.tags.map((tag) => (
+                <span key={tag} className="project-tag">{tag}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ============================================================
    SVG ICONS  (only those still used in this file)
@@ -264,23 +441,7 @@ export default function Home() {
             <span className="section-line"></span>
           </div>
 
-          <div className="building-grid">
-            {BUILDING.map((item) => (
-              <div key={item.id} className="building-card" id={item.id}>
-                <div className="building-status sp-reveal">
-                  <span className="status-dot"></span>
-                  <span className="mono">{item.status}</span>
-                </div>
-                <h3 className="sp-reveal">{item.title}</h3>
-                <p className="sp-reveal">{item.description}</p>
-                <div className="project-tags sp-reveal">
-                  {item.tags.map((tag) => (
-                    <span key={tag} className="project-tag">{tag}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <PipelineGrid items={BUILDING} />
         </div>
       </SpatialSection>
 
