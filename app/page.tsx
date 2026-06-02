@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import Draggable from "gsap/Draggable";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -13,6 +13,7 @@ import AboutSection from "../components/AboutSection";
 import dynamic from "next/dynamic";
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
+const PreLoader  = dynamic(() => import("../components/PreLoader"),  { ssr: false });
 
 /* ============================================================
    DATA — extracted from index-old.html
@@ -461,6 +462,8 @@ function MailIcon({ size = 16 }: { size?: number }) {
    ============================================================ */
 
 export default function Home() {
+  /* PreLoader gate — flips to true when the ring detonates */
+  const [preloaderDone, setPreloaderDone] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -474,6 +477,8 @@ export default function Home() {
 
   return (
     <>
+      {/* ===== PRE-LOADER (sits above everything, removed from DOM after implosion) ===== */}
+      <PreLoader onComplete={() => setPreloaderDone(true)} />
       {/* ===== NAV ===== */}
       <nav className="nav" id="navbar">
         <div className="nav-inner">
@@ -543,7 +548,7 @@ export default function Home() {
       </nav>
 
       {/* ===== HERO ===== */}
-      <HeroSection />
+      <HeroSection animate={preloaderDone} />
 
       <hr className="section-divider" />
 

@@ -19,7 +19,7 @@ function GitHubIcon({ size = 18 }: { size?: number }) {
 const TOP    = ["J", "O", "N", "A"];
 const BOTTOM = ["T", "H", "A", "N"];
 
-export default function HeroSection() {
+export default function HeroSection({ animate = false }: { animate?: boolean }) {
   /* --- Refs --- */
   const runwayRef      = useRef<HTMLDivElement>(null);
   const greetingRef    = useRef<HTMLParagraphElement>(null);
@@ -93,12 +93,37 @@ export default function HeroSection() {
   }, []);
 
   /* ======================================================
-     2.  INTRO DROP-IN  (plays immediately on mount, no ScrollTrigger)
-         Every hero block slams in from above with back-ease snap.
+     2a. HIDE ON MOUNT
+         Sets hero elements invisible immediately so nothing
+         flashes under the PreLoader overlay.
   ====================================================== */
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from(
+      gsap.set(
+        [
+          ".hero-greeting",
+          ".hero-name-split",
+          ".hero-building",
+          ".hero-tagline",
+          ".hero-sub",
+          ".hero-impact",
+          ".hero-buttons",
+        ],
+        { opacity: 0, y: -100 }
+      );
+    }, runwayRef);
+    return () => ctx.revert();
+  }, []);
+
+  /* ======================================================
+     2b. INTRO DROP-IN  (fires once animate flips to true)
+         Every hero block slams in from above with back-ease snap.
+         Called by PreLoader's onComplete via page.tsx state.
+  ====================================================== */
+  useEffect(() => {
+    if (!animate) return;
+    const ctx = gsap.context(() => {
+      gsap.to(
         [
           ".hero-greeting",
           ".hero-name-split",
@@ -109,17 +134,16 @@ export default function HeroSection() {
           ".hero-buttons",
         ],
         {
-          y: -100,
-          opacity: 0,
+          y: 0,
+          opacity: 1,
           ease: "back.out(1.5)",
           duration: 1.2,
           stagger: 0.1,
         }
       );
     }, runwayRef);
-
     return () => ctx.revert();
-  }, []);
+  }, [animate]);
 
   /* ======================================================
      3.  SCROLL TUNNEL  (runway → sticky, scrub: 2)
