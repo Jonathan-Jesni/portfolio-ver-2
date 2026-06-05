@@ -2073,6 +2073,8 @@ canvas.glass-image-canvas {
   width: 100%;
   overflow: hidden;   /* clips the overflowing track */
   position: relative;
+  /* Room morph — GSAP animates this to each project's tint */
+  background-color: #050505;
 }
 
 /* The wide, scrollable row of project groups */
@@ -2084,6 +2086,9 @@ canvas.glass-image-canvas {
   padding: 120px 64px 48px;
   width: max-content;   /* expands to fit all children side-by-side */
   will-change: transform;
+  /* 3D perspective for coverflow rotationY effect */
+  perspective: 1200px;
+  transform-style: preserve-3d;
 }
 
 /* Mobile: disable horizontal layout, fall back to vertical stack */

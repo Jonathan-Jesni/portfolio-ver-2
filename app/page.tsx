@@ -73,6 +73,13 @@ const PROJECTS = [
   },
 ] as const;
 
+/* Deep OLED tints — one per project. Used for the room morph background. */
+const ROOM_COLORS: Record<string, string> = {
+  "ludex":          "#040a14",  /* deep navy blue — tech, data */
+  "file-converter": "#04100a",  /* deep forest green — systems */
+  "webguardian":    "#140404",  /* deep crimson — threat, security */
+  "synthetic-data": "#0d0412",  /* deep violet — synthetic, AI */
+};
 
 
 const BUILDING = [
@@ -562,6 +569,7 @@ export default function Home() {
               image={'image' in project ? project.image : null}
               imageAlt={'imageAlt' in project ? project.imageAlt : null}
               pipeline={'pipeline' in project ? (project.pipeline as readonly string[]) : undefined}
+              roomColor={ROOM_COLORS[project.id]}
             />
           ))}
         </HorizontalScrollSection>

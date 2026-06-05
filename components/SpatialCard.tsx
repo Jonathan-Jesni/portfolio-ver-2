@@ -17,6 +17,8 @@ interface SpatialCardProps {
   image?: string | null;
   imageAlt?: string | null;
   pipeline?: readonly string[];
+  /** OLED tint for the room morph background (e.g. '#040a14') */
+  roomColor?: string;
 }
 
 /* -------------------------------------------------------
@@ -52,8 +54,8 @@ const HUE_PALETTE: Record<string, number> = {
 /* -------------------------------------------------------
    Component — Deconstructed sibling layout.
    Image and text are distinct floating panels inside a
-   project group. HorizontalScrollSection handles pinning
-   and applies parallax via data attributes.
+   project group. HorizontalScrollSection handles pinning,
+   coverflow, and room morph via data-room-color.
 ------------------------------------------------------- */
 export default function SpatialCard({
   id,
@@ -66,6 +68,7 @@ export default function SpatialCard({
   image,
   imageAlt,
   pipeline,
+  roomColor,
 }: SpatialCardProps) {
   const groupRef      = useRef<HTMLDivElement>(null);
   const imageLayerRef = useRef<HTMLDivElement>(null);
@@ -152,6 +155,7 @@ export default function SpatialCard({
       ref={groupRef}
       className="sc-project-group sc-card--3d"
       id={`project-${id}`}
+      data-room-color={roomColor ?? "#050505"}
       style={{ touchAction: "pan-y" }}
     >
       {/* ── Image Panel — dedicated screenshot / pipeline container ── */}

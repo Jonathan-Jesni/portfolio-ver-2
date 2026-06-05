@@ -8,27 +8,28 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface HorizontalScrollSectionProps {
   children: React.ReactNode;
-  /** Extra scroll length as a multiple of viewport height. Default 2.5.
-   *  Increase for more projects. (totalProjects * 0.7) is a good heuristic. */
+  /** Extra scroll length as a multiple of viewport height.
+   *  (totalProjects * 0.7) is a good heuristic. */
   scrollMultiplier?: number;
 }
+
+const DEFAULT_BG = "#050505";
 
 /**
  * HorizontalScrollSection
  * ──────────────────────────────────────────────────────────────────────
- * Pins the section, then translates its inner track horizontally
- * (right → left) as the user scrolls vertically — gallery / film-strip
- * style. Unpins automatically when the last card clears the viewport.
+ * Pins the section and translates .hscroll-track horizontally via a
+ * GSAP tween (not onUpdate/gsap.set) so we can use containerAnimation.
  *
  * Features:
- * - Progress bar: a 3px accent line at the bottom of the viewport that
- *   fills from left→right as the user scrolls through the tunnel.
- * - Cinematic group reveals: each .sc-project-group fades + slides in
- *   from the right as it enters the viewport, driven by containerAnimation
- *   so the trigger fires on horizontal position, not vertical scroll.
+ * ① Progress bar — glowing accent stripe at viewport bottom, fills L→R.
+ * ② 3D Coverflow — each .sc-project-group enters with rotationY: -15 /
+ *    scale: 0.8, centers perfectly, then exits with rotationY: 15 /
+ *    scale: 0.8. All driven by containerAnimation (horizontal position).
+ * ③ Room morph — .hscroll-outer background eases to each project's
+ *    data-room-color as it centers in the viewport.
  *
- * Mobile (< 768px): pinning, progress bar, and reveals are all disabled.
- * Children fall back to a normal vertical flex column.
+ * Mobile (< 768px): everything disabled, children stack vertically.
  */
 export default function HorizontalScrollSection({
   children,
@@ -39,7 +40,6 @@ export default function HorizontalScrollSection({
   const progressBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    /* ── Disable on mobile — never hijack touch scroll ── */
     const mm = gsap.matchMedia();
 
     mm.add("(min-width: 768px)", () => {
@@ -48,29 +48,25 @@ export default function HorizontalScrollSection({
       const progressBarEl = progressBarRef.current;
       if (!outerEl || !trackEl || !progressBarEl) return;
 
-      /* Capture as non-null consts so closures never re-widen the type */
       const outer:       HTMLDivElement = outerEl;
       const track:       HTMLDivElement = trackEl;
       const progressBar: HTMLDivElement = progressBarEl;
 
-      /* Total horizontal overflow the track needs to travel */
       function getScrollDistance() {
         return track.scrollWidth - outer.offsetWidth;
       }
 
-      /* ── Cinematic group reveals ──────────────────────────────────────
-       * Set all groups to their initial "off-screen" state before the
-       * ScrollTrigger is created, so there's no flash of full-opacity content.
+      /* ── Coverflow: set initial state before tween is created ────────
+       * Starting at scale 0.8 / rotationY -15 / opacity 0.4 ensures no
+       * flash of full-opacity content on mount.
        */
       const groups = track.querySelectorAll<HTMLElement>(".sc-project-group");
-      gsap.set(groups, { opacity: 0.08, x: 80 });
+      gsap.set(groups, { scale: 0.85, rotationY: -15, opacity: 0.4, transformPerspective: 1200 });
 
       /* ── Main scroll tween ───────────────────────────────────────────
-       * We expose this tween as `scrollTween` and pass it as
-       * containerAnimation to each group's ScrollTrigger. This is the
-       * official GSAP pattern for triggers inside a pinned horizontal
-       * scroll — the child ST fires based on horizontal progress, not
-       * vertical scroll position.
+       * gsap.to() drives the horizontal translation. Storing it in
+       * `scrollTween` lets us pass it as containerAnimation to child
+       * ScrollTriggers so they fire based on horizontal position.
        */
       const scrollTween = gsap.to(track, {
         x: () => -getScrollDistance(),
@@ -85,52 +81,101 @@ export default function HorizontalScrollSection({
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate(self) {
-            /* Progress bar fills left-to-right */
+            /* Progress bar scaleX mirrors tunnel progress */
             gsap.set(progressBar, { scaleX: self.progress });
           },
           onLeave() {
-            /* Fade progress bar out once the tunnel is fully scrolled */
             gsap.to(progressBar, { opacity: 0, duration: 0.4, ease: "power2.out" });
           },
           onEnterBack() {
-            /* Restore progress bar when user scrolls back into tunnel */
             gsap.to(progressBar, { opacity: 1, duration: 0.2 });
+          },
+          onLeaveBack() {
+            /* Reset room to default when scrolled above the tunnel */
+            gsap.to(outer, { backgroundColor: DEFAULT_BG, duration: 0.6, ease: "power2.out", overwrite: "auto" });
           },
         },
       });
 
-      /* ── Per-group cinematic reveal ──────────────────────────────────
-       * Each group gets its own ScrollTrigger with containerAnimation pointing
-       * to the scrollTween. GSAP then evaluates the trigger's start/end in the
-       * tween's coordinate space (horizontal pixels), not the page scroll.
+      /* ── Per-group: coverflow + room morph ───────────────────────────
+       * Three linked ScrollTriggers per group, all using containerAnimation.
        */
-      const revealTweens: gsap.core.Tween[] = [];
+      const coverfTweens: (gsap.core.Tween | gsap.core.Timeline)[] = [];
 
       groups.forEach((group) => {
-        const tween = gsap.to(group, {
-          opacity: 1,
-          x: 0,
-          duration: 1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: group,
-            containerAnimation: scrollTween,
-            start: "left right",   /* fires when group's left edge hits viewport right */
-            end: "left center",
-            scrub: false,          /* one-shot animation, not scrubbed */
-            toggleActions: "play none none reverse",
+        const roomColor = group.dataset.roomColor ?? DEFAULT_BG;
+
+        /* ── Enter: right edge → center ── */
+        const enterTween = gsap.fromTo(
+          group,
+          { scale: 0.85, rotationY: -15, opacity: 0.4 },
+          {
+            scale: 1,
+            rotationY: 0,
+            opacity: 1,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: group,
+              containerAnimation: scrollTween,
+              start: "left right",   /* group's left edge at viewport right */
+              end: "center center",  /* group's center at viewport center   */
+              scrub: true,
+            },
+          }
+        );
+
+        /* ── Exit: center → left edge leaves viewport ── */
+        const exitTween = gsap.fromTo(
+          group,
+          { scale: 1, rotationY: 0, opacity: 1 },
+          {
+            scale: 0.85,
+            rotationY: 15,
+            opacity: 0.4,
+            ease: "power2.in",
+            scrollTrigger: {
+              trigger: group,
+              containerAnimation: scrollTween,
+              start: "center center",  /* card is perfectly centered */
+              end: "right left",       /* card's right edge leaves left side */
+              scrub: true,
+            },
+          }
+        );
+
+        /* ── Room morph: fires when card center hits viewport center ── */
+        const morphTrigger = ScrollTrigger.create({
+          trigger: group,
+          containerAnimation: scrollTween,
+          start: "center center+=5%",  /* slight offset so it snaps cleanly */
+          onEnter() {
+            gsap.to(outer, {
+              backgroundColor: roomColor,
+              duration: 0.6,
+              ease: "power2.out",
+              overwrite: "auto",
+            });
+          },
+          onEnterBack() {
+            gsap.to(outer, {
+              backgroundColor: roomColor,
+              duration: 0.6,
+              ease: "power2.out",
+              overwrite: "auto",
+            });
           },
         });
-        revealTweens.push(tween);
+
+        coverfTweens.push(enterTween, exitTween);
+        coverfTweens.push(morphTrigger as unknown as gsap.core.Tween);
       });
 
-      /* Refresh on resize so end value and scroll distance stay accurate */
       const onResize = () => ScrollTrigger.refresh();
       window.addEventListener("resize", onResize);
 
       return () => {
         scrollTween.kill();
-        revealTweens.forEach((t) => t.kill());
+        coverfTweens.forEach((t) => t.kill());
         window.removeEventListener("resize", onResize);
       };
     });
@@ -139,13 +184,10 @@ export default function HorizontalScrollSection({
   }, [scrollMultiplier]);
 
   return (
-    /* Outer: clips overflow, becomes the GSAP pin target */
     <div ref={outerRef} className="hscroll-outer">
-      {/* Track: the wide flex row that slides left */}
       <div ref={trackRef} className="hscroll-track">
         {children}
       </div>
-      {/* Progress bar: fills left→right as tunnel is scrolled */}
       <div ref={progressBarRef} className="hscroll-progress-bar" />
     </div>
   );
