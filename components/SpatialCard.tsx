@@ -2,10 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import dynamic from "next/dynamic";
-
-/* Lazy-load GlassImage — avoids SSR WebGL issues */
-const GlassImage = dynamic(() => import("./GlassImage"), { ssr: false });
 
 /* -------------------------------------------------------
    Types
@@ -54,9 +50,10 @@ const HUE_PALETTE: Record<string, number> = {
 };
 
 /* -------------------------------------------------------
-   Component
-   No longer owns a scroll runway — it's a pure display
-   card. The parent HorizontalScrollSection handles pinning.
+   Component — Deconstructed sibling layout.
+   Image and text are distinct floating panels inside a
+   project group. HorizontalScrollSection handles pinning
+   and applies parallax via data attributes.
 ------------------------------------------------------- */
 export default function SpatialCard({
   id,
@@ -70,7 +67,7 @@ export default function SpatialCard({
   imageAlt,
   pipeline,
 }: SpatialCardProps) {
-  const cardRef       = useRef<HTMLDivElement>(null);
+  const groupRef      = useRef<HTMLDivElement>(null);
   const imageLayerRef = useRef<HTMLDivElement>(null);
   const titleLayerRef = useRef<HTMLDivElement>(null);
   const tagsLayerRef  = useRef<HTMLDivElement>(null);
@@ -78,29 +75,29 @@ export default function SpatialCard({
 
   const placeholderHue = HUE_PALETTE[id] ?? 210;
 
-  /* ---- 3D Gyroscopic tilt + Z-axis inner parallax ---- */
+  /* ---- 3D Gyroscopic tilt + Z-axis inner parallax on hover ---- */
   useEffect(() => {
-    const cardEl: HTMLDivElement | null = cardRef.current;
-    if (!cardEl) return;
-    const card: HTMLDivElement = cardEl;
+    const groupEl: HTMLDivElement | null = groupRef.current;
+    if (!groupEl) return;
+    const group: HTMLDivElement = groupEl;
 
     const zLayers = [
-      { el: imageLayerRef.current, zMultiplier: 1.0, xyMultiplier: 0.6 },
+      { el: imageLayerRef.current, zMultiplier: 1.0, xyMultiplier: 0.5 },
       { el: titleLayerRef.current, zMultiplier: 1.8, xyMultiplier: 1.0 },
       { el: tagsLayerRef.current,  zMultiplier: 2.4, xyMultiplier: 1.3 },
       { el: linkLayerRef.current,  zMultiplier: 2.8, xyMultiplier: 1.5 },
     ];
 
-    gsap.set(card, { transformPerspective: 900 });
+    gsap.set(group, { transformPerspective: 900 });
 
     function onMouseMove(e: MouseEvent) {
-      const r  = card.getBoundingClientRect();
+      const r  = group.getBoundingClientRect();
       const nx = (e.clientX - r.left  - r.width  / 2) / (r.width  / 2);
       const ny = (e.clientY - r.top   - r.height / 2) / (r.height / 2);
 
-      gsap.to(card, {
-        rotateY:  nx * 7,
-        rotateX: -ny * 7,
+      gsap.to(group, {
+        rotateY:  nx * 5,
+        rotateX: -ny * 5,
         duration: 0.35,
         ease: "power2.out",
         overwrite: "auto",
@@ -120,7 +117,7 @@ export default function SpatialCard({
     }
 
     function onMouseLeave() {
-      gsap.to(card, {
+      gsap.to(group, {
         rotateX: 0,
         rotateY: 0,
         duration: 0.9,
@@ -139,107 +136,116 @@ export default function SpatialCard({
       });
     }
 
-    card.addEventListener("mousemove", onMouseMove);
-    card.addEventListener("mouseleave", onMouseLeave);
+    group.addEventListener("mousemove", onMouseMove);
+    group.addEventListener("mouseleave", onMouseLeave);
 
     return () => {
-      card.removeEventListener("mousemove", onMouseMove);
-      card.removeEventListener("mouseleave", onMouseLeave);
-      gsap.killTweensOf([card, ...zLayers.map(l => l.el).filter(Boolean)]);
+      group.removeEventListener("mousemove", onMouseMove);
+      group.removeEventListener("mouseleave", onMouseLeave);
+      gsap.killTweensOf([group, ...zLayers.map(l => l.el).filter(Boolean)]);
     };
   }, []);
 
   return (
-    /* sc-panel: the self-contained card — no runway wrapper */
-    <article
-      ref={cardRef}
-      className="sc-panel sc-card--3d"
+    /* Project group: image panel + text panel as sibling floating blocks */
+    <div
+      ref={groupRef}
+      className="sc-project-group sc-card--3d"
       id={`project-${id}`}
-      /* touch-action: pan-y lets vertical scroll pass through on mobile */
       style={{ touchAction: "pan-y" }}
     >
-      <div className="sc-panel-inner">
-
-        {/* ── Image / pipeline layer ── */}
-        <div ref={imageLayerRef} className="sc-z-layer sc-z-image">
-          {image ? (
-            <div className="sc-image-wrap">
-              <GlassImage
-                src={image}
-                alt={imageAlt}
-                placeholderLabel={title}
-                placeholderHue={placeholderHue}
-                className="sc-glass-image"
-              />
-            </div>
-          ) : pipeline ? (
-            <div className="sc-pipeline-strip">
-              {pipeline.map((step, idx) => (
-                <span key={step} className="sc-pipeline-row">
-                  <span className="sc-pipeline-step mono">{step}</span>
-                  {idx < pipeline.length - 1 && (
-                    <span className="sc-pipeline-arrow mono">→</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="sc-image-wrap">
-              <GlassImage
-                src={null}
-                alt={imageAlt ?? title}
-                placeholderLabel={title.toUpperCase()}
-                placeholderHue={placeholderHue}
-                className="sc-glass-image"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* ── Text block ── */}
-        <div className="sc-text">
-          <span className="sc-overline mono">Featured Project</span>
-
-          {/* Title layer — mid Z */}
-          <div ref={titleLayerRef} className="sc-z-layer">
-            <h3 className="sc-title">
-              {title}
-              <span className="sc-subtitle"> — {subtitle}</span>
-            </h3>
+      {/* ── Image Panel — dedicated screenshot / pipeline container ── */}
+      <div
+        ref={imageLayerRef}
+        className="sc-deconstructed-image sc-z-layer sc-z-image"
+      >
+        {image ? (
+          <div className="sc-image-wrap">
+            {/* Plain img — sharp retina, correct orientation, object-fit: cover */}
+            <img
+              src={image}
+              alt={imageAlt ?? title}
+              className="sc-glass-image"
+            />
           </div>
-
-          <p className="sc-description">{description}</p>
-
-          <p className="sc-tech mono">Built with: {tech}</p>
-
-          {/* Tags layer — higher Z */}
-          <div ref={tagsLayerRef} className="sc-z-layer">
-            <div className="sc-tags">
-              {tags.map((tag) => (
-                <span key={tag} className="sc-tag mono">{tag}</span>
-              ))}
-            </div>
+        ) : pipeline ? (
+          <div className="sc-pipeline-strip">
+            {pipeline.map((step, idx) => (
+              <span key={step} className="sc-pipeline-row">
+                <span className="sc-pipeline-step mono">{step}</span>
+                {idx < pipeline.length - 1 && (
+                  <span className="sc-pipeline-arrow mono">→</span>
+                )}
+              </span>
+            ))}
           </div>
-
-          {/* Links — highest Z */}
-          <div ref={linkLayerRef} className="sc-z-layer">
-            <div className="sc-links">
-              <a
-                href={github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="sc-link"
-                id={`${id}-github`}
-              >
-                <GitHubIcon />
-                Source
-                <ArrowUpRightIcon />
-              </a>
-            </div>
+        ) : (
+          /* Fallback tinted block for projects with neither image nor pipeline */
+          <div
+            className="sc-image-wrap"
+            style={{
+              background: `hsl(${placeholderHue}, 20%, 10%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              className="mono"
+              style={{ color: `hsl(${placeholderHue}, 40%, 40%)`, fontSize: "11px", letterSpacing: "0.12em" }}
+            >
+              {title.toUpperCase()}
+            </span>
           </div>
-        </div>
-
+        )}
       </div>
-    </article>
+
+      {/* ── Text Panel — glass-morphic floating plaque ── */}
+      <div className="sc-deconstructed-text">
+        <div className="sc-deconstructed-text-inner">
+          <div className="sc-text">
+            <span className="sc-overline mono">Featured Project</span>
+
+            {/* Title layer — mid Z */}
+            <div ref={titleLayerRef} className="sc-z-layer">
+              <h3 className="sc-title">
+                {title}
+                <span className="sc-subtitle"> — {subtitle}</span>
+              </h3>
+            </div>
+
+            <p className="sc-description">{description}</p>
+
+            <p className="sc-tech mono">Built with: {tech}</p>
+
+            {/* Tags layer — higher Z */}
+            <div ref={tagsLayerRef} className="sc-z-layer">
+              <div className="sc-tags">
+                {tags.map((tag) => (
+                  <span key={tag} className="sc-tag mono">{tag}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Links — highest Z */}
+            <div ref={linkLayerRef} className="sc-z-layer">
+              <div className="sc-links">
+                <a
+                  href={github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sc-link"
+                  id={`${id}-github`}
+                >
+                  <GitHubIcon />
+                  Source
+                  <ArrowUpRightIcon />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
