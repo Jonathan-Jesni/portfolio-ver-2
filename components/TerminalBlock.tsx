@@ -93,38 +93,40 @@ export default function TerminalBlock() {
 
   return (
     <div ref={containerRef} className="term-shell">
-      {/* ---- Title bar ---- */}
-      <div className="term-bar">
-        <div className="term-dots">
-          <span className="term-dot term-dot--red" />
-          <span className="term-dot term-dot--yellow" />
-          <span className="term-dot term-dot--green" />
-        </div>
-        <span className="term-title">guest@jonathan: ~</span>
-      </div>
-
-      {/* ---- Body ---- */}
-      <div className={`term-body${showOutput ? " is-expanded" : ""}`}>
-        {/* Command line being typed */}
-        <div className="term-line">
-          <span className="term-prompt-arrow">➜</span>
-          <span className="term-prompt-dir">~</span>
-          <span className="term-typed">{command}</span>
-          {!showOutput && <span className="terminal-cursor" aria-hidden="true" />}
-        </div>
-
-        {/* Output: revealed after typing finishes */}
-        {showOutput && (
-          <div className="fade-in-fast">
-            <JsonOutput />
-            {/* Second prompt line at the bottom */}
-            <div className="term-line term-line--mt">
-              <span className="term-prompt-arrow">➜</span>
-              <span className="term-prompt-dir">~</span>
-              <span className="terminal-cursor" aria-hidden="true" />
-            </div>
+      <div className="term-shell-inner">
+        {/* ---- Title bar ---- */}
+        <div className="term-bar">
+          <div className="term-dots">
+            <span className="term-dot term-dot--red" />
+            <span className="term-dot term-dot--yellow" />
+            <span className="term-dot term-dot--green" />
           </div>
-        )}
+          <span className="term-title">guest@jonathan: ~</span>
+        </div>
+
+        {/* ---- Body ---- */}
+        <div className={`term-body${showOutput ? " is-expanded" : ""}`}>
+          {/* Command line being typed */}
+          <div className="term-line">
+            <span className="term-prompt-arrow">➡︎</span>
+            <span className="term-prompt-dir">~</span>
+            <span className="term-typed">{command}</span>
+            {!showOutput && <span className="terminal-cursor" aria-hidden="true" />}
+          </div>
+
+          {/* Output: revealed after typing finishes */}
+          {showOutput && (
+            <div className="fade-in-fast">
+              <JsonOutput />
+              {/* Second prompt line at the bottom */}
+              <div className="term-line term-line--mt">
+                <span className="term-prompt-arrow">➡︎</span>
+                <span className="term-prompt-dir">~</span>
+                <span className="terminal-cursor" aria-hidden="true" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

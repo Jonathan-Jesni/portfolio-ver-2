@@ -4,47 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 /* ================================================================
-   40 glitch text strings — mix of sys errors, hex codes, binary
+   PreLoader — Premium counter + power4.inOut curtain reveal
+   Art Director constraints:
+     ✅ No glitch / hacker strings
+     ✅ Monolithic 00 → 100 counter in JetBrains Mono
+     ✅ power4.inOut black curtain slides out of viewport
+     ✅ Hero animate fires exactly at curtain mid-point
    ================================================================ */
-const GLITCH_STRINGS = [
-  ">_ SYS.ERR",          "0x00F8A3C1",        "01101110 10110011",  "0xDEADBEEF",
-  ">_ KERNEL.PANIC",     "0xFF00CC12A3",       "11001011 00110101",  "0x4A3F00E8",
-  ">_ NULL.REF",         "0x00BFFF004E",       "10110101 11001001",  "0xC0FFEE42",
-  ">_ STACK.OVERFLOW",   "0x1A2B3C4D5E",       "01010111 00001100",  "0xFACE0FFF",
-  ">_ SYS.HALT",         "0xBADF00D1B2",       "11110000 01010101",  "0x0000FFAA",
-  ">_ MEM.CORRUPT",      "0xDEAD00001F",       "00101101 10101010",  "0xBAADF00D",
-  ">_ BUS.ERROR",        "0xCAFEBABE00",       "11000011 11110001",  "0xFEEDFACE",
-  ">_ SEGFAULT",         "0x00FF4400CC",       "10001111 01110000",  "0xABCDEF01",
-  ">_ INIT.FAIL",        "0x12345678AB",       "01110110 10011100",  "0xF0F0F0F0",
-  ">_ PROC.KILL",        "0xDEAD4E19FF",       "11101001 00110011",  "0x0F0F0F0F",
-] as const;
 
-/* ================================================================
-   Corner label data — pure chrome aesthetic
-   ================================================================ */
-const CORNER_LABELS = [
-  { pos: { top: "24px",    left:  "24px"  }, text: "[0000:0000]" },
-  { pos: { top: "24px",    right: "24px"  }, text: "[FFFF:FFFF]" },
-  { pos: { bottom: "24px", left:  "24px"  }, text: ">_ LOADING"  },
-  { pos: { bottom: "24px", right: "24px"  }, text: "SYS.INIT..." },
-] as const;
-
-/* ================================================================
-   Component
-   ================================================================ */
 interface PreLoaderProps {
   onComplete: () => void;
 }
 
 export default function PreLoader({ onComplete }: PreLoaderProps) {
-  const overlayRef    = useRef<HTMLDivElement>(null);
-  const textRefs      = useRef<(HTMLSpanElement | null)[]>([]);
-  const dotRef        = useRef<HTMLDivElement>(null);
-  const ringRef       = useRef<HTMLDivElement>(null);
-  /* Ref-ify onComplete so the effect never needs to list it as a dep */
-  const onCompleteRef = useRef(onComplete);
+  const overlayRef      = useRef<HTMLDivElement>(null);
+  const curtainRef      = useRef<HTMLDivElement>(null);
+  const counterRef      = useRef<HTMLDivElement>(null);
+  const labelRef        = useRef<HTMLParagraphElement>(null);
+  const onCompleteRef   = useRef(onComplete);
   const [isDone, setIsDone] = useState(false);
 
+  /* Keep the callback ref fresh without triggering re-runs */
   useEffect(() => {
     onCompleteRef.current = onComplete;
   });
@@ -53,150 +33,111 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     let cancelled = false;
 
     const ctx = gsap.context(() => {
-      const texts = textRefs.current.filter(Boolean) as HTMLSpanElement[];
-      const dot   = dotRef.current!;
-      const ring  = ringRef.current!;
+      const counter = counterRef.current!;
+      const curtain = curtainRef.current!;
+      const label   = labelRef.current!;
 
-      /* ── Hand all transform control to GSAP immediately ────────────
-         This is the CRITICAL FIX: no Math.random() in JSX.
-         GSAP scatters elements on mount inside useEffect.
-      ──────────────────────────────────────────────────────────────── */
-      gsap.set(texts, {
-        xPercent: -50,
-        yPercent: -50,
-        x:        () => gsap.utils.random(-window.innerWidth  * 0.50, window.innerWidth  * 0.50),
-        y:        () => gsap.utils.random(-window.innerHeight * 0.50, window.innerHeight * 0.50),
-        rotation: () => gsap.utils.random(-45, 45),
-        scale:    () => gsap.utils.random(0.5, 2.2),
-        opacity:  () => gsap.utils.random(0.15, 0.9),
-      });
-
-      /* Dot and ring start hidden, centered — GSAP owns their transforms */
-      gsap.set([dot, ring], { xPercent: -50, yPercent: -50, scale: 0, opacity: 0 });
-
-      /* ════════════════════════════════════════════════════════════════
-         PHASE 1 — Infinite Glitch Chaos
-         repeatRefresh: true forces re-randomization on every iteration
-         so "random()" string values produce genuinely new numbers each loop.
-      ════════════════════════════════════════════════════════════════ */
-      const glitchTl = gsap.timeline({ repeat: -1, repeatRefresh: true });
-
-      glitchTl.to(texts, {
-        skewX:   "random(-38, 38)",
-        skewY:   "random(-14, 14)",
-        scale:   "random(0.15, 3.8)",
-        x:       () => gsap.utils.random(-window.innerWidth  * 0.48, window.innerWidth  * 0.48),
-        y:       () => gsap.utils.random(-window.innerHeight * 0.48, window.innerHeight * 0.48),
-        color:   () => gsap.utils.random(["#00ffff", "#ffffff", "#1f1f1f", "#00ff88", "#ff3366", "#888888"]),
-        opacity: "random(0.04, 1.0)",
-        duration: 0.18,
-        stagger:  { each: 0.014, from: "random" },
-        ease:    "none",
-        yoyo:    true,
-        repeat:   1,
-      });
-
-      /* ════════════════════════════════════════════════════════════════
-         SMART LOAD TRIGGER
-         Both conditions must resolve before Phase 2 fires:
-           1. window "load" event (all resources fetched)
-           2. 1200 ms minimum cinematic display time
-      ════════════════════════════════════════════════════════════════ */
+      /* ── Wait for both: page resources + minimum display time ── */
       const loadReady = new Promise<void>((resolve) => {
-        if (document.readyState === "complete") {
-          resolve();
-        } else {
-          window.addEventListener("load", () => resolve(), { once: true });
-        }
+        if (document.readyState === "complete") resolve();
+        else window.addEventListener("load", () => resolve(), { once: true });
       });
 
+      /* 1800 ms minimum — enough to watch the counter feel weighty */
       const minDisplay = new Promise<void>((resolve) =>
-        setTimeout(resolve, 1200)
+        setTimeout(resolve, 1800)
       );
 
+      /* ── Counter object — GSAP drives the numeric value via a proxy ── */
+      const proxy = { val: 0 };
+
+      const countTl = gsap.timeline();
+
+      /* 
+         Counter pacing:
+         - 0 → 72  in ~1.1s  (power2.in — slow start, accelerates)
+         - 72 → 100 in ~0.5s  (power1.in — deliberate last mile)
+         This creates the tactile feel of real loading, not a uniform spin.
+      */
+      countTl
+        .to(proxy, {
+          val: 72,
+          duration: 1.1,
+          ease: "power2.in",
+          onUpdate() {
+            if (counter) counter.textContent = String(Math.floor(proxy.val)).padStart(2, "0");
+          },
+        })
+        .to(proxy, {
+          val: 100,
+          duration: 0.5,
+          ease: "power1.in",
+          onUpdate() {
+            if (counter) counter.textContent = String(Math.floor(proxy.val)).padStart(2, "0");
+          },
+        });
+
+      /* ── Once both load + min time resolve, fire the curtain ── */
       Promise.all([loadReady, minDisplay]).then(() => {
         if (cancelled) return;
 
-        /* Kill glitch — Phase 2 takes over */
-        glitchTl.kill();
-        gsap.killTweensOf(texts);
+        /* Kill the counter mid-animation if resources loaded early;
+           snap immediately to 100 before the reveal starts */
+        countTl.kill();
+        if (counter) counter.textContent = "100";
 
-        /* Compute ring expansion scale so it always covers the full viewport */
-        const vw          = window.innerWidth;
-        const vh          = window.innerHeight;
-        const cornerDist  = Math.sqrt(vw * vw + vh * vh) / 2;
-        const ringBase    = 6;   /* px — must match ring width/height in JSX */
-        const targetScale = Math.ceil((cornerDist * 2.4) / ringBase);
+        /*
+          ── Curtain reveal sequence ──────────────────────────────────
 
-        /* ════════════════════════════════════════════════════════════
-           PHASE 2 — The Implosion
-           All 40 text elements are sucked into the dead centre.
-           power4.in gives the violent "gravity well" pull.
-        ════════════════════════════════════════════════════════════ */
+          The black overlay slides UP out of the viewport using
+          power4.inOut — the characteristic ease of premium reveals.
+
+          Architecture: the curtain div covers the entire screen (inset:0).
+          We translate it from Y:0 to Y:-100vh. The content beneath it
+          is already rendered and just becomes visible as the curtain lifts.
+
+          Hero animate fires at the 40% mark of the curtain travel so
+          the first hero elements are already sliding in by the time
+          the curtain fully exits — this creates a simultaneous cinematic reveal.
+        */
+        const CURTAIN_DURATION = 1.0;
+
         gsap.timeline()
+          /* Tiny pause at 100 — lets the eye register "done" before motion */
+          .to({}, { duration: 0.18 })
 
-          .to(texts, {
-            x:        0,
-            y:        0,
-            scale:    0,
-            opacity:  0,
-            skewX:    0,
-            skewY:    0,
-            rotation: 0,
-            duration: 0.85,
-            ease:     "power4.in",
-            stagger:  { each: 0.008, from: "random" },
-          })
+          /* Label cross-fades to nothing */
+          .to(label, {
+            opacity: 0,
+            duration: 0.25,
+            ease: "power2.out",
+          }, 0.18)
 
-          /* White dot swells from the convergence point */
-          .to(dot, {
-            scale:    1,
-            opacity:  1,
-            duration: 0.28,
-            ease:     "back.out(2.5)",
-          }, "-=0.05")
+          /* Counter fades out slightly ahead of the curtain lift */
+          .to(counter, {
+            opacity: 0,
+            y: -8,
+            duration: 0.30,
+            ease: "power3.out",
+          }, 0.22)
 
-          /* Dot holds 0.1 s … then collapses */
-          .to(dot, {
-            opacity:  0,
-            duration: 0.12,
-            ease:     "power2.in",
-            delay:    0.1,
-          })
-
-          /* ════════════════════════════════════════════════════════
-             PHASE 3 — The Sonic Boom
-             Ring detonates from the same centre point.
-             onStart triggers Hero drop-in exactly at detonation.
-          ════════════════════════════════════════════════════════ */
-          .fromTo(
-            ring,
-            { scale: 1, opacity: 1 },
-            {
-              scale:    targetScale,
-              opacity:  0,
-              duration: 0.75,
-              ease:     "expo.out",
-              onStart() {
-                onCompleteRef.current(); /* Hero knows it's time */
-              },
+          /* ── THE CURTAIN LIFT ──
+             power4.inOut: starts slow, accelerates through the middle,
+             decelerates perfectly as the curtain exits the screen. */
+          .to(curtain, {
+            yPercent: -100,
+            duration: CURTAIN_DURATION,
+            ease: "power4.inOut",
+            onStart() {
+              /* Hero content begins its drop-in mid-curtain */
+              gsap.delayedCall(CURTAIN_DURATION * 0.4, () => {
+                if (!cancelled) onCompleteRef.current();
+              });
             },
-            "<" /* same moment the dot vanishes */
-          )
-
-          /* Overlay fades as the ring tears outward */
-          .to(
-            overlayRef.current,
-            {
-              opacity:  0,
-              duration: 0.55,
-              ease:     "power2.out",
-              onComplete() {
-                if (!cancelled) setIsDone(true);
-              },
+            onComplete() {
+              if (!cancelled) setIsDone(true);
             },
-            "<0.1"
-          );
+          }, 0.38); /* 0.38s after counter fades — tight but not rushed */
       });
     }, overlayRef);
 
@@ -206,7 +147,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     };
   }, []);
 
-  /* Fully removed from DOM after animation completes */
+  /* Remove from DOM after curtain has fully exited */
   if (isDone) return null;
 
   return (
@@ -217,118 +158,79 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       style={{
         position:        "fixed",
         inset:           0,
-        zIndex:          9999,
-        backgroundColor: "#000000",
+        zIndex:          9998,
+        pointerEvents:   "none",
         overflow:        "hidden",
       }}
     >
-      {/* ── CRT scanline texture ── */}
+      {/* ── Black curtain — the element that actually moves ── */}
       <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset:    0,
-          background: `repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0,0,0,0.13) 2px,
-            rgba(0,0,0,0.13) 4px
-          )`,
-          pointerEvents: "none",
-          zIndex:        1,
-        }}
-      />
-
-      {/* ── Corner chrome labels ── */}
-      {CORNER_LABELS.map(({ pos, text }, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          style={{
-            position:      "absolute",
-            ...pos,
-            fontFamily:    "var(--font-jetbrains), 'JetBrains Mono', monospace",
-            fontSize:      "11px",
-            color:         "rgba(255,255,255,0.18)",
-            letterSpacing: "0.1em",
-            userSelect:    "none",
-            pointerEvents: "none",
-            zIndex:        2,
-          }}
-        >
-          {text}
-        </span>
-      ))}
-
-      {/* ── Glitch text elements ──────────────────────────────────────────
-          Rendered centred + invisible; GSAP scatters them in useEffect.
-          CRITICAL: no Math.random() here → zero hydration mismatch risk.
-      ────────────────────────────────────────────────────────────────── */}
-      {GLITCH_STRINGS.map((str, i) => (
-        <span
-          key={i}
-          ref={(el) => { textRefs.current[i] = el; }}
-          aria-hidden="true"
-          style={{
-            position:      "absolute",
-            left:          "50%",
-            top:           "50%",
-            /* No CSS transform — GSAP owns the transform matrix entirely */
-            opacity:       0,
-            fontFamily:    "var(--font-jetbrains), 'JetBrains Mono', 'Courier New', monospace",
-            fontSize:      "clamp(9px, 1.3vw, 16px)",
-            fontWeight:    700,
-            color:         "#ffffff",
-            whiteSpace:    "nowrap",
-            userSelect:    "none",
-            pointerEvents: "none",
-            willChange:    "transform, opacity, color",
-            letterSpacing: "0.06em",
-            zIndex:        3,
-          }}
-        >
-          {str}
-        </span>
-      ))}
-
-      {/* ── White Dot — GSAP controls all transforms from the start ── */}
-      <div
-        ref={dotRef}
-        aria-hidden="true"
+        ref={curtainRef}
         style={{
           position:        "absolute",
-          left:            "50%",
-          top:             "50%",
-          width:           "4px",
-          height:          "4px",
-          borderRadius:    "50%",
-          backgroundColor: "#ffffff",
-          opacity:         0,
-          willChange:      "transform, opacity",
-          boxShadow:       "0 0 16px 6px rgba(255,255,255,0.8), 0 0 40px 14px rgba(255,255,255,0.3)",
-          zIndex:          4,
+          inset:           0,
+          backgroundColor: "#050505",
+          zIndex:          1,
+          /* GPU promotion — this element will be translated */
+          willChange:      "transform",
+          /* A single horizontal hairline at the curtain's bottom edge
+             draws attention to the panel as it lifts */
+          boxShadow:       "0 -1px 0 rgba(255,255,255,0.06)",
         }}
       />
 
-      {/* ── Ring — starts at 0 opacity, detonates in Phase 3 ── */}
+      {/* ── Counter + label — centered inside the curtain ── */}
       <div
-        ref={ringRef}
-        aria-hidden="true"
         style={{
-          position:     "absolute",
-          left:         "50%",
-          top:          "50%",
-          width:        "6px",
-          height:       "6px",
-          border:       "2px solid #ffffff",
-          borderRadius: "50%",
-          opacity:      0,
-          willChange:   "transform, opacity",
-          boxShadow:    "0 0 20px 6px rgba(255,255,255,0.6)",
-          zIndex:       4,
+          position:        "absolute",
+          inset:           0,
+          zIndex:          2,
+          display:         "flex",
+          flexDirection:   "column",
+          alignItems:      "center",
+          justifyContent:  "center",
+          gap:             "12px",
+          pointerEvents:   "none",
         }}
-      />
+      >
+        {/* 
+          The monolithic counter. JetBrains Mono per AD spec.
+          Tabular nums prevents the layout from shifting as digits change.
+          Large, heavy, dead-centered — one element, no noise.
+        */}
+        <div
+          ref={counterRef}
+          style={{
+            fontFamily:     "var(--font-jetbrains), 'JetBrains Mono', monospace",
+            fontSize:       "clamp(96px, 18vw, 200px)",
+            fontWeight:     600,
+            lineHeight:     1,
+            letterSpacing:  "-0.04em",
+            color:          "rgba(255,255,255,0.92)",
+            fontVariantNumeric: "tabular-nums",
+            /* Subtle text-shadow gives it weight against pure black */
+            textShadow:     "0 0 80px rgba(255,255,255,0.08)",
+          }}
+        >
+          00
+        </div>
+
+        {/* Minimal label below — monospaced, dim, upper-case */}
+        <p
+          ref={labelRef}
+          style={{
+            fontFamily:    "var(--font-jetbrains), 'JetBrains Mono', monospace",
+            fontSize:      "11px",
+            fontWeight:    500,
+            color:         "rgba(255,255,255,0.25)",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            margin:        0,
+          }}
+        >
+          Loading
+        </p>
+      </div>
     </div>
   );
 }
