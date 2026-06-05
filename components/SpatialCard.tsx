@@ -3,8 +3,12 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import dynamic from "next/dynamic";
 
 gsap.registerPlugin(ScrollTrigger);
+
+/* Lazy-load GlassImage — avoids SSR WebGL issues */
+const GlassImage = dynamic(() => import("./GlassImage"), { ssr: false });
 
 /* -------------------------------------------------------
    Types
@@ -23,7 +27,7 @@ interface SpatialCardProps {
 }
 
 /* -------------------------------------------------------
-   Icons (inline — no extra dep)
+   Icons
 ------------------------------------------------------- */
 function GitHubIcon() {
   return (
@@ -43,6 +47,16 @@ function ArrowUpRightIcon() {
 }
 
 /* -------------------------------------------------------
+   Z-axis layer hues per project — visual identity
+------------------------------------------------------- */
+const HUE_PALETTE: Record<string, number> = {
+  ludex:            210,   /* cool blue — AI/data */
+  "file-converter": 160,   /* teal — document processing */
+  webguardian:      0,     /* red — security */
+  "synthetic-data": 270,   /* violet — generative */
+};
+
+/* -------------------------------------------------------
    Component
 ------------------------------------------------------- */
 export default function SpatialCard({
@@ -57,21 +71,23 @@ export default function SpatialCard({
   imageAlt,
   pipeline,
 }: SpatialCardProps) {
-  // Outer scroll runway (250vh gives enough room to breathe)
-  const runwayRef = useRef<HTMLDivElement>(null);
-  // The sticky viewport-height shell
-  const stickyRef = useRef<HTMLDivElement>(null);
-  // The card that gets scaled/blurred
-  const cardRef = useRef<HTMLDivElement>(null);
-  // The text block that gets the clip-path wipe
-  const textRef = useRef<HTMLDivElement>(null);
+  const runwayRef  = useRef<HTMLDivElement>(null);
+  const stickyRef  = useRef<HTMLDivElement>(null);
+  const cardRef    = useRef<HTMLDivElement>(null);
+  const textRef    = useRef<HTMLDivElement>(null);
+  /* Z-layer refs for inner parallax */
+  const imageLayerRef = useRef<HTMLDivElement>(null);
+  const titleLayerRef = useRef<HTMLDivElement>(null);
+  const tagsLayerRef  = useRef<HTMLDivElement>(null);
+  const linkLayerRef  = useRef<HTMLDivElement>(null);
 
-  /* ---- GSAP ScrollTrigger fly-through ---- */
+  const placeholderHue = HUE_PALETTE[id] ?? 210;
+
+  /* ---- GSAP ScrollTrigger Z-fly-through ---- */
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!runwayRef.current || !cardRef.current) return;
 
-      // Set initial state before the timeline touches it
       gsap.set(cardRef.current, {
         scale: 0.8,
         filter: "blur(12px)",
@@ -88,7 +104,7 @@ export default function SpatialCard({
         },
       });
 
-      // 0 → 35%: Approach — card rushes from deep space and locks into place
+      /* 0 → 35%: Approach — rushes from deep space */
       tl.to(
         cardRef.current,
         {
@@ -102,7 +118,7 @@ export default function SpatialCard({
         0
       );
 
-      // 35% → 65%: Reading plateau — hold perfectly still
+      /* 35% → 65%: Reading plateau — hold still */
       tl.to(
         cardRef.current,
         {
@@ -115,7 +131,7 @@ export default function SpatialCard({
         0.35
       );
 
-      // 65% → 100%: Fly past — card overshoots and fades
+      /* 65% → 100%: Fly past — overshoots and fades */
       tl.to(
         cardRef.current,
         {
@@ -137,10 +153,7 @@ export default function SpatialCard({
     const textEl = textRef.current;
     if (!textEl) return;
 
-    // Split children into individually-revealable lines
     const lines = Array.from(textEl.querySelectorAll<HTMLElement>("[data-reveal]"));
-
-    // Set initial clipped state
     gsap.set(lines, { clipPath: "inset(0 0 110% 0)", yPercent: 8 });
 
     const observer = new IntersectionObserver(
@@ -158,7 +171,6 @@ export default function SpatialCard({
           }
         });
       },
-      // Fire when ~60% of the text block is in view (i.e. plateau)
       { threshold: 0.6 }
     );
 
@@ -166,71 +178,168 @@ export default function SpatialCard({
     return () => observer.disconnect();
   }, []);
 
-  return (
-    /* ---- Outer scroll runway ---- */
-    <div ref={runwayRef} className="sc-runway" id={`project-${id}`}>
-      {/* ---- Sticky shell ---- */}
-      <div ref={stickyRef} className="sc-sticky">
-        {/* ---- The actual card ---- */}
-        <article ref={cardRef} className="sc-card">
-          <div className="sc-card-inner">
-            {/* Image or pipeline */}
-            {image ? (
-              <div className="project-image-wrap">
-                <img
-                  src={image}
-                  alt={imageAlt ?? title}
-                  className="project-image"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-            ) : pipeline ? (
-              <div className="project-pipeline">
-                {pipeline.map((step, idx) => (
-                  <span key={step} className="pipeline-row">
-                    <span className="pipeline-step mono">{step}</span>
-                    {idx < pipeline.length - 1 && (
-                      <span className="pipeline-arrow mono">→</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+  /* ---- 3D Gyroscopic tilt + Z-axis inner parallax ---- */
+  useEffect(() => {
+    const cardEl: HTMLDivElement | null = cardRef.current;
+    if (!cardEl) return;
+    /* Capture as non-null const so closures inherit the narrowed type */
+    const card: HTMLDivElement = cardEl;
 
-            {/* Text block — each child tagged for wipe-in */}
+    const zLayers = [
+      { el: imageLayerRef.current, zMultiplier: 1.0, xyMultiplier: 0.6 },
+      { el: titleLayerRef.current, zMultiplier: 1.8, xyMultiplier: 1.0 },
+      { el: tagsLayerRef.current,  zMultiplier: 2.4, xyMultiplier: 1.3 },
+      { el: linkLayerRef.current,  zMultiplier: 2.8, xyMultiplier: 1.5 },
+    ];
+
+    /* Set CSS perspective on the card so translateZ works */
+    gsap.set(card, { transformPerspective: 900 });
+
+    function onMouseMove(e: MouseEvent) {
+      const r = card.getBoundingClientRect();
+      const nx = (e.clientX - r.left - r.width  / 2) / (r.width  / 2); /* -1..1 */
+      const ny = (e.clientY - r.top  - r.height / 2) / (r.height / 2); /* -1..1 */
+
+      /* Card outer shell tilts gently */
+      gsap.to(card, {
+        rotateY:  nx * 7,
+        rotateX: -ny * 7,
+        duration: 0.35,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+
+      /* Inner Z-layers shift at different depths — the parallax illusion */
+      zLayers.forEach(({ el, zMultiplier, xyMultiplier }) => {
+        if (!el) return;
+        gsap.to(el, {
+          x: nx * 6  * xyMultiplier,
+          y: ny * 6  * xyMultiplier,
+          z: zMultiplier * 12,  /* translateZ — floats toward viewer */
+          duration: 0.4,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      });
+    }
+
+    function onMouseLeave() {
+      gsap.to(card, {
+        rotateX: 0,
+        rotateY: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+      zLayers.forEach(({ el, zMultiplier }) => {
+        if (!el) return;
+        gsap.to(el, {
+          x: 0,
+          y: 0,
+          z: zMultiplier * 4, /* settle back to resting Z */
+          duration: 0.9,
+          ease: "power3.out",
+          overwrite: "auto",
+        });
+      });
+    }
+
+    card.addEventListener("mousemove", onMouseMove);
+    card.addEventListener("mouseleave", onMouseLeave);
+
+    return () => {
+      card.removeEventListener("mousemove", onMouseMove);
+      card.removeEventListener("mouseleave", onMouseLeave);
+      gsap.killTweensOf([card, ...zLayers.map(l => l.el).filter(Boolean)]);
+    };
+  }, []);
+
+  return (
+    <div ref={runwayRef} className="sc-runway" id={`project-${id}`}>
+      <div ref={stickyRef} className="sc-sticky">
+        <article ref={cardRef} className="sc-card sc-card--3d">
+          <div className="sc-card-inner">
+
+            {/* ── Image layer — lowest Z (glass image renders here) ── */}
+            <div ref={imageLayerRef} className="sc-z-layer sc-z-image" data-z="1">
+              {image ? (
+                <div className="project-image-wrap">
+                  <GlassImage
+                    src={image}
+                    alt={imageAlt}
+                    placeholderLabel={title}
+                    placeholderHue={placeholderHue}
+                    className="project-glass-image"
+                  />
+                </div>
+              ) : pipeline ? (
+                <div className="project-pipeline">
+                  {pipeline.map((step, idx) => (
+                    <span key={step} className="pipeline-row">
+                      <span className="pipeline-step mono">{step}</span>
+                      {idx < pipeline.length - 1 && (
+                        <span className="pipeline-arrow mono">→</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                /* Placeholder block for projects without image or pipeline */
+                <div className="project-image-wrap">
+                  <GlassImage
+                    src={null}
+                    alt={imageAlt ?? title}
+                    placeholderLabel={title.toUpperCase()}
+                    placeholderHue={placeholderHue}
+                    className="project-glass-image"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ── Text block — clip-path wipe on scroll ── */}
             <div ref={textRef} className="sc-text">
               <span className="project-overline mono" data-reveal>Featured Project</span>
 
-              <h3 className="project-title" data-reveal>
-                {title}{" "}
-                <span className="project-subtitle">— {subtitle}</span>
-              </h3>
+              {/* Title — mid Z-layer, floats toward viewer ── */}
+              <div ref={titleLayerRef} className="sc-z-layer">
+                <h3 className="project-title" data-reveal>
+                  {title}{" "}
+                  <span className="project-subtitle">— {subtitle}</span>
+                </h3>
+              </div>
 
               <p className="project-description" data-reveal>{description}</p>
 
               <p className="project-tech mono" data-reveal>Built with: {tech}</p>
 
-              <div className="project-tags" data-reveal>
-                {tags.map((tag) => (
-                  <span key={tag} className="project-tag mono">{tag}</span>
-                ))}
+              {/* Tags — higher Z-layer ── */}
+              <div ref={tagsLayerRef} className="sc-z-layer">
+                <div className="project-tags" data-reveal>
+                  {tags.map((tag) => (
+                    <span key={tag} className="project-tag mono">{tag}</span>
+                  ))}
+                </div>
               </div>
 
-              <div className="project-links" data-reveal>
-                <a
-                  href={github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-link"
-                  id={`${id}-github`}
-                >
-                  <GitHubIcon />
-                  Source
-                  <ArrowUpRightIcon />
-                </a>
+              {/* Links — highest Z-layer, floats closest to viewer ── */}
+              <div ref={linkLayerRef} className="sc-z-layer">
+                <div className="project-links" data-reveal>
+                  <a
+                    href={github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="project-link"
+                    id={`${id}-github`}
+                  >
+                    <GitHubIcon />
+                    Source
+                    <ArrowUpRightIcon />
+                  </a>
+                </div>
               </div>
             </div>
+
           </div>
         </article>
       </div>

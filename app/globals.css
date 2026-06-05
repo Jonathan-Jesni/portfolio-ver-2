@@ -1906,6 +1906,163 @@ img {
 }
 
 /* ============================================================
+   HERO — Two-column inner grid for text + canvas sequence
+   ============================================================ */
+.hero-inner-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .hero-inner-grid {
+    /* Text takes 55%, canvas takes 45% */
+    grid-template-columns: 55fr 45fr;
+    gap: 64px;
+  }
+}
+
+.hero-text-col {
+  /* The text column — no constraints, lets the heading breathe */
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   CANVAS SEQUENCE — hero 3D object frame scrubber
+   ============================================================ */
+.hero-canvas-wrap {
+  position: relative;
+  width: 100%;
+  /* Aspect ratio matches a typical square-ish 3D object render */
+  aspect-ratio: 1 / 1;
+  /* On mobile, hide by default to preserve the name heading */
+  display: none;
+  will-change: opacity, transform;
+}
+
+@media (min-width: 900px) {
+  .hero-canvas-wrap {
+    display: block;
+  }
+}
+
+.hero-sequence-canvas,
+.canvas-seq {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  /* Subtle inner glow — makes the canvas feel like it's emitting light */
+  box-shadow:
+    0 0 0 1px var(--border-hairline),
+    0 0 60px rgba(0, 168, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Vignette overlay — blends the canvas edges into the dark background */
+.hero-canvas-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #050505 100%);
+  /* Aggressive at corners, transparent in center */
+  opacity: 0.8;
+}
+
+/* ============================================================
+   GLASS IMAGE — WebGL R3F canvas wrapper
+   ============================================================ */
+.glass-image-wrap {
+  position: relative;
+  width: 100%;
+  /* Match the static project-image height */
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  cursor: crosshair; /* signals interactivity without being distracting */
+}
+
+.glass-image-canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fallback for SSR — matches static image sizing */
+.glass-image-fallback {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.80;
+}
+
+/* Placeholder — styled to match the project palette */
+.glass-image-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  color: var(--ink-4);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+}
+
+/* The R3F <canvas> element */
+canvas.glass-image-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Project glass image — matches existing project-image dimensions */
+.project-glass-image {
+  width: 100%;
+  height: 200px;
+}
+
+/* ============================================================
+   SC-CARD — 3D perspective + Z-layer system
+   ============================================================ */
+
+/* Enable 3D transform space on the card itself */
+.sc-card--3d {
+  transform-style: preserve-3d;
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+  will-change: transform, filter, opacity;
+}
+
+.sc-card--3d .sc-card-inner {
+  /* Inner core also participates in 3D space */
+  transform-style: preserve-3d;
+  overflow: visible; /* allow z-layer children to visually pop */
+}
+
+/* Z-layer utility — inner elements that float at different depths */
+.sc-z-layer {
+  position: relative;
+  will-change: transform;
+  /* Base resting Z — JS overrides per-layer */
+  transform: translateZ(4px);
+  transform-style: preserve-3d;
+}
+
+.sc-z-image {
+  /* Image layer stays closest to the card plane */
+  transform: translateZ(2px);
+}
+
+/* ============================================================
    REDUCED MOTION — mandatory accessibility
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {

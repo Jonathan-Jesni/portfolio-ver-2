@@ -3,8 +3,12 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import dynamic from "next/dynamic";
 
 gsap.registerPlugin(ScrollTrigger);
+
+/* CanvasSequence lazy-loaded — it's client-only */
+const CanvasSequence = dynamic(() => import("./CanvasSequence"), { ssr: false });
 
 /* ---- Local inline icon ---- */
 function GitHubIcon({ size = 18 }: { size?: number }) {
@@ -26,6 +30,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   const topCharRefs    = useRef<(HTMLSpanElement | null)[]>([]);
   const botCharRefs    = useRef<(HTMLSpanElement | null)[]>([]);
   const subContentRef  = useRef<HTMLDivElement>(null);
+  const canvasWrapRef  = useRef<HTMLDivElement>(null);
 
   /* ---- 1. MAGNETIC MOUSE EFFECT ---- */
   useEffect(() => {
@@ -97,6 +102,8 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         ],
         { opacity: 0, y: -80 }
       );
+      /* Canvas starts transparent and fades in separately */
+      gsap.set(".hero-canvas-wrap", { opacity: 0 });
     }, runwayRef);
     return () => ctx.revert();
   }, []);
@@ -105,6 +112,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   useEffect(() => {
     if (!animate) return;
     const ctx = gsap.context(() => {
+      /* Text elements drop in first */
       gsap.to(
         [
           ".hero-greeting",
@@ -122,6 +130,14 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
           stagger: 0.08,
         }
       );
+
+      /* Canvas fades in slightly later — lets the text land first */
+      gsap.to(".hero-canvas-wrap", {
+        opacity: 1,
+        duration: 1.4,
+        ease: "power2.out",
+        delay: 0.5,
+      });
     }, runwayRef);
     return () => ctx.revert();
   }, [animate]);
@@ -141,89 +157,114 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       tl.to(topGroupRef.current,    { y: "-120vh", ease: "power2.in" }, 0)
         .to(bottomGroupRef.current, { y:  "120vh", ease: "power2.in" }, 0)
         .to(greetingRef.current,   { opacity: 0, y: -28, ease: "none", duration: 0.20 }, 0)
-        .to(subContentRef.current, { opacity: 0, y:  28, ease: "none", duration: 0.20 }, 0);
+        .to(subContentRef.current, { opacity: 0, y:  28, ease: "none", duration: 0.20 }, 0)
+        /* Canvas scales and fades out as tunnel opens */
+        .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
     }, runwayRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={runwayRef} className="hero-runway">
+    <div ref={runwayRef} className="hero-runway" id="hero-runway">
       <div className="hero-sticky" id="hero">
         <div className="container">
 
-          <p ref={greetingRef} className="hero-greeting mono">
-            Hi, my name is
-          </p>
+          {/* ─── Two-column hero layout ─── */}
+          <div className="hero-inner-grid">
 
-          {/* Massive JONATHAN split heading */}
-          <h1 className="hero-name-split" aria-label="Jonathan">
-            <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
-              {TOP.map((ch, i) => (
-                <span
-                  key={`t${i}`}
-                  ref={(el) => { topCharRefs.current[i] = el; }}
-                  className="hero-char"
-                >
-                  {ch}
+            {/* Left column — text */}
+            <div className="hero-text-col">
+              <p ref={greetingRef} className="hero-greeting mono">
+                Hi, my name is
+              </p>
+
+              {/* Massive JONATHAN split heading */}
+              <h1 className="hero-name-split" aria-label="Jonathan">
+                <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
+                  {TOP.map((ch, i) => (
+                    <span
+                      key={`t${i}`}
+                      ref={(el) => { topCharRefs.current[i] = el; }}
+                      className="hero-char"
+                    >
+                      {ch}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-            <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
-              {BOTTOM.map((ch, i) => (
-                <span
-                  key={`b${i}`}
-                  ref={(el) => { botCharRefs.current[i] = el; }}
-                  className="hero-char"
-                >
-                  {ch}
+                <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
+                  {BOTTOM.map((ch, i) => (
+                    <span
+                      key={`b${i}`}
+                      ref={(el) => { botCharRefs.current[i] = el; }}
+                      className="hero-char"
+                    >
+                      {ch}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-          </h1>
+              </h1>
 
-          {/* Sub-content — fades as tunnel opens */}
-          <div ref={subContentRef} className="hero-sub-content">
-            <p
-              className="hero-building mono"
-              style={{ color: "var(--ink-3)", fontSize: "12px", marginBottom: "24px", letterSpacing: "0.08em", textTransform: "uppercase" }}
-            >
-              &gt; currently.building: smarter tools for real-world problems
-            </p>
+              {/* Sub-content — fades as tunnel opens */}
+              <div ref={subContentRef} className="hero-sub-content">
+                <p
+                  className="hero-building mono"
+                  style={{ color: "var(--ink-3)", fontSize: "12px", marginBottom: "24px", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                >
+                  &gt; currently.building: smarter tools for real-world problems
+                </p>
 
-            <h2 className="hero-tagline">
-              I build AI-powered tools and systems<br />
-              that solve real-world problems.
-            </h2>
+                <h2 className="hero-tagline">
+                  I build AI-powered tools and systems<br />
+                  that solve real-world problems.
+                </h2>
 
-            <p className="hero-sub">
-              CS student focused on AI, cybersecurity, and scalable systems.
-            </p>
+                <p className="hero-sub">
+                  CS student focused on AI, cybersecurity, and scalable systems.
+                </p>
 
-            <div className="hero-buttons">
-              <a
-                href="https://github.com/Jonathan-Jesni"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-                id="hero-github-btn"
-              >
-                <GitHubIcon size={16} />
-                View My Work
-                <span className="btn-arrow" aria-hidden="true">↗</span>
-              </a>
-              <a
-                href="/assets/Jonathan_Resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline"
-                id="hero-resume-btn"
-              >
-                Resume
-              </a>
+                <div className="hero-buttons">
+                  <a
+                    href="https://github.com/Jonathan-Jesni"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    id="hero-github-btn"
+                  >
+                    <GitHubIcon size={16} />
+                    View My Work
+                    <span className="btn-arrow" aria-hidden="true">↗</span>
+                  </a>
+                  <a
+                    href="/assets/Jonathan_Resume.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    id="hero-resume-btn"
+                  >
+                    Resume
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
 
+            {/* Right column — Canvas Sequence (the 3D object runway) */}
+            <div ref={canvasWrapRef} className="hero-canvas-wrap" aria-hidden="true">
+              <CanvasSequence
+                runwaySelector="#hero-runway"
+                totalFrames={120}
+                src="/sequence/frame-[i].webp"
+                padLength={3}
+                placeholder={true}   /* ← flip to false after dropping your Blender frames */
+                start={0.05}
+                end={0.75}
+                className="hero-sequence-canvas"
+              />
+              {/* Rim vignette — blends canvas edges into the OLED black */}
+              <div className="hero-canvas-vignette" aria-hidden="true" />
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
