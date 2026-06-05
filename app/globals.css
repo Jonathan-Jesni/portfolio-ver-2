@@ -95,10 +95,10 @@ img {
   /* primary body text */
   --ink-2: #a0a0a0;
   /* secondary text */
-  --ink-3: #5a5a5a;
-  /* muted/disabled */
-  --ink-4: #2e2e2e;
-  /* hairline structures */
+  --ink-3: #787878;
+  /* muted — lifted from #5a5a5a for WCAG AA on #0a0a0a (~4.8:1) */
+  --ink-4: #3e3e3e;
+  /* hairline structures — lifted from #2e2e2e */
 
   /* Borders — glass-plate system */
   --border-hairline: rgba(255, 255, 255, 0.05);
@@ -1961,15 +1961,15 @@ img {
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* Vignette overlay — blends the canvas edges into the dark background */
+/* Vignette overlay — blends the canvas edges into the dark background.
+   Uses the exact body/card background hex to prevent muddy edges. */
 .hero-canvas-vignette {
   position: absolute;
   inset: 0;
   border-radius: 20px;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #050505 100%);
-  /* Aggressive at corners, transparent in center */
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #0a0a0c 100%);
   opacity: 0.8;
 }
 
@@ -2060,6 +2060,279 @@ canvas.glass-image-canvas {
 .sc-z-image {
   /* Image layer stays closest to the card plane */
   transform: translateZ(2px);
+}
+
+/* ============================================================
+   HORIZONTAL SCROLL TUNNEL — film-strip gallery
+   ============================================================ */
+
+/* Section shell — normal flow wrapper.
+   On desktop the HorizontalScrollSection component pins this
+   and translates .hscroll-track horizontally via GSAP. */
+.hscroll-outer {
+  width: 100%;
+  overflow: hidden;   /* clips the overflowing track */
+  position: relative;
+}
+
+/* The wide, scrollable row of cards */
+.hscroll-track {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  padding: 48px 64px;   /* breathing room so card shadows don't clip */
+  width: max-content;   /* expands to fit all children side-by-side */
+  will-change: transform;
+}
+
+/* Mobile: disable horizontal layout, fall back to vertical stack */
+@media (max-width: 767px) {
+  .hscroll-outer {
+    overflow: visible;
+  }
+
+  .hscroll-track {
+    flex-direction: column;
+    width: 100%;
+    padding: 24px 0;
+    gap: 20px;
+  }
+}
+
+/* Projects section header — sits above the tunnel in normal flow */
+.projects-header {
+  padding-top: 128px;
+  padding-bottom: 48px;
+}
+
+@media (max-width: 767px) {
+  .projects-header {
+    padding-top: 80px;
+    padding-bottom: 32px;
+  }
+}
+
+/* Adjust projects section itself — remove its own padding since
+   the tunnel's padding-block handles spacing */
+.projects {
+  padding-top: 0;
+  padding-bottom: 128px;
+}
+
+@media (max-width: 767px) {
+  .projects {
+    padding-bottom: 80px;
+  }
+}
+
+/* ============================================================
+   SC-PANEL — the new self-contained project card
+   (replaces the old sc-runway / sc-sticky scroll-per-card system)
+   ============================================================ */
+
+/* Fixed width so cards form a uniform gallery strip on desktop */
+.sc-panel {
+  width: clamp(340px, 40vw, 480px);  /* adaptive but bounded */
+  flex-shrink: 0;
+  /* Double-Bezel outer shell */
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-hairline);
+  border-radius: 20px;
+  padding: 3px;
+  box-shadow: var(--shadow-card);
+  /* 3D context */
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: border-color var(--t-mid), box-shadow var(--t-mid);
+  /* Block touch-action interference — set per-element in JSX */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sc-panel:hover {
+    border-color: var(--border-subtle);
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+/* Mobile: full-width */
+@media (max-width: 767px) {
+  .sc-panel {
+    width: 100%;
+  }
+}
+
+/* Inner core */
+.sc-panel-inner {
+  background: var(--surface-1);
+  border-radius: calc(20px - 3px);
+  box-shadow: inset 0 1px 0 var(--edge-top);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+/* Top-edge refraction highlight */
+.sc-panel-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(255,255,255,0.12) 50%, var(--edge-top) 60%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Image wrap — object-fit cover + inner shadow for dark card blend */
+.sc-image-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  height: 200px;
+}
+
+/* Inner shadow over the image — blends edges into the dark card */
+.sc-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+              inset 0 -20px 40px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sc-glass-image {
+  width: 100%;
+  height: 200px;
+}
+
+/* Pipeline strip — for cards without an image */
+.sc-pipeline-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 14px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--border-hairline);
+}
+
+.sc-pipeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sc-pipeline-step {
+  font-size: 11px;
+  color: var(--ink-2);
+  padding: 3px 9px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  letter-spacing: 0.04em;
+}
+
+.sc-pipeline-arrow {
+  font-size: 11px;
+  color: var(--ink-4);
+}
+
+/* Text section */
+.sc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sc-overline {
+  font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}
+
+.sc-title {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-0);
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.sc-subtitle {
+  font-weight: 400;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.sc-description {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.75;
+}
+
+.sc-tech {
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.sc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sc-tag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-3);
+  padding: 4px 10px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sc-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.sc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  transition: color var(--t-fast);
+  letter-spacing: 0.02em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sc-link:hover {
+    color: var(--accent);
+  }
+}
+
+.sc-link svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* ============================================================

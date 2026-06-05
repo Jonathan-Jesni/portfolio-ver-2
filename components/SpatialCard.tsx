@@ -2,10 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
-
-gsap.registerPlugin(ScrollTrigger);
 
 /* Lazy-load GlassImage — avoids SSR WebGL issues */
 const GlassImage = dynamic(() => import("./GlassImage"), { ssr: false });
@@ -47,17 +44,19 @@ function ArrowUpRightIcon() {
 }
 
 /* -------------------------------------------------------
-   Z-axis layer hues per project — visual identity
+   Per-project hue palette for placeholder/identity tinting
 ------------------------------------------------------- */
 const HUE_PALETTE: Record<string, number> = {
-  ludex:            210,   /* cool blue — AI/data */
-  "file-converter": 160,   /* teal — document processing */
-  webguardian:      0,     /* red — security */
-  "synthetic-data": 270,   /* violet — generative */
+  ludex:            210,
+  "file-converter": 160,
+  webguardian:      0,
+  "synthetic-data": 270,
 };
 
 /* -------------------------------------------------------
    Component
+   No longer owns a scroll runway — it's a pure display
+   card. The parent HorizontalScrollSection handles pinning.
 ------------------------------------------------------- */
 export default function SpatialCard({
   id,
@@ -71,11 +70,7 @@ export default function SpatialCard({
   imageAlt,
   pipeline,
 }: SpatialCardProps) {
-  const runwayRef  = useRef<HTMLDivElement>(null);
-  const stickyRef  = useRef<HTMLDivElement>(null);
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const textRef    = useRef<HTMLDivElement>(null);
-  /* Z-layer refs for inner parallax */
+  const cardRef       = useRef<HTMLDivElement>(null);
   const imageLayerRef = useRef<HTMLDivElement>(null);
   const titleLayerRef = useRef<HTMLDivElement>(null);
   const tagsLayerRef  = useRef<HTMLDivElement>(null);
@@ -83,106 +78,10 @@ export default function SpatialCard({
 
   const placeholderHue = HUE_PALETTE[id] ?? 210;
 
-  /* ---- GSAP ScrollTrigger Z-fly-through ---- */
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (!runwayRef.current || !cardRef.current) return;
-
-      gsap.set(cardRef.current, {
-        scale: 0.8,
-        filter: "blur(12px)",
-        opacity: 0,
-        y: -60,
-      });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: runwayRef.current,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 1,
-        },
-      });
-
-      /* 0 → 35%: Approach — rushes from deep space */
-      tl.to(
-        cardRef.current,
-        {
-          scale: 1,
-          y: 0,
-          filter: "blur(0px)",
-          opacity: 1,
-          ease: "back.out(1.4)",
-          duration: 0.35,
-        },
-        0
-      );
-
-      /* 35% → 65%: Reading plateau — hold still */
-      tl.to(
-        cardRef.current,
-        {
-          scale: 1,
-          filter: "blur(0px)",
-          opacity: 1,
-          ease: "none",
-          duration: 0.3,
-        },
-        0.35
-      );
-
-      /* 65% → 100%: Fly past — overshoots and fades */
-      tl.to(
-        cardRef.current,
-        {
-          scale: 1.5,
-          filter: "blur(15px)",
-          opacity: 0,
-          ease: "power2.in",
-          duration: 0.35,
-        },
-        0.65
-      );
-    }, runwayRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  /* ---- Clip-path text wipe via IntersectionObserver ---- */
-  useEffect(() => {
-    const textEl = textRef.current;
-    if (!textEl) return;
-
-    const lines = Array.from(textEl.querySelectorAll<HTMLElement>("[data-reveal]"));
-    gsap.set(lines, { clipPath: "inset(0 0 110% 0)", yPercent: 8 });
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            gsap.to(lines, {
-              clipPath: "inset(0 0 0% 0)",
-              yPercent: 0,
-              duration: 0.8,
-              ease: "power3.out",
-              stagger: 0.07,
-            });
-            observer.disconnect();
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
-
-    observer.observe(textEl);
-    return () => observer.disconnect();
-  }, []);
-
   /* ---- 3D Gyroscopic tilt + Z-axis inner parallax ---- */
   useEffect(() => {
     const cardEl: HTMLDivElement | null = cardRef.current;
     if (!cardEl) return;
-    /* Capture as non-null const so closures inherit the narrowed type */
     const card: HTMLDivElement = cardEl;
 
     const zLayers = [
@@ -192,15 +91,13 @@ export default function SpatialCard({
       { el: linkLayerRef.current,  zMultiplier: 2.8, xyMultiplier: 1.5 },
     ];
 
-    /* Set CSS perspective on the card so translateZ works */
     gsap.set(card, { transformPerspective: 900 });
 
     function onMouseMove(e: MouseEvent) {
-      const r = card.getBoundingClientRect();
-      const nx = (e.clientX - r.left - r.width  / 2) / (r.width  / 2); /* -1..1 */
-      const ny = (e.clientY - r.top  - r.height / 2) / (r.height / 2); /* -1..1 */
+      const r  = card.getBoundingClientRect();
+      const nx = (e.clientX - r.left  - r.width  / 2) / (r.width  / 2);
+      const ny = (e.clientY - r.top   - r.height / 2) / (r.height / 2);
 
-      /* Card outer shell tilts gently */
       gsap.to(card, {
         rotateY:  nx * 7,
         rotateX: -ny * 7,
@@ -209,13 +106,12 @@ export default function SpatialCard({
         overwrite: "auto",
       });
 
-      /* Inner Z-layers shift at different depths — the parallax illusion */
       zLayers.forEach(({ el, zMultiplier, xyMultiplier }) => {
         if (!el) return;
         gsap.to(el, {
-          x: nx * 6  * xyMultiplier,
-          y: ny * 6  * xyMultiplier,
-          z: zMultiplier * 12,  /* translateZ — floats toward viewer */
+          x: nx * 6 * xyMultiplier,
+          y: ny * 6 * xyMultiplier,
+          z: zMultiplier * 12,
           duration: 0.4,
           ease: "power2.out",
           overwrite: "auto",
@@ -234,9 +130,8 @@ export default function SpatialCard({
       zLayers.forEach(({ el, zMultiplier }) => {
         if (!el) return;
         gsap.to(el, {
-          x: 0,
-          y: 0,
-          z: zMultiplier * 4, /* settle back to resting Z */
+          x: 0, y: 0,
+          z: zMultiplier * 4,
           duration: 0.9,
           ease: "power3.out",
           overwrite: "auto",
@@ -255,94 +150,96 @@ export default function SpatialCard({
   }, []);
 
   return (
-    <div ref={runwayRef} className="sc-runway" id={`project-${id}`}>
-      <div ref={stickyRef} className="sc-sticky">
-        <article ref={cardRef} className="sc-card sc-card--3d">
-          <div className="sc-card-inner">
+    /* sc-panel: the self-contained card — no runway wrapper */
+    <article
+      ref={cardRef}
+      className="sc-panel sc-card--3d"
+      id={`project-${id}`}
+      /* touch-action: pan-y lets vertical scroll pass through on mobile */
+      style={{ touchAction: "pan-y" }}
+    >
+      <div className="sc-panel-inner">
 
-            {/* ── Image layer — lowest Z (glass image renders here) ── */}
-            <div ref={imageLayerRef} className="sc-z-layer sc-z-image" data-z="1">
-              {image ? (
-                <div className="project-image-wrap">
-                  <GlassImage
-                    src={image}
-                    alt={imageAlt}
-                    placeholderLabel={title}
-                    placeholderHue={placeholderHue}
-                    className="project-glass-image"
-                  />
-                </div>
-              ) : pipeline ? (
-                <div className="project-pipeline">
-                  {pipeline.map((step, idx) => (
-                    <span key={step} className="pipeline-row">
-                      <span className="pipeline-step mono">{step}</span>
-                      {idx < pipeline.length - 1 && (
-                        <span className="pipeline-arrow mono">→</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                /* Placeholder block for projects without image or pipeline */
-                <div className="project-image-wrap">
-                  <GlassImage
-                    src={null}
-                    alt={imageAlt ?? title}
-                    placeholderLabel={title.toUpperCase()}
-                    placeholderHue={placeholderHue}
-                    className="project-glass-image"
-                  />
-                </div>
-              )}
+        {/* ── Image / pipeline layer ── */}
+        <div ref={imageLayerRef} className="sc-z-layer sc-z-image">
+          {image ? (
+            <div className="sc-image-wrap">
+              <GlassImage
+                src={image}
+                alt={imageAlt}
+                placeholderLabel={title}
+                placeholderHue={placeholderHue}
+                className="sc-glass-image"
+              />
             </div>
-
-            {/* ── Text block — clip-path wipe on scroll ── */}
-            <div ref={textRef} className="sc-text">
-              <span className="project-overline mono" data-reveal>Featured Project</span>
-
-              {/* Title — mid Z-layer, floats toward viewer ── */}
-              <div ref={titleLayerRef} className="sc-z-layer">
-                <h3 className="project-title" data-reveal>
-                  {title}{" "}
-                  <span className="project-subtitle">— {subtitle}</span>
-                </h3>
-              </div>
-
-              <p className="project-description" data-reveal>{description}</p>
-
-              <p className="project-tech mono" data-reveal>Built with: {tech}</p>
-
-              {/* Tags — higher Z-layer ── */}
-              <div ref={tagsLayerRef} className="sc-z-layer">
-                <div className="project-tags" data-reveal>
-                  {tags.map((tag) => (
-                    <span key={tag} className="project-tag mono">{tag}</span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Links — highest Z-layer, floats closest to viewer ── */}
-              <div ref={linkLayerRef} className="sc-z-layer">
-                <div className="project-links" data-reveal>
-                  <a
-                    href={github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="project-link"
-                    id={`${id}-github`}
-                  >
-                    <GitHubIcon />
-                    Source
-                    <ArrowUpRightIcon />
-                  </a>
-                </div>
-              </div>
+          ) : pipeline ? (
+            <div className="sc-pipeline-strip">
+              {pipeline.map((step, idx) => (
+                <span key={step} className="sc-pipeline-row">
+                  <span className="sc-pipeline-step mono">{step}</span>
+                  {idx < pipeline.length - 1 && (
+                    <span className="sc-pipeline-arrow mono">→</span>
+                  )}
+                </span>
+              ))}
             </div>
+          ) : (
+            <div className="sc-image-wrap">
+              <GlassImage
+                src={null}
+                alt={imageAlt ?? title}
+                placeholderLabel={title.toUpperCase()}
+                placeholderHue={placeholderHue}
+                className="sc-glass-image"
+              />
+            </div>
+          )}
+        </div>
 
+        {/* ── Text block ── */}
+        <div className="sc-text">
+          <span className="sc-overline mono">Featured Project</span>
+
+          {/* Title layer — mid Z */}
+          <div ref={titleLayerRef} className="sc-z-layer">
+            <h3 className="sc-title">
+              {title}
+              <span className="sc-subtitle"> — {subtitle}</span>
+            </h3>
           </div>
-        </article>
+
+          <p className="sc-description">{description}</p>
+
+          <p className="sc-tech mono">Built with: {tech}</p>
+
+          {/* Tags layer — higher Z */}
+          <div ref={tagsLayerRef} className="sc-z-layer">
+            <div className="sc-tags">
+              {tags.map((tag) => (
+                <span key={tag} className="sc-tag mono">{tag}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Links — highest Z */}
+          <div ref={linkLayerRef} className="sc-z-layer">
+            <div className="sc-links">
+              <a
+                href={github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sc-link"
+                id={`${id}-github`}
+              >
+                <GitHubIcon />
+                Source
+                <ArrowUpRightIcon />
+              </a>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div>
+    </article>
   );
 }

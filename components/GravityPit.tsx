@@ -38,7 +38,7 @@ function buildStaticGrid(containerW: number): { x: number; y: number }[] {
   const positions: { x: number; y: number }[] = [];
   let curX = PAD_X;
   let curY = PAD_Y;
-  let rowH = PILL_H + GUTTER; // uniform row height
+  const rowH = PILL_H + GUTTER; // uniform row height
 
   for (const label of PILLS) {
     const pw = pillWidth(label);

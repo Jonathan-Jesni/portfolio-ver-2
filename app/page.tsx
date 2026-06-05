@@ -8,6 +8,7 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 gsap.registerPlugin(Draggable, ScrollTrigger);
 import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
+import HorizontalScrollSection from "../components/HorizontalScrollSection";
 import HeroSection from "../components/HeroSection";
 import AboutSection from "../components/AboutSection";
 import dynamic from "next/dynamic";
@@ -346,7 +347,13 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
   }, []);
 
   return (
-    <div className="pipeline-wrapper" ref={gridRef}>
+    <div
+      className="pipeline-wrapper"
+      ref={gridRef}
+      /* pan-y: lets vertical scroll pass through on touch devices
+         prevents pull-to-refresh / swipe-to-go-back conflicts */
+      style={{ touchAction: "pan-y" }}
+    >
 
       {/* ── Dot-grid background ── */}
       <svg className="pipeline-grid-bg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -532,13 +539,16 @@ export default function Home() {
       <hr className="section-divider" />
 
       <section className="projects" id="projects">
-        <div className="container">
+        {/* Section header — above the horizontal scroll tunnel */}
+        <div className="container projects-header">
           <div className="section-label">
             <span className="section-title">Selected Work</span>
             <span className="section-line"></span>
           </div>
+        </div>
 
-          {/* Spatial fly-through — one per project, stacked vertically */}
+        {/* Horizontal scroll tunnel — gallery / film-strip */}
+        <HorizontalScrollSection scrollMultiplier={PROJECTS.length * 0.7}>
           {PROJECTS.map((project) => (
             <SpatialCard
               key={project.id}
@@ -554,7 +564,10 @@ export default function Home() {
               pipeline={'pipeline' in project ? (project.pipeline as readonly string[]) : undefined}
             />
           ))}
+        </HorizontalScrollSection>
 
+        {/* CTA — below the tunnel, back in normal flow */}
+        <div className="container">
           <div className="projects-cta">
             <p>There&apos;s more on GitHub.</p>
             <a
@@ -602,9 +615,13 @@ export default function Home() {
             Technologies and frameworks I use to engineer robust, scalable systems.
           </p>
           <p className="sp-reveal mono" style={{ color: "var(--ink-3)", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "24px" }}>
-            // drag to interact
+            {"// drag to interact"}
           </p>
-          <GravityPit />
+          {/* touch-action wrapper — prevents swipe-to-go-back on mobile
+              while still allowing the pit's own pointer events to fire */}
+          <div style={{ touchAction: "none" }}>
+            <GravityPit />
+          </div>
         </div>
       </SpatialSection>
 
