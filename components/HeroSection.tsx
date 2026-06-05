@@ -6,7 +6,7 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ---- Local inline icon to avoid cross-component imports ---- */
+/* ---- Local inline icon ---- */
 function GitHubIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -15,12 +15,10 @@ function GitHubIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-/* ---- Character groups ---- */
 const TOP    = ["J", "O", "N", "A"];
 const BOTTOM = ["T", "H", "A", "N"];
 
 export default function HeroSection({ animate = false }: { animate?: boolean }) {
-  /* --- Refs --- */
   const runwayRef      = useRef<HTMLDivElement>(null);
   const greetingRef    = useRef<HTMLParagraphElement>(null);
   const topGroupRef    = useRef<HTMLSpanElement>(null);
@@ -29,29 +27,24 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   const botCharRefs    = useRef<(HTMLSpanElement | null)[]>([]);
   const subContentRef  = useRef<HTMLDivElement>(null);
 
-  /* ======================================================
-     1.  MAGNETIC MOUSE EFFECT  (quickSetter + lerp via ticker)
-  ====================================================== */
+  /* ---- 1. MAGNETIC MOUSE EFFECT ---- */
   useEffect(() => {
     const allChars = [
       ...topCharRefs.current,
       ...botCharRefs.current,
     ].filter(Boolean) as HTMLSpanElement[];
 
-    // One quickSetter pair per character span
     const setters = allChars.map((el) => ({
       x: gsap.quickSetter(el, "x", "px") as (v: number) => void,
       y: gsap.quickSetter(el, "y", "px") as (v: number) => void,
     }));
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-    // Per-character lerp state
     const cur = allChars.map(() => ({ x: 0, y: 0 }));
     const tgt = allChars.map(() => ({ x: 0, y: 0 }));
 
-    const RADIUS   = 200; // px — proximity radius
-    const MAX_PUSH = 60;  // px — max repulsion distance
+    const RADIUS   = 200;
+    const MAX_PUSH = 56;
 
     function onMouseMove(e: MouseEvent) {
       allChars.forEach((el, i) => {
@@ -73,11 +66,10 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       });
     }
 
-    // Lerp smoothing runs every GSAP tick (already synced with Lenis)
     const tickFn = () => {
       allChars.forEach((_, i) => {
-        cur[i].x = lerp(cur[i].x, tgt[i].x, 0.08);
-        cur[i].y = lerp(cur[i].y, tgt[i].y, 0.08);
+        cur[i].x = lerp(cur[i].x, tgt[i].x, 0.075);
+        cur[i].y = lerp(cur[i].y, tgt[i].y, 0.075);
         setters[i].x(cur[i].x);
         setters[i].y(cur[i].y);
       });
@@ -85,18 +77,13 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
 
     gsap.ticker.add(tickFn);
     window.addEventListener("mousemove", onMouseMove);
-
     return () => {
       gsap.ticker.remove(tickFn);
       window.removeEventListener("mousemove", onMouseMove);
     };
   }, []);
 
-  /* ======================================================
-     2a. HIDE ON MOUNT
-         Sets hero elements invisible immediately so nothing
-         flashes under the PreLoader overlay.
-  ====================================================== */
+  /* ---- 2a. HIDE ON MOUNT ---- */
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.set(
@@ -106,20 +93,15 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
           ".hero-building",
           ".hero-tagline",
           ".hero-sub",
-          ".hero-impact",
           ".hero-buttons",
         ],
-        { opacity: 0, y: -100 }
+        { opacity: 0, y: -80 }
       );
     }, runwayRef);
     return () => ctx.revert();
   }, []);
 
-  /* ======================================================
-     2b. INTRO DROP-IN  (fires once animate flips to true)
-         Every hero block slams in from above with back-ease snap.
-         Called by PreLoader's onComplete via page.tsx state.
-  ====================================================== */
+  /* ---- 2b. INTRO DROP-IN — fires after PreLoader curtain ---- */
   useEffect(() => {
     if (!animate) return;
     const ctx = gsap.context(() => {
@@ -130,27 +112,21 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
           ".hero-building",
           ".hero-tagline",
           ".hero-sub",
-          ".hero-impact",
           ".hero-buttons",
         ],
         {
           y: 0,
           opacity: 1,
-          ease: "back.out(1.5)",
-          duration: 1.2,
-          stagger: 0.1,
+          ease: "power4.out",
+          duration: 1.1,
+          stagger: 0.08,
         }
       );
     }, runwayRef);
     return () => ctx.revert();
   }, [animate]);
 
-  /* ======================================================
-     3.  SCROLL TUNNEL  (runway → sticky, scrub: 2)
-         TOP chars   → fly upward   (-120 vh)
-         BOTTOM chars → fly downward (+120 vh)
-         Greeting + sub-content fade out quickly
-  ====================================================== */
+  /* ---- 3. SCROLL TUNNEL ---- */
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -162,30 +138,26 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         },
       });
 
-      // Letters part (drives the "portal opening")
       tl.to(topGroupRef.current,    { y: "-120vh", ease: "power2.in" }, 0)
         .to(bottomGroupRef.current, { y:  "120vh", ease: "power2.in" }, 0)
-        // Greeting and sub-content fade out early so the void opens cleanly
-        .to(greetingRef.current,   { opacity: 0, y: -32, ease: "none", duration: 0.22 }, 0)
-        .to(subContentRef.current, { opacity: 0, y:  32, ease: "none", duration: 0.22 }, 0);
+        .to(greetingRef.current,   { opacity: 0, y: -28, ease: "none", duration: 0.20 }, 0)
+        .to(subContentRef.current, { opacity: 0, y:  28, ease: "none", duration: 0.20 }, 0);
     }, runwayRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    /* 300 vh runway gives scrub room to feel heavy and deliberate */
     <div ref={runwayRef} className="hero-runway">
       <div className="hero-sticky" id="hero">
         <div className="container">
 
-          <p ref={greetingRef} className="hero-greeting mono" data-hero-intro>
+          <p ref={greetingRef} className="hero-greeting mono">
             Hi, my name is
           </p>
 
-          {/* ---- The massive JONATHAN split heading ---- */}
-          <h1 className="hero-name-split" aria-label="Jonathan" data-hero-intro>
-            {/* TOP half — flies up on scroll */}
+          {/* Massive JONATHAN split heading */}
+          <h1 className="hero-name-split" aria-label="Jonathan">
             <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
               {TOP.map((ch, i) => (
                 <span
@@ -197,8 +169,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                 </span>
               ))}
             </span>
-
-            {/* BOTTOM half — flies down on scroll */}
             <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
               {BOTTOM.map((ch, i) => (
                 <span
@@ -212,40 +182,25 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
             </span>
           </h1>
 
-          {/* ---- Sub-content fades out as the tunnel opens ---- */}
+          {/* Sub-content — fades as tunnel opens */}
           <div ref={subContentRef} className="hero-sub-content">
             <p
               className="hero-building mono"
-              style={{ color: "var(--gray-500)", fontSize: "14px", marginBottom: "24px" }}
-              data-hero-intro
+              style={{ color: "var(--ink-3)", fontSize: "12px", marginBottom: "24px", letterSpacing: "0.08em", textTransform: "uppercase" }}
             >
               &gt; currently.building: smarter tools for real-world problems
             </p>
 
-            <h2 className="hero-tagline" data-hero-intro>
-              I build AI-powered tools and systems
-              <br />
+            <h2 className="hero-tagline">
+              I build AI-powered tools and systems<br />
               that solve real-world problems.
             </h2>
 
-            <p className="hero-sub" data-hero-intro>
-              Computer Science student focused on AI, cybersecurity, and scalable systems.
+            <p className="hero-sub">
+              CS student focused on AI, cybersecurity, and scalable systems.
             </p>
 
-            <p
-              className="hero-impact mono"
-              style={{
-                color: "var(--gray-400)",
-                fontSize: "14px",
-                marginBottom: "48px",
-                maxWidth: "600px",
-              }}
-              data-hero-intro
-            >
-              Built and deployed 4 real-world systems across AI, cybersecurity, and large-scale data processing.
-            </p>
-
-            <div className="hero-buttons" data-hero-intro>
+            <div className="hero-buttons">
               <a
                 href="https://github.com/Jonathan-Jesni"
                 target="_blank"
@@ -253,8 +208,9 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                 className="btn btn-primary"
                 id="hero-github-btn"
               >
-                <GitHubIcon size={18} />
+                <GitHubIcon size={16} />
                 View My Work
+                <span className="btn-arrow" aria-hidden="true">↗</span>
               </a>
               <a
                 href="/assets/Jonathan_Resume.pdf"
@@ -263,7 +219,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                 className="btn btn-outline"
                 id="hero-resume-btn"
               >
-                View Resume ↗
+                Resume
               </a>
             </div>
           </div>

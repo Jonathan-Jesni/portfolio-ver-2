@@ -385,41 +385,44 @@ function PipelineGrid({ items }: { items: BuildingItem[] }) {
             className="building-card pipeline-card sp-reveal"
             data-pipeline-index={idx}
           >
-            {/* Status row */}
-            <div className="building-status">
-              <span className="status-dot" aria-hidden="true">
-                <span className="status-dot-pulse" />
-              </span>
-              <span className="mono building-status-label">{item.status}</span>
-              <span className="pipeline-node-id mono">
-                node_{String(idx).padStart(2, "0")}
-              </span>
-            </div>
-
-            {/* Title — floats above card plane on tilt */}
-            <h3 className="pipeline-title pipeline-z">{item.title}</h3>
-
-            {/* Step matrix — Z-layer with scrub playhead */}
-            <div className="pipe-steps-row pipeline-z" aria-label="Pipeline steps">
-              <div className="pipeline-playhead" aria-hidden="true" />
-              {item.steps.map((step, si) => (
-                <span key={step} className="pipe-step">
-                  <span className="pipe-step-label mono">[{step}]</span>
-                  {si < item.steps.length - 1 && (
-                    <span className="pipe-arrow mono" aria-hidden="true">→</span>
-                  )}
+            {/* Double-Bezel inner core */}
+            <div className="building-card-inner">
+              {/* Status row */}
+              <div className="building-status">
+                <span className="status-dot" aria-hidden="true">
+                  <span className="status-dot-pulse" />
                 </span>
-              ))}
-            </div>
+                <span className="mono building-status-label">{item.status}</span>
+                <span className="pipeline-node-id mono">
+                  node_{String(idx).padStart(2, "0")}
+                </span>
+              </div>
 
-            {/* Description — Z-layer */}
-            <p className="pipeline-desc pipeline-z">{item.description}</p>
+              {/* Title — floats above card plane on tilt */}
+              <h3 className="pipeline-title pipeline-z">{item.title}</h3>
 
-            {/* Tags — Z-layer */}
-            <div className="project-tags pipeline-z">
-              {item.tags.map((tag) => (
-                <span key={tag} className="project-tag">{tag}</span>
-              ))}
+              {/* Step matrix — Z-layer with scrub playhead */}
+              <div className="pipe-steps-row pipeline-z" aria-label="Pipeline steps">
+                <div className="pipeline-playhead" aria-hidden="true" />
+                {item.steps.map((step, si) => (
+                  <span key={step} className="pipe-step">
+                    <span className="pipe-step-label mono">[{step}]</span>
+                    {si < item.steps.length - 1 && (
+                      <span className="pipe-arrow mono" aria-hidden="true">→</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+
+              {/* Description — Z-layer */}
+              <p className="pipeline-desc pipeline-z">{item.description}</p>
+
+              {/* Tags — Z-layer */}
+              <div className="project-tags pipeline-z">
+                {item.tags.map((tag) => (
+                  <span key={tag} className="project-tag">{tag}</span>
+                ))}
+              </div>
             </div>
           </div>
         ))}
@@ -479,26 +482,17 @@ export default function Home() {
     <>
       {/* ===== PRE-LOADER (sits above everything, removed from DOM after implosion) ===== */}
       <PreLoader onComplete={() => setPreloaderDone(true)} />
-      {/* ===== NAV ===== */}
+      {/* ===== NAV — Floating glass-pill island ===== */}
       <nav className="nav" id="navbar">
         <div className="nav-inner">
           <a href="#hero" className="nav-logo" id="nav-logo">
-            <span className="bracket">{"{"}</span> J{" "}
-            <span className="bracket">{"}"}</span>
+            <span className="bracket">&#123;</span>J<span className="bracket">&#125;</span>
           </a>
           <ul className="nav-links">
-            <li>
-              <a href="#projects">Projects</a>
-            </li>
-            <li>
-              <a href="#skills">Skills</a>
-            </li>
-            <li>
-              <a href="#about">About</a>
-            </li>
-            <li>
-              <a href="#contact">Contact</a>
-            </li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
           </ul>
           <a
             href="/assets/Jonathan_Resume.pdf"
@@ -507,7 +501,8 @@ export default function Home() {
             className="nav-resume"
             id="nav-resume-btn"
           >
-            Resume ↗
+            Resume
+            <span className="nav-resume-arrow" aria-hidden="true">↗</span>
           </a>
           <button
             className="mobile-toggle"
@@ -518,32 +513,16 @@ export default function Home() {
           >
             <span></span>
             <span></span>
-            <span></span>
           </button>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu — full-screen glass overlay */}
         <div className="mobile-menu" id="mobile-menu" ref={mobileMenuRef}>
-          <a href="#projects" onClick={closeMobileMenu}>
-            Projects
-          </a>
-          <a href="#skills" onClick={closeMobileMenu}>
-            Skills
-          </a>
-          <a href="#about" onClick={closeMobileMenu}>
-            About
-          </a>
-          <a href="#contact" onClick={closeMobileMenu}>
-            Contact
-          </a>
-          <a
-            href="/assets/Jonathan_Resume.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={closeMobileMenu}
-          >
-            Resume ↗
-          </a>
+          <a href="#projects" onClick={closeMobileMenu}>Projects</a>
+          <a href="#skills" onClick={closeMobileMenu}>Skills</a>
+          <a href="#about" onClick={closeMobileMenu}>About</a>
+          <a href="#contact" onClick={closeMobileMenu}>Contact</a>
+          <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
         </div>
       </nav>
 
@@ -555,8 +534,7 @@ export default function Home() {
       <section className="projects" id="projects">
         <div className="container">
           <div className="section-label">
-            <span className="section-number">01</span>
-            <span className="section-title">Featured Projects</span>
+            <span className="section-title">Selected Work</span>
             <span className="section-line"></span>
           </div>
 
@@ -578,7 +556,7 @@ export default function Home() {
           ))}
 
           <div className="projects-cta">
-            <p>Want to explore more?</p>
+            <p>There&apos;s more on GitHub.</p>
             <a
               href="https://github.com/Jonathan-Jesni?tab=repositories"
               target="_blank"
@@ -586,7 +564,7 @@ export default function Home() {
               className="btn btn-outline"
               id="projects-cta-btn"
             >
-              View All Projects on GitHub →
+              View all repositories
             </a>
           </div>
         </div>
@@ -603,8 +581,7 @@ export default function Home() {
       <SpatialSection id="currently-building">
         <div className="container">
           <div className="section-label">
-            <span className="section-number sp-reveal">03</span>
-            <span className="section-title sp-reveal">&gt; currently.building</span>
+            <span className="section-title sp-reveal mono">currently.building</span>
             <span className="section-line"></span>
           </div>
 
@@ -618,15 +595,14 @@ export default function Home() {
       <SpatialSection id="skills">
         <div className="container">
           <div className="section-label">
-            <span className="section-number sp-reveal">04</span>
-            <span className="section-title sp-reveal">skills.list</span>
+            <span className="section-title sp-reveal">Skills</span>
             <span className="section-line"></span>
           </div>
-          <p className="sp-reveal" style={{ color: 'var(--gray-400)', marginBottom: '32px' }}>
-            Core technologies and frameworks I use to engineer robust, scalable systems.
+          <p className="sp-reveal" style={{ color: 'var(--ink-2)', marginBottom: '32px', fontFamily: 'var(--font-jakarta)', fontSize: '15px', letterSpacing: '-0.01em' }}>
+            Technologies and frameworks I use to engineer robust, scalable systems.
           </p>
-          <p className="sp-reveal" style={{ color: "var(--gray-500)", fontSize: "13px", fontFamily: "var(--font-jetbrains), monospace", marginBottom: "24px" }}>
-            {`// drag the pills around`}
+          <p className="sp-reveal mono" style={{ color: "var(--ink-3)", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "24px" }}>
+            // drag to interact
           </p>
           <GravityPit />
         </div>
@@ -638,12 +614,10 @@ export default function Home() {
       <SpatialSection id="contact">
         <div className="container">
           <div className="contact-inner">
-            <span className="section-number sp-reveal">05 — What&apos;s Next?</span>
             <h2 className="contact-heading sp-reveal">Get In Touch</h2>
             <p className="contact-text sp-reveal">
-              I&apos;m actively looking for internships and opportunities to
-              build impactful systems. Whether you have a question, a project
-              idea, or just want to connect — my inbox is always open.
+              I&apos;m actively looking for internships and opportunities to build impactful systems.
+              Whether you have a question, a project idea, or just want to connect — my inbox is open.
             </p>
             <div className="contact-links sp-reveal">
               <a href="mailto:jonathanjesni@gmail.com" className="contact-link" id="contact-email-btn">

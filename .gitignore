@@ -48,6 +48,10 @@ agents.md
 claude.md
 .cursor/
 .cursorrules
+.agents/
+.claude/
+.gemini/
+skills-lock.json
 
 # Windows System Files
 Thumbs.db

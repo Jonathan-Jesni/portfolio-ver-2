@@ -172,63 +172,64 @@ export default function SpatialCard({
       {/* ---- Sticky shell ---- */}
       <div ref={stickyRef} className="sc-sticky">
         {/* ---- The actual card ---- */}
-        <article ref={cardRef} className="sc-card project-card">
+        <article ref={cardRef} className="sc-card">
+          <div className="sc-card-inner">
+            {/* Image or pipeline */}
+            {image ? (
+              <div className="project-image-wrap">
+                <img
+                  src={image}
+                  alt={imageAlt ?? title}
+                  className="project-image"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            ) : pipeline ? (
+              <div className="project-pipeline">
+                {pipeline.map((step, idx) => (
+                  <span key={step} className="pipeline-row">
+                    <span className="pipeline-step mono">{step}</span>
+                    {idx < pipeline.length - 1 && (
+                      <span className="pipeline-arrow mono">→</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            ) : null}
 
-          {/* Image or pipeline */}
-          {image ? (
-            <div className="project-image-wrap">
-              <img
-                src={image}
-                alt={imageAlt ?? title}
-                className="project-image"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          ) : pipeline ? (
-            <div className="project-pipeline">
-              {pipeline.map((step, idx) => (
-                <span key={step} className="pipeline-row">
-                  <span className="pipeline-step">{step}</span>
-                  {idx < pipeline.length - 1 && (
-                    <span className="pipeline-arrow">→</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          ) : null}
+            {/* Text block — each child tagged for wipe-in */}
+            <div ref={textRef} className="sc-text">
+              <span className="project-overline mono" data-reveal>Featured Project</span>
 
-          {/* Text block — each child tagged for wipe-in */}
-          <div ref={textRef} className="sc-text">
-            <span className="project-overline" data-reveal>Featured Project</span>
+              <h3 className="project-title" data-reveal>
+                {title}{" "}
+                <span className="project-subtitle">— {subtitle}</span>
+              </h3>
 
-            <h3 className="project-title" data-reveal>
-              {title}{" "}
-              <span className="project-subtitle">— {subtitle}</span>
-            </h3>
+              <p className="project-description" data-reveal>{description}</p>
 
-            <p className="project-description" data-reveal>{description}</p>
+              <p className="project-tech mono" data-reveal>Built with: {tech}</p>
 
-            <p className="project-tech" data-reveal>Built with: {tech}</p>
+              <div className="project-tags" data-reveal>
+                {tags.map((tag) => (
+                  <span key={tag} className="project-tag mono">{tag}</span>
+                ))}
+              </div>
 
-            <div className="project-tags" data-reveal>
-              {tags.map((tag) => (
-                <span key={tag} className="project-tag">{tag}</span>
-              ))}
-            </div>
-
-            <div className="project-links" data-reveal>
-              <a
-                href={github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="project-link"
-                id={`${id}-github`}
-              >
-                <GitHubIcon />
-                Source
-                <ArrowUpRightIcon />
-              </a>
+              <div className="project-links" data-reveal>
+                <a
+                  href={github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="project-link"
+                  id={`${id}-github`}
+                >
+                  <GitHubIcon />
+                  Source
+                  <ArrowUpRightIcon />
+                </a>
+              </div>
             </div>
           </div>
         </article>

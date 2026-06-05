@@ -106,8 +106,7 @@ export default function AboutSection() {
           <div ref={textColRef} className="about-split-text">
             {/* Section label */}
             <div className="section-label" style={{ marginBottom: "48px" }}>
-              <span className="section-number">02</span>
-              <span className="section-title">&gt; about.me</span>
+              <span className="section-title">About</span>
               <span className="section-line" />
             </div>
 
