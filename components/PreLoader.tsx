@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(useGSAP);
 
 /* ================================================================
    PreLoader — Premium counter + power4.inOut curtain reveal
@@ -24,24 +27,22 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const onCompleteRef   = useRef(onComplete);
   const [isDone, setIsDone] = useState(false);
 
-  /* Keep the callback ref fresh without triggering re-runs */
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  });
+  onCompleteRef.current = onComplete;
 
-  useEffect(() => {
+  useGSAP(() => {
     let cancelled = false;
 
-    const ctx = gsap.context(() => {
-      const counter = counterRef.current!;
-      const curtain = curtainRef.current!;
-      const label   = labelRef.current!;
+    const counter = counterRef.current;
+    const curtain = curtainRef.current;
+    const label   = labelRef.current;
 
-      /* ── Wait for both: page resources + minimum display time ── */
-      const loadReady = new Promise<void>((resolve) => {
-        if (document.readyState === "complete") resolve();
-        else window.addEventListener("load", () => resolve(), { once: true });
-      });
+    if (!counter || !curtain || !label) return;
+
+    /* ── Wait for both: page resources + minimum display time ── */
+    const loadReady = new Promise<void>((resolve) => {
+      if (document.readyState === "complete") resolve();
+      else window.addEventListener("load", () => resolve(), { once: true });
+    });
 
       /* 1800 ms minimum — enough to watch the counter feel weighty */
       const minDisplay = new Promise<void>((resolve) =>
@@ -138,14 +139,12 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
               if (!cancelled) setIsDone(true);
             },
           }, 0.38); /* 0.38s after counter fades — tight but not rushed */
-      });
-    }, overlayRef);
+    });
 
     return () => {
       cancelled = true;
-      ctx.revert();
     };
-  }, []);
+  }, { scope: overlayRef });
 
   /* Remove from DOM after curtain has fully exited */
   if (isDone) return null;

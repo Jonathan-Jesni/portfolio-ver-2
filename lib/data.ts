@@ -51,12 +51,6 @@ export const PROJECTS = [
   },
 ] as const;
 
-export const ROOM_COLORS: Record<(typeof PROJECTS)[number]["id"], string> = {
-  ludex: "#040a14",
-  "file-converter": "#04100a",
-  webguardian: "#140404",
-  "synthetic-data": "#0d0412",
-};
 
 export const BUILDING = [
   {

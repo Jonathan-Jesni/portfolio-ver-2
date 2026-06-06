@@ -4,12 +4,11 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import AboutSection from "../components/AboutSection";
 import HeroSection from "../components/HeroSection";
-import HorizontalScrollSection from "../components/HorizontalScrollSection";
+import StickyDeckSection from "../components/StickyDeckSection";
 import PipelineGrid from "../components/PipelineGrid";
-import SpatialCard from "../components/SpatialCard";
 import SpatialSection from "../components/SpatialSection";
 import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/icons";
-import { BUILDING, PROJECTS, ROOM_COLORS } from "../lib/data";
+import { BUILDING } from "../lib/data";
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });
@@ -73,48 +72,7 @@ export default function Home() {
 
       <hr className="section-divider" />
 
-      <section className="projects" id="projects">
-        <div className="container projects-header">
-          <div className="section-label">
-            <span className="section-title">Selected Work</span>
-            <span className="section-line"></span>
-          </div>
-        </div>
-
-        <HorizontalScrollSection scrollMultiplier={PROJECTS.length * 0.7}>
-          {PROJECTS.map((project) => (
-            <SpatialCard
-              key={project.id}
-              id={project.id}
-              title={project.title}
-              subtitle={project.subtitle}
-              description={project.description}
-              tech={project.tech}
-              tags={project.tags}
-              github={project.github}
-              image={project.image}
-              imageAlt={project.imageAlt}
-              pipeline={"pipeline" in project ? project.pipeline : undefined}
-              roomColor={ROOM_COLORS[project.id]}
-            />
-          ))}
-        </HorizontalScrollSection>
-
-        <div className="container">
-          <div className="projects-cta">
-            <p>There&apos;s more on GitHub.</p>
-            <a
-              href="https://github.com/Jonathan-Jesni?tab=repositories"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline"
-              id="projects-cta-btn"
-            >
-              View all repositories
-            </a>
-          </div>
-        </div>
-      </section>
+      <StickyDeckSection />
 
       <hr className="section-divider" />
 
