@@ -204,7 +204,12 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
         .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
         .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0)
-        .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
+        .fromTo(
+          canvasWrapRef.current,
+          { opacity: 1, scale: 1 },
+          { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 },
+          0
+        );
     });
 
     return () => mm.revert();
