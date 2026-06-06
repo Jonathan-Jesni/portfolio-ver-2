@@ -2475,44 +2475,85 @@ canvas.glass-image-canvas {
 }
 
 /* Pipeline visualisation */
+/* ── High-End Animated Pipeline ── */
 .sd-pipeline {
   position: absolute;
   inset: 3px;
   border-radius: 13px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px 8px;
+  gap: 0;
   padding: 32px;
 }
 
 .sd-pipeline-step {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-.sd-pipeline-label {
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-  letter-spacing: 0.10em;
+/* The Node (Pill) */
+.sd-pipeline-node {
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-4);
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: nodeIlluminate 4s infinite;
+  will-change: color, border-color, box-shadow;
 }
 
-.sd-pipeline-arrow {
-  font-size: 11px;
-  color: rgba(255,255,255,0.10);
-  animation: pulseArrow 2s infinite ease-in-out;
+/* The Connecting Wire */
+.sd-pipeline-wire {
+  width: 24px;
+  height: 2px;
+  background: var(--surface-2);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  margin: 0 -4px;
 }
 
-@keyframes pulseArrow {
+/* The Glowing Data Pulse */
+.sd-pipeline-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--card-hue)), transparent);
+  animation: wirePulse 4s infinite linear;
+  will-change: transform;
+}
+
+@keyframes wirePulse {
+  0% { transform: translateX(-100%); }
+  10% { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes nodeIlluminate {
   0%, 100% {
-    color: rgba(255,255,255,0.10);
-    text-shadow: none;
+    color: var(--ink-4);
+    border-color: var(--border-hairline);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
-  50% {
-    color: rgba(255,255,255,0.9);
-    text-shadow: 0 0 8px rgba(255,255,255,0.6);
+  10% {
+    color: var(--ink-0);
+    border-color: hsl(var(--card-hue));
+    box-shadow: 0 0 12px hsla(var(--card-hue), 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  25% {
+    color: var(--ink-4);
+    border-color: var(--border-hairline);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 }
 

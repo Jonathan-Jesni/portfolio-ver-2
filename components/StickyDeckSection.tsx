@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -70,7 +70,7 @@ export default function StickyDeckSection() {
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       imageCards.forEach((card, i) => {
         const isLast = i === imageCards.length - 1;
-        const nextEl = isLast ? document.querySelector(".sd-spacer") : imageCards[i + 1];
+        const nextEl = isLast ? document.querySelector(".sd-split-right .sd-spacer") : imageCards[i + 1];
 
         gsap.to(card, {
           scale:   0.95,
@@ -91,7 +91,7 @@ export default function StickyDeckSection() {
       textCards.forEach((textCard, i) => {
         /* Depth stacking: cards below the active one scale + blur out */
         const isLast = i === textCards.length - 1;
-        const nextEl = isLast ? document.querySelector(".sd-spacer") : textCards[i + 1];
+        const nextEl = isLast ? document.querySelector(".sd-split-left .sd-spacer") : textCards[i + 1];
 
         gsap.to(textCard, {
           scale:   0.95,
@@ -254,18 +254,22 @@ export default function StickyDeckSection() {
                     aria-label="Processing pipeline"
                   >
                     {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
-                      <div key={step} className="sd-pipeline-step">
-                        <span className="sd-pipeline-label mono">{step}</span>
+                      <React.Fragment key={step}>
+                        <div 
+                          className="sd-pipeline-node"
+                          style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
+                        >
+                          {step}
+                        </div>
                         {si < arr.length - 1 && (
-                          <span 
-                            className="sd-pipeline-arrow" 
-                            aria-hidden="true"
-                            style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
-                          >
-                            →
-                          </span>
+                          <div className="sd-pipeline-wire">
+                            <div 
+                              className="sd-pipeline-pulse"
+                              style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
+                            />
+                          </div>
                         )}
-                      </div>
+                      </React.Fragment>
                     ))}
                   </div>
                 ) : (
