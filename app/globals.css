@@ -68,7 +68,7 @@ img {
 .grain-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-grain);
   pointer-events: none;
   opacity: 0.032;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
@@ -145,6 +145,14 @@ img {
   --t-fast: 160ms var(--ease-out-expo);
   --t-mid: 280ms var(--ease-out-expo);
   --t-slow: 500ms var(--ease-out-expo);
+
+  /* Semantic z-index scale — never use arbitrary values elsewhere */
+  --z-grain: 9999;        /* film-grain overlay: always on top */
+  --z-preloader: 9998;    /* preloader curtain */
+  --z-nav: 100;           /* floating nav pill */
+  --z-mobile-menu: 99;    /* full-screen mobile overlay */
+  --z-above: 10;          /* in-card elevated elements */
+  --z-base: 1;            /* default stacking context */
 }
 
 /* ---- Mono utility â€” strict use for code, numbers, labels only ---- */
@@ -254,7 +262,7 @@ img {
   top: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100;
+  z-index: var(--z-nav);
   /* The pill itself */
   background: rgba(5, 5, 5, 0.75);
   backdrop-filter: blur(20px);
@@ -417,7 +425,7 @@ img {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   padding: 120px 32px 48px;
-  z-index: 99;
+  z-index: var(--z-mobile-menu);
   flex-direction: column;
   gap: 4px;
 }
@@ -1254,6 +1262,13 @@ img {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-wrapper:has(.pipeline-card:hover) .pipeline-packet {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 .building-grid {
   position: relative;
   z-index: 2;
@@ -1358,6 +1373,13 @@ img {
 
   100% {
     transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot-pulse {
+    animation: none;
     opacity: 0;
   }
 }
@@ -1492,6 +1514,12 @@ img {
   100% {
     border-color: var(--border-hairline);
     box-shadow: var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-card--executing {
+    animation: none;
   }
 }
 

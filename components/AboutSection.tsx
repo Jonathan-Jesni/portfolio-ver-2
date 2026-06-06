@@ -9,8 +9,7 @@ import TerminalBlock from "./TerminalBlock";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* -------------------------------------------------------
-   Bio paragraphs — exact text from the original site.
-   Each entry is an array of segments so we can bold
+   Bio paragraphs — each entry is an array of segments so we can bold
    specific words while still splitting at the word level.
 ------------------------------------------------------- */
 const BIO_PARAGRAPHS = [
@@ -31,14 +30,11 @@ const BIO_PARAGRAPHS = [
   </>,
 ];
 
-
-
 /* -------------------------------------------------------
    Component
 ------------------------------------------------------- */
 export default function AboutSection() {
   const runwayRef = useRef<HTMLElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
   const textColRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -46,45 +42,70 @@ export default function AboutSection() {
     const runway = runwayRef.current;
     if (!runway) return;
 
-    /* ---- Gather every .reveal-word span inside the text column ---- */
-    const words = textColRef.current
-      ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
-      : [];
+    const mm = gsap.matchMedia();
 
-    /* ---- Main timeline: word-by-word color scrub ---- */
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: runway,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1,
-      },
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      /* ---- Gather every .reveal-word span inside the text column ---- */
+      const words = textColRef.current
+        ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
+        : [];
+
+      /* ---- Main timeline: word-by-word color scrub ---- */
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: runway,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1,
+        },
+      });
+
+      if (words.length > 0) {
+        tl.to(
+          words,
+          {
+            color: "rgba(255, 255, 255, 1)",
+            ease: "none",
+            stagger: {
+              each: 0.04,
+              from: "start",
+            },
+          },
+          0
+        );
+      }
+
+      /* ---- Terminal: scrubbed slide-in (reverses on scroll-back) ---- */
+      if (terminalRef.current) {
+        tl.fromTo(
+          terminalRef.current,
+          { y: 150, opacity: 0 },
+          { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
+          0
+        );
+      }
     });
 
-    if (words.length > 0) {
-      tl.to(
-        words,
-        {
-          color: "rgba(255, 255, 255, 1)",
-          ease: "none",
-          stagger: {
-            each: 0.04,
-            from: "start",
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      /* Words are immediately visible; terminal fades in once */
+      if (textColRef.current) {
+        const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
+        gsap.set(words, { color: "rgba(255,255,255,1)" });
+      }
+      if (terminalRef.current) {
+        gsap.set(terminalRef.current, { opacity: 0 });
+        ScrollTrigger.create({
+          trigger: runway,
+          start: "top 75%",
+          once: true,
+          onEnter: () => {
+            gsap.to(terminalRef.current, { opacity: 1, duration: 0.4, ease: "power1.out" });
           },
-        },
-        0
-      );
-    }
+        });
+      }
+    });
 
-    /* ---- Terminal: scrubbed slide-in (reverses on scroll-back) ---- */
-    if (terminalRef.current) {
-      tl.fromTo(
-        terminalRef.current,
-        { y: 150, opacity: 0 },
-        { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
-        0
-      );
-    }
+    return () => mm.revert();
   }, { scope: runwayRef });
 
   return (
@@ -94,7 +115,7 @@ export default function AboutSection() {
       className="about-runway"
       style={{ height: "250vh" }}
     >
-      <div ref={stickyRef} className="about-sticky">
+      <div className="about-sticky">
         {/* ---- Inner layout: two columns on desktop ---- */}
         <div className="about-split-container">
 
@@ -106,7 +127,7 @@ export default function AboutSection() {
               <span className="section-line" />
             </div>
 
-            {/* Bio paragraphs — each word is a individually animatable span */}
+            {/* Bio paragraphs — each word is individually animatable */}
             <div className="about-bio">
               {BIO_PARAGRAPHS.map((para, idx) => (
                 <p key={idx} className="about-bio-para">
@@ -136,13 +157,11 @@ type ReactChild = React.ReactNode;
 
 function BioWords({ node }: { node: ReactChild }): React.ReactElement {
   if (typeof node === "string") {
-    // Split the string on spaces and wrap each word
     const tokens = node.split(/(\s+)/);
     return (
       <>
         {tokens.map((token, i) =>
           /^\s+$/.test(token) ? (
-            // Preserve whitespace tokens as-is
             <React.Fragment key={i}>{token}</React.Fragment>
           ) : token === "" ? null : (
             <span className="reveal-word" key={i}>
@@ -172,7 +191,6 @@ function BioWords({ node }: { node: ReactChild }): React.ReactElement {
     );
   }
 
-  // React element — recurse into children
   if (React.isValidElement(node)) {
     const el = node as React.ReactElement<{ children?: ReactChild }>;
     const { children, ...rest } = el.props as { children?: ReactChild; [key: string]: unknown };

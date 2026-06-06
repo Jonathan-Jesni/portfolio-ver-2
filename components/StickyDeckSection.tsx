@@ -25,38 +25,66 @@ export default function StickyDeckSection() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useGSAP(() => {
-    const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
-    if (imageCards.length < 1) return;
+    const mm = gsap.matchMedia();
 
-    imageCards.forEach((card, i) => {
-      /* Crossfade the left text panel when this image card enters view */
-      ScrollTrigger.create({
-        trigger: card,
-        start:   "top 60%",
-        end:     "bottom 40%",
-        onEnter:     () => setActiveIndex(i),
-        onEnterBack: () => setActiveIndex(i),
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
+      if (imageCards.length < 1) return;
+
+      imageCards.forEach((card, i) => {
+        /* Crossfade the left text panel when this image card enters view */
+        ScrollTrigger.create({
+          trigger: card,
+          start:   "top 60%",
+          end:     "bottom 40%",
+          onEnter:     () => setActiveIndex(i),
+          onEnterBack: () => setActiveIndex(i),
+        });
+
+        /* Depth stacking: cards below the active one scale + blur out.
+           For the last card, we use the .sd-spacer as the scroll trigger
+           so it also fades back gracefully before the CTA appears. */
+        const isLast = i === imageCards.length - 1;
+        const nextEl = isLast ? document.querySelector(".sd-spacer") : imageCards[i + 1];
+
+        gsap.to(card, {
+          scale:   0.95,
+          opacity: 0.5,
+          filter:  "blur(2px)",
+          ease:    "none",
+          scrollTrigger: {
+            trigger: nextEl,
+            start:   "top 25vh",
+            end:     isLast ? "bottom 60%" : "top 20%",
+            scrub:   0.8,
+          },
+        });
       });
 
-      /* Depth stacking: cards below the active one scale + blur out.
-         For the last card, we use the .sd-spacer as the scroll trigger
-         so it also fades back gracefully before the CTA appears. */
-      const isLast = i === imageCards.length - 1;
-      const nextEl = isLast ? document.querySelector(".sd-spacer") : imageCards[i + 1];
-
-      gsap.to(card, {
-        scale:   0.95,
-        opacity: 0.5,
-        filter:  "blur(2px)",
-        ease:    "none",
-        scrollTrigger: {
-          trigger: nextEl,
-          start:   "top 25vh",
-          end:     isLast ? "bottom 60%" : "top 20%",
-          scrub:   0.8,
-        },
-      });
+      return () => {
+        ScrollTrigger.getAll().forEach((st) => st.kill());
+      };
     });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      /* Under reduced motion, sync active index on scroll via IntersectionObserver */
+      const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const idx = imageCards.indexOf(entry.target as HTMLElement);
+              if (idx !== -1) setActiveIndex(idx);
+            }
+          });
+        },
+        { threshold: 0.5 }
+      );
+      imageCards.forEach((card) => obs.observe(card));
+      return () => obs.disconnect();
+    });
+
+    return () => mm.revert();
   }, { scope: sectionRef });
 
   return (
@@ -98,10 +126,7 @@ export default function StickyDeckSection() {
                     {/* Top-edge accent line matches the image card */}
                     <div className="sd-card-accent" aria-hidden="true" />
 
-                    {/* Overline — matches old "Featured Project" */}
-                    <p className="sd-text-overline mono">Featured Project</p>
-
-                    {/* Title with inline subtitle — exactly as old design */}
+                    {/* Title with inline subtitle */}
                     <h3 className="sd-text-title">
                       {project.title}
                       <span className="sd-text-subtitle"> — {project.subtitle}</span>
@@ -115,7 +140,7 @@ export default function StickyDeckSection() {
                       <p className="sd-text-note mono">{note}</p>
                     )}
 
-                    {/* Built with line — restored from old design */}
+                    {/* Built with line */}
                     <p className="sd-text-built-with mono">
                       Built with: {project.tech}
                     </p>
@@ -200,7 +225,7 @@ export default function StickyDeckSection() {
                     aria-hidden="true"
                   >
                     <span className="sd-placeholder-label mono">
-                      {(project as any).title.toUpperCase()}
+                      {(project as { title: string }).title.toUpperCase()}
                     </span>
                   </div>
                 )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, startTransition } from "react";
 import Matter from "matter-js";
 
 const {
@@ -76,6 +76,14 @@ export default function GravityPit() {
   const rafIdRef      = useRef<number>(0);
   const staticPos     = useRef<{ x: number; y: number }[]>([]);
 
+  /* Check reduced-motion preference — disable physics entirely if true */
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    startTransition(() => {
+      setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    });
+  }, []);
+
   /* ── PHASE 1: Apply static grid positions to DOM on mount ── */
   useEffect(() => {
     const container = containerRef.current;
@@ -96,14 +104,20 @@ export default function GravityPit() {
       el.style.height          = `${PILL_H}px`;
       el.style.transformOrigin = `${pw / 2}px ${PILL_H / 2}px`;
       el.style.transform       = `translate(${pos.x}px, ${pos.y}px) rotate(0rad)`;
-      el.style.transition      = "transform 0.3s var(--ease-out-expo)";
+      /* Only add the smooth transition when motion is allowed */
+      if (!reducedMotion) {
+        el.style.transition = "transform 0.3s var(--ease-out-expo)";
+      }
     });
-  }, []);
+  }, [reducedMotion]);
 
   /* ── PHASE 2: Activate physics on first interaction ── */
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    /* Skip physics activation entirely under reduced motion */
+    if (reducedMotion) return;
 
     function activatePhysics() {
       if (engineRef.current) return; // already active — idempotent
@@ -148,7 +162,6 @@ export default function GravityPit() {
           frictionAir: 0.022,
           density:     0.0018,
           label,
-          /* CRITICAL: start at rest — no angular velocity */
           isStatic:    false,
         });
       });
@@ -198,7 +211,6 @@ export default function GravityPit() {
           const pw = pillWidth(PILLS[i]);
           const x  = body.position.x - pw / 2;
           const y  = body.position.y - PILL_H / 2;
-          /* Remove the CSS transition once physics takes over */
           el.style.transition = "none";
           el.style.transform  = `translate(${x}px, ${y}px) rotate(${body.angle}rad)`;
         });
@@ -235,7 +247,7 @@ export default function GravityPit() {
         Composite.clear(engineRef.current.world, false);
       }
     };
-  }, []);
+  }, [reducedMotion]);
 
   return (
     <div
@@ -243,9 +255,11 @@ export default function GravityPit() {
       className={`gravity-pit${physicsActive ? " physics-active" : ""}`}
       id="gravity-pit"
       data-lenis-prevent
+      role="region"
+      aria-label="Interactive skills playground — click to activate physics"
     >
-      {/* Corner label — only shows until physics activates */}
-      {!physicsActive && (
+      {/* Corner label — only shows until physics activates, hidden under reduced motion */}
+      {!physicsActive && !reducedMotion && (
         <p
           aria-hidden="true"
           style={{

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, startTransition } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -13,6 +13,8 @@ gsap.registerPlugin(useGSAP);
      ✅ Monolithic 00 → 100 counter in JetBrains Mono
      ✅ power4.inOut black curtain slides out of viewport
      ✅ Hero animate fires exactly at curtain mid-point
+     ✅ Session-storage: only runs once per browser session
+     ✅ Respects prefers-reduced-motion
    ================================================================ */
 
 interface PreLoaderProps {
@@ -27,9 +29,17 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const onCompleteRef   = useRef(onComplete);
   const [isDone, setIsDone] = useState(false);
 
-  onCompleteRef.current = onComplete;
+  /* Keep the callback ref up to date without causing re-renders */
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  /* Removed sessionStorage check so preloader runs every time */
 
   useGSAP(() => {
+    /* If already marked done from session storage, bail */
+    if (isDone) return;
+
     let cancelled = false;
 
     const counter = counterRef.current;
@@ -38,11 +48,22 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
 
     if (!counter || !curtain || !label) return;
 
-    /* ── Wait for both: page resources + minimum display time ── */
-    const loadReady = new Promise<void>((resolve) => {
-      if (document.readyState === "complete") resolve();
-      else window.addEventListener("load", () => resolve(), { once: true });
+    /* ── Reduced motion: skip animation, fire immediately ── */
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      if (!cancelled) {
+        onCompleteRef.current();
+        startTransition(() => setIsDone(true));
+      }
     });
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      /* ── Wait for both: page resources + minimum display time ── */
+      const loadReady = new Promise<void>((resolve) => {
+        if (document.readyState === "complete") resolve();
+        else window.addEventListener("load", () => resolve(), { once: true });
+      });
 
       /* 1800 ms minimum — enough to watch the counter feel weighty */
       const minDisplay = new Promise<void>((resolve) =>
@@ -54,7 +75,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
 
       const countTl = gsap.timeline();
 
-      /* 
+      /*
          Counter pacing:
          - 0 → 72  in ~1.1s  (power2.in — slow start, accelerates)
          - 72 → 100 in ~0.5s  (power1.in — deliberate last mile)
@@ -132,19 +153,27 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
             onStart() {
               /* Hero content begins its drop-in mid-curtain */
               gsap.delayedCall(CURTAIN_DURATION * 0.4, () => {
-                if (!cancelled) onCompleteRef.current();
+                if (!cancelled) {
+                  onCompleteRef.current();
+                }
               });
             },
             onComplete() {
-              if (!cancelled) setIsDone(true);
+              if (!cancelled) startTransition(() => setIsDone(true));
             },
           }, 0.38); /* 0.38s after counter fades — tight but not rushed */
+      });
+
+      return () => {
+        cancelled = true;
+      };
     });
 
     return () => {
       cancelled = true;
+      mm.revert();
     };
-  }, { scope: overlayRef });
+  }, { scope: overlayRef, dependencies: [isDone] });
 
   /* Remove from DOM after curtain has fully exited */
   if (isDone) return null;
@@ -192,7 +221,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
           pointerEvents:   "none",
         }}
       >
-        {/* 
+        {/*
           The monolithic counter. JetBrains Mono per AD spec.
           Tabular nums prevents the layout from shifting as digits change.
           Large, heavy, dead-centered — one element, no noise.

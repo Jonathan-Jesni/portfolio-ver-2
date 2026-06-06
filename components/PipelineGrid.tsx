@@ -67,50 +67,56 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
     );
     if (!cards.length) return;
 
-    const cleanups: (() => void)[] = [];
+    const mm = gsap.matchMedia();
 
-    cards.forEach((card, ci) => {
-      function onMouseMove(e: MouseEvent) {
-        if (draggingFlags.current[ci]) return;
-        const r = card.getBoundingClientRect();
-        const nx = (e.clientX - r.left - r.width / 2) / (r.width / 2);
-        const ny = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const cleanups: (() => void)[] = [];
 
-        gsap.to(card, {
-          rotateY: nx * 10,
-          rotateX: -ny * 10,
-          duration: 0.25,
-          ease: "power2.out",
-          overwrite: "auto",
+      cards.forEach((card, ci) => {
+        function onMouseMove(e: MouseEvent) {
+          if (draggingFlags.current[ci]) return;
+          const r = card.getBoundingClientRect();
+          const nx = (e.clientX - r.left - r.width / 2) / (r.width / 2);
+          const ny = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+
+          gsap.to(card, {
+            rotateY: nx * 10,
+            rotateX: -ny * 10,
+            duration: 0.25,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+
+          card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+            gsap.to(el, { x: nx * 7, y: ny * 7, duration: 0.3, ease: "power2.out", overwrite: "auto" })
+          );
+        }
+
+        function onMouseLeave() {
+          if (draggingFlags.current[ci]) return;
+          gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" });
+          card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+            gsap.to(el, { x: 0, y: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" })
+          );
+        }
+
+        card.addEventListener("mousemove", onMouseMove);
+        card.addEventListener("mouseleave", onMouseLeave);
+
+        cleanups.push(() => {
+          card.removeEventListener("mousemove", onMouseMove);
+          card.removeEventListener("mouseleave", onMouseLeave);
+          gsap.killTweensOf(card, "rotateX,rotateY");
+          card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
+            gsap.killTweensOf(el, "x,y")
+          );
         });
-
-        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
-          gsap.to(el, { x: nx * 7, y: ny * 7, duration: 0.3, ease: "power2.out", overwrite: "auto" })
-        );
-      }
-
-      function onMouseLeave() {
-        if (draggingFlags.current[ci]) return;
-        gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" });
-        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
-          gsap.to(el, { x: 0, y: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" })
-        );
-      }
-
-      card.addEventListener("mousemove", onMouseMove);
-      card.addEventListener("mouseleave", onMouseLeave);
-
-      cleanups.push(() => {
-        card.removeEventListener("mousemove", onMouseMove);
-        card.removeEventListener("mouseleave", onMouseLeave);
-        gsap.killTweensOf(card, "rotateX,rotateY");
-        card.querySelectorAll<HTMLElement>(".pipeline-z").forEach((el) =>
-          gsap.killTweensOf(el, "x,y")
-        );
       });
+
+      return () => cleanups.forEach((fn) => fn());
     });
 
-    return () => cleanups.forEach((fn) => fn());
+    return () => mm.revert();
   }, { scope: gridRef });
 
   useGSAP(() => {
@@ -205,11 +211,16 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
 
       const runway = card.closest<HTMLElement>(".sp-runway") ?? card;
 
+      /* Auto-run animation only when motion is allowed */
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
       const st = ScrollTrigger.create({
         trigger: runway,
         start: "35% top",
         once: true,
         onEnter() {
+          if (prefersReduced) return;
+
           const maxX = rowEl.offsetWidth - playheadEl.offsetWidth;
 
           gsap.set(playheadEl, { x: 0 });

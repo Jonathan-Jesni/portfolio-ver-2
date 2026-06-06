@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, startTransition } from "react";
 
 /* ------------------------------------------------------------------
    The full command that gets typed out character by character.
@@ -51,6 +51,16 @@ export default function TerminalBlock() {
   const [command, setCommand] = useState("");
   const [showOutput, setShowOutput] = useState(false);
   const [started, setStarted] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  /* Detect prefers-reduced-motion on mount */
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    startTransition(() => setReducedMotion(mq.matches));
+    const handler = (e: MediaQueryListEvent) => startTransition(() => setReducedMotion(e.matches));
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   /* ---- IntersectionObserver: fires the sequence on first entry ---- */
   useEffect(() => {
@@ -75,6 +85,15 @@ export default function TerminalBlock() {
   useEffect(() => {
     if (!started) return;
 
+    /* Under reduced motion: show full command and output instantly */
+    if (reducedMotion) {
+      startTransition(() => {
+        setCommand(COMMAND);
+        setShowOutput(true);
+      });
+      return;
+    }
+
     let charIndex = 0;
 
     const interval = setInterval(() => {
@@ -83,13 +102,12 @@ export default function TerminalBlock() {
 
       if (charIndex === COMMAND.length) {
         clearInterval(interval);
-        // Pause 500 ms, then reveal the output block
         setTimeout(() => setShowOutput(true), 500);
       }
     }, 95); // ~95 ms per character — deliberate, readable pace
 
     return () => clearInterval(interval);
-  }, [started]);
+  }, [started, reducedMotion]);
 
   return (
     <div ref={containerRef} className="term-shell">

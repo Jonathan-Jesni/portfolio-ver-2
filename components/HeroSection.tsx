@@ -16,7 +16,6 @@ const BOTTOM = ["T", "H", "A", "N"];
 
 export default function HeroSection({ animate = false }: { animate?: boolean }) {
   const runwayRef = useRef<HTMLDivElement>(null);
-  const greetingRef = useRef<HTMLParagraphElement>(null);
   const topGroupRef = useRef<HTMLSpanElement>(null);
   const bottomGroupRef = useRef<HTMLSpanElement>(null);
   const topCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -24,112 +23,118 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   const subContentRef = useRef<HTMLDivElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
+  /* ── Magnetic character repulsion (pointer interaction) ── */
   useGSAP(() => {
     const runway = runwayRef.current;
     if (!runway) return;
 
-    const allChars = [
-      ...topCharRefs.current,
-      ...botCharRefs.current,
-    ].filter(Boolean) as HTMLSpanElement[];
-    if (!allChars.length) return;
+    const mm = gsap.matchMedia();
 
-    const setters = allChars.map((el) => ({
-      x: gsap.quickSetter(el, "x", "px") as (v: number) => void,
-      y: gsap.quickSetter(el, "y", "px") as (v: number) => void,
-    }));
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const allChars = [
+        ...topCharRefs.current,
+        ...botCharRefs.current,
+      ].filter(Boolean) as HTMLSpanElement[];
+      if (!allChars.length) return;
 
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const cur = allChars.map(() => ({ x: 0, y: 0 }));
-    const tgt = allChars.map(() => ({ x: 0, y: 0 }));
-    const radius = 200;
-    const maxPush = 56;
-    let isActive = false;
+      const setters = allChars.map((el) => ({
+        x: gsap.quickSetter(el, "x", "px") as (v: number) => void,
+        y: gsap.quickSetter(el, "y", "px") as (v: number) => void,
+      }));
 
-    function resetTargets() {
-      tgt.forEach((target) => {
-        target.x = 0;
-        target.y = 0;
-      });
-    }
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+      const cur = allChars.map(() => ({ x: 0, y: 0 }));
+      const tgt = allChars.map(() => ({ x: 0, y: 0 }));
+      const radius = 200;
+      const maxPush = 56;
+      let isActive = false;
 
-    function onMouseMove(e: MouseEvent) {
-      if (!isActive) return;
+      function resetTargets() {
+        tgt.forEach((target) => {
+          target.x = 0;
+          target.y = 0;
+        });
+      }
 
-      allChars.forEach((el, i) => {
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      function onMouseMove(e: MouseEvent) {
+        if (!isActive) return;
 
-        if (dist < radius && dist > 0) {
-          const force = (1 - dist / radius) * maxPush;
-          tgt[i].x = -(dx / dist) * force;
-          tgt[i].y = -(dy / dist) * force;
-        } else {
-          tgt[i].x = 0;
-          tgt[i].y = 0;
-        }
-      });
-    }
+        allChars.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const dx = e.clientX - cx;
+          const dy = e.clientY - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
 
-    const tickFn = () => {
-      allChars.forEach((_, i) => {
-        cur[i].x = lerp(cur[i].x, tgt[i].x, 0.075);
-        cur[i].y = lerp(cur[i].y, tgt[i].y, 0.075);
-        setters[i].x(cur[i].x);
-        setters[i].y(cur[i].y);
-      });
-    };
+          if (dist < radius && dist > 0) {
+            const force = (1 - dist / radius) * maxPush;
+            tgt[i].x = -(dx / dist) * force;
+            tgt[i].y = -(dy / dist) * force;
+          } else {
+            tgt[i].x = 0;
+            tgt[i].y = 0;
+          }
+        });
+      }
 
-    function startInteraction() {
-      if (isActive) return;
-      isActive = true;
-      window.addEventListener("mousemove", onMouseMove);
-      gsap.ticker.add(tickFn);
-    }
+      const tickFn = () => {
+        allChars.forEach((_, i) => {
+          cur[i].x = lerp(cur[i].x, tgt[i].x, 0.075);
+          cur[i].y = lerp(cur[i].y, tgt[i].y, 0.075);
+          setters[i].x(cur[i].x);
+          setters[i].y(cur[i].y);
+        });
+      };
 
-    function stopInteraction() {
-      if (!isActive) return;
-      isActive = false;
-      window.removeEventListener("mousemove", onMouseMove);
-      gsap.ticker.remove(tickFn);
-      resetTargets();
-      allChars.forEach((_, i) => {
-        cur[i].x = 0;
-        cur[i].y = 0;
-        setters[i].x(0);
-        setters[i].y(0);
-      });
-    }
+      function startInteraction() {
+        if (isActive) return;
+        isActive = true;
+        window.addEventListener("mousemove", onMouseMove);
+        gsap.ticker.add(tickFn);
+      }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          startInteraction();
-        } else {
-          stopInteraction();
-        }
-      },
-      { threshold: 0 }
-    );
+      function stopInteraction() {
+        if (!isActive) return;
+        isActive = false;
+        window.removeEventListener("mousemove", onMouseMove);
+        gsap.ticker.remove(tickFn);
+        resetTargets();
+        allChars.forEach((_, i) => {
+          cur[i].x = 0;
+          cur[i].y = 0;
+          setters[i].x(0);
+          setters[i].y(0);
+        });
+      }
 
-    observer.observe(runway);
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            startInteraction();
+          } else {
+            stopInteraction();
+          }
+        },
+        { threshold: 0 }
+      );
 
-    return () => {
-      observer.disconnect();
-      stopInteraction();
-    };
+      observer.observe(runway);
+
+      return () => {
+        observer.disconnect();
+        stopInteraction();
+      };
+    });
+
+    return () => mm.revert();
   }, { scope: runwayRef });
 
+  /* ── Initial hidden state for entrance animation ── */
   useGSAP(() => {
     gsap.set(
       [
-        ".hero-greeting",
         ".hero-name-split",
-        ".hero-building",
         ".hero-tagline",
         ".hero-sub",
         ".hero-buttons",
@@ -139,50 +144,70 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
     gsap.set(".hero-canvas-wrap", { opacity: 0 });
   }, { scope: runwayRef });
 
+  /* ── Entrance animation (fires after preloader) ── */
   useGSAP(() => {
     if (!animate) return;
 
-    gsap.to(
-      [
-        ".hero-greeting",
-        ".hero-name-split",
-        ".hero-building",
-        ".hero-tagline",
-        ".hero-sub",
-        ".hero-buttons",
-      ],
-      {
-        y: 0,
-        opacity: 1,
-        ease: "power4.out",
-        duration: 1.1,
-        stagger: 0.08,
-      }
-    );
+    const mm = gsap.matchMedia();
 
-    gsap.to(".hero-canvas-wrap", {
-      opacity: 1,
-      duration: 1.4,
-      ease: "power2.out",
-      delay: 0.5,
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.to(
+        [
+          ".hero-name-split",
+          ".hero-tagline",
+          ".hero-sub",
+          ".hero-buttons",
+        ],
+        {
+          y: 0,
+          opacity: 1,
+          ease: "power4.out",
+          duration: 1.1,
+          stagger: 0.08,
+        }
+      );
+
+      gsap.to(".hero-canvas-wrap", {
+        opacity: 1,
+        duration: 1.4,
+        ease: "power2.out",
+        delay: 0.5,
+      });
     });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      /* Instant reveal — no transforms */
+      gsap.set(
+        [".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
+        { opacity: 1, y: 0 }
+      );
+      gsap.set(".hero-canvas-wrap", { opacity: 1 });
+    });
+
+    return () => mm.revert();
   }, { scope: runwayRef, dependencies: [animate] });
 
+  /* ── Scroll-out parallax (name flies apart, sub-content fades) ── */
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: runwayRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 2,
-      },
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: runwayRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 2,
+        },
+      });
+
+      tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
+        .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
+        .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0)
+        .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
     });
 
-    tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
-      .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
-      .to(greetingRef.current, { opacity: 0, y: -28, ease: "none", duration: 0.20 }, 0)
-      .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0)
-      .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
+    return () => mm.revert();
   }, { scope: runwayRef });
 
   return (
@@ -191,10 +216,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         <div className="container">
           <div className="hero-inner-grid">
             <div className="hero-text-col">
-              <p ref={greetingRef} className="hero-greeting mono">
-                Hi, my name is
-              </p>
-
               <h1 className="hero-name-split" aria-label="Jonathan">
                 <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
                   {TOP.map((ch, i) => (
@@ -221,13 +242,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
               </h1>
 
               <div ref={subContentRef} className="hero-sub-content">
-                <p
-                  className="hero-building mono"
-                  style={{ color: "var(--ink-3)", fontSize: "12px", marginBottom: "24px", letterSpacing: "0.08em", textTransform: "uppercase" }}
-                >
-                  &gt; currently.building: smarter tools for real-world problems
-                </p>
-
                 <h2 className="hero-tagline">
                   I build AI-powered tools and systems<br />
                   that solve real-world problems.
