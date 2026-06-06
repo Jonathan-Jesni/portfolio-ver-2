@@ -23,6 +23,7 @@ export const PROJECTS = [
     image: null,
     imageAlt: null,
     pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
+    note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
   },
   {
     id: "webguardian",
