@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
+import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import TerminalBlock from "./TerminalBlock";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* -------------------------------------------------------
    Bio paragraphs — exact text from the original site.
@@ -41,55 +42,50 @@ export default function AboutSection() {
   const textColRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useGSAP(() => {
     const runway = runwayRef.current;
     if (!runway) return;
 
-    const ctx = gsap.context(() => {
-      /* ---- Gather every .reveal-word span inside the text column ---- */
-      const words = textColRef.current
-        ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
-        : [];
+    /* ---- Gather every .reveal-word span inside the text column ---- */
+    const words = textColRef.current
+      ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
+      : [];
 
-      /* ---- Main timeline: word-by-word color scrub ---- */
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: runway,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 1,
-        },
-      });
+    /* ---- Main timeline: word-by-word color scrub ---- */
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: runway,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1,
+      },
+    });
 
-      if (words.length > 0) {
-        tl.to(
-          words,
-          {
-            color: "rgba(255, 255, 255, 1)",
-            ease: "none",
-            stagger: {
-              each: 0.04,
-              from: "start",
-            },
+    if (words.length > 0) {
+      tl.to(
+        words,
+        {
+          color: "rgba(255, 255, 255, 1)",
+          ease: "none",
+          stagger: {
+            each: 0.04,
+            from: "start",
           },
-          0
-        );
-      }
+        },
+        0
+      );
+    }
 
-      /* ---- Terminal: scrubbed slide-in (reverses on scroll-back) ---- */
-      if (terminalRef.current) {
-        tl.fromTo(
-          terminalRef.current,
-          { y: 150, opacity: 0 },
-          { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
-          0
-        );
-      }
-
-    }, runway);
-
-    return () => ctx.revert();
-  }, []);
+    /* ---- Terminal: scrubbed slide-in (reverses on scroll-back) ---- */
+    if (terminalRef.current) {
+      tl.fromTo(
+        terminalRef.current,
+        { y: 150, opacity: 0 },
+        { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
+        0
+      );
+    }
+  }, { scope: runwayRef });
 
   return (
     <section

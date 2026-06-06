@@ -1,43 +1,38 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
+import { GitHubIcon } from "./icons";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-/* CanvasSequence lazy-loaded — it's client-only */
 const CanvasSequence = dynamic(() => import("./CanvasSequence"), { ssr: false });
 
-/* ---- Local inline icon ---- */
-function GitHubIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-    </svg>
-  );
-}
-
-const TOP    = ["J", "O", "N", "A"];
+const TOP = ["J", "O", "N", "A"];
 const BOTTOM = ["T", "H", "A", "N"];
 
 export default function HeroSection({ animate = false }: { animate?: boolean }) {
-  const runwayRef      = useRef<HTMLDivElement>(null);
-  const greetingRef    = useRef<HTMLParagraphElement>(null);
-  const topGroupRef    = useRef<HTMLSpanElement>(null);
+  const runwayRef = useRef<HTMLDivElement>(null);
+  const greetingRef = useRef<HTMLParagraphElement>(null);
+  const topGroupRef = useRef<HTMLSpanElement>(null);
   const bottomGroupRef = useRef<HTMLSpanElement>(null);
-  const topCharRefs    = useRef<(HTMLSpanElement | null)[]>([]);
-  const botCharRefs    = useRef<(HTMLSpanElement | null)[]>([]);
-  const subContentRef  = useRef<HTMLDivElement>(null);
-  const canvasWrapRef  = useRef<HTMLDivElement>(null);
+  const topCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const botCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const subContentRef = useRef<HTMLDivElement>(null);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
 
-  /* ---- 1. MAGNETIC MOUSE EFFECT ---- */
-  useEffect(() => {
+  useGSAP(() => {
+    const runway = runwayRef.current;
+    if (!runway) return;
+
     const allChars = [
       ...topCharRefs.current,
       ...botCharRefs.current,
     ].filter(Boolean) as HTMLSpanElement[];
+    if (!allChars.length) return;
 
     const setters = allChars.map((el) => ({
       x: gsap.quickSetter(el, "x", "px") as (v: number) => void,
@@ -47,21 +42,30 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
     const cur = allChars.map(() => ({ x: 0, y: 0 }));
     const tgt = allChars.map(() => ({ x: 0, y: 0 }));
+    const radius = 200;
+    const maxPush = 56;
+    let isActive = false;
 
-    const RADIUS   = 200;
-    const MAX_PUSH = 56;
+    function resetTargets() {
+      tgt.forEach((target) => {
+        target.x = 0;
+        target.y = 0;
+      });
+    }
 
     function onMouseMove(e: MouseEvent) {
+      if (!isActive) return;
+
       allChars.forEach((el, i) => {
-        const r  = el.getBoundingClientRect();
-        const cx = r.left + r.width  / 2;
-        const cy = r.top  + r.height / 2;
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
         const dx = e.clientX - cx;
         const dy = e.clientY - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < RADIUS && dist > 0) {
-          const force = (1 - dist / RADIUS) * MAX_PUSH;
+        if (dist < radius && dist > 0) {
+          const force = (1 - dist / radius) * maxPush;
           tgt[i].x = -(dx / dist) * force;
           tgt[i].y = -(dy / dist) * force;
         } else {
@@ -80,106 +84,117 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       });
     };
 
-    gsap.ticker.add(tickFn);
-    window.addEventListener("mousemove", onMouseMove);
-    return () => {
-      gsap.ticker.remove(tickFn);
+    function startInteraction() {
+      if (isActive) return;
+      isActive = true;
+      window.addEventListener("mousemove", onMouseMove);
+      gsap.ticker.add(tickFn);
+    }
+
+    function stopInteraction() {
+      if (!isActive) return;
+      isActive = false;
       window.removeEventListener("mousemove", onMouseMove);
-    };
-  }, []);
+      gsap.ticker.remove(tickFn);
+      resetTargets();
+      allChars.forEach((_, i) => {
+        cur[i].x = 0;
+        cur[i].y = 0;
+        setters[i].x(0);
+        setters[i].y(0);
+      });
+    }
 
-  /* ---- 2a. HIDE ON MOUNT ---- */
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.set(
-        [
-          ".hero-greeting",
-          ".hero-name-split",
-          ".hero-building",
-          ".hero-tagline",
-          ".hero-sub",
-          ".hero-buttons",
-        ],
-        { opacity: 0, y: -80 }
-      );
-      /* Canvas starts transparent and fades in separately */
-      gsap.set(".hero-canvas-wrap", { opacity: 0 });
-    }, runwayRef);
-    return () => ctx.revert();
-  }, []);
-
-  /* ---- 2b. INTRO DROP-IN — fires after PreLoader curtain ---- */
-  useEffect(() => {
-    if (!animate) return;
-    const ctx = gsap.context(() => {
-      /* Text elements drop in first */
-      gsap.to(
-        [
-          ".hero-greeting",
-          ".hero-name-split",
-          ".hero-building",
-          ".hero-tagline",
-          ".hero-sub",
-          ".hero-buttons",
-        ],
-        {
-          y: 0,
-          opacity: 1,
-          ease: "power4.out",
-          duration: 1.1,
-          stagger: 0.08,
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startInteraction();
+        } else {
+          stopInteraction();
         }
-      );
+      },
+      { threshold: 0 }
+    );
 
-      /* Canvas fades in slightly later — lets the text land first */
-      gsap.to(".hero-canvas-wrap", {
+    observer.observe(runway);
+
+    return () => {
+      observer.disconnect();
+      stopInteraction();
+    };
+  }, { scope: runwayRef });
+
+  useGSAP(() => {
+    gsap.set(
+      [
+        ".hero-greeting",
+        ".hero-name-split",
+        ".hero-building",
+        ".hero-tagline",
+        ".hero-sub",
+        ".hero-buttons",
+      ],
+      { opacity: 0, y: -80 }
+    );
+    gsap.set(".hero-canvas-wrap", { opacity: 0 });
+  }, { scope: runwayRef });
+
+  useGSAP(() => {
+    if (!animate) return;
+
+    gsap.to(
+      [
+        ".hero-greeting",
+        ".hero-name-split",
+        ".hero-building",
+        ".hero-tagline",
+        ".hero-sub",
+        ".hero-buttons",
+      ],
+      {
+        y: 0,
         opacity: 1,
-        duration: 1.4,
-        ease: "power2.out",
-        delay: 0.5,
-      });
-    }, runwayRef);
-    return () => ctx.revert();
-  }, [animate]);
+        ease: "power4.out",
+        duration: 1.1,
+        stagger: 0.08,
+      }
+    );
 
-  /* ---- 3. SCROLL TUNNEL ---- */
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: runwayRef.current,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 2,
-        },
-      });
+    gsap.to(".hero-canvas-wrap", {
+      opacity: 1,
+      duration: 1.4,
+      ease: "power2.out",
+      delay: 0.5,
+    });
+  }, { scope: runwayRef, dependencies: [animate] });
 
-      tl.to(topGroupRef.current,    { y: "-120vh", ease: "power2.in" }, 0)
-        .to(bottomGroupRef.current, { y:  "120vh", ease: "power2.in" }, 0)
-        .to(greetingRef.current,   { opacity: 0, y: -28, ease: "none", duration: 0.20 }, 0)
-        .to(subContentRef.current, { opacity: 0, y:  28, ease: "none", duration: 0.20 }, 0)
-        /* Canvas scales and fades out as tunnel opens */
-        .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
-    }, runwayRef);
+  useGSAP(() => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: runwayRef.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 2,
+      },
+    });
 
-    return () => ctx.revert();
-  }, []);
+    tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
+      .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
+      .to(greetingRef.current, { opacity: 0, y: -28, ease: "none", duration: 0.20 }, 0)
+      .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0)
+      .to(canvasWrapRef.current, { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 }, 0);
+  }, { scope: runwayRef });
 
   return (
     <div ref={runwayRef} className="hero-runway" id="hero-runway">
       <div className="hero-sticky" id="hero">
         <div className="container">
-
-          {/* ─── Two-column hero layout ─── */}
           <div className="hero-inner-grid">
-
-            {/* Left column — text */}
             <div className="hero-text-col">
               <p ref={greetingRef} className="hero-greeting mono">
                 Hi, my name is
               </p>
 
-              {/* Massive JONATHAN split heading */}
               <h1 className="hero-name-split" aria-label="Jonathan">
                 <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
                   {TOP.map((ch, i) => (
@@ -205,7 +220,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                 </span>
               </h1>
 
-              {/* Sub-content — fades as tunnel opens */}
               <div ref={subContentRef} className="hero-sub-content">
                 <p
                   className="hero-building mono"
@@ -248,22 +262,19 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
               </div>
             </div>
 
-            {/* Right column — Canvas Sequence (the 3D object runway) */}
             <div ref={canvasWrapRef} className="hero-canvas-wrap" aria-hidden="true">
               <CanvasSequence
                 runwaySelector="#hero-runway"
                 totalFrames={120}
                 src="/sequence/frame-[i].webp"
                 padLength={3}
-                placeholder={true}   /* ← flip to false after dropping your Blender frames */
+                placeholder={true}
                 start={0.05}
                 end={0.75}
                 className="hero-sequence-canvas"
               />
-              {/* Rim vignette — blends canvas edges into the OLED black */}
               <div className="hero-canvas-vignette" aria-hidden="true" />
             </div>
-
           </div>
         </div>
       </div>

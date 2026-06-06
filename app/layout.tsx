@@ -21,11 +21,29 @@ export const metadata: Metadata = {
   title: "Jonathan Jesni — AI & Systems Developer",
   description:
     "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
+  keywords: [
+    "Jonathan Jesni",
+    "AI developer",
+    "systems developer",
+    "frontend engineer",
+    "machine learning portfolio",
+    "cybersecurity projects",
+    "recommendation systems",
+    "computer vision",
+    "document processing",
+    "Next.js portfolio",
+  ],
   openGraph: {
     title: "Jonathan Jesni — AI & Systems Developer",
     description:
       "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jonathan Jesni — AI & Systems Developer",
+    description:
+      "AI-powered tools, cybersecurity systems, and real-world software engineering projects by Jonathan Jesni.",
   },
 };
 

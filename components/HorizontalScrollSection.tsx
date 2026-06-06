@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 interface HorizontalScrollSectionProps {
   children: React.ReactNode;
@@ -39,7 +40,7 @@ export default function HorizontalScrollSection({
   const trackRef       = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useGSAP(() => {
     const mm = gsap.matchMedia();
 
     mm.add("(min-width: 768px)", () => {
@@ -181,7 +182,7 @@ export default function HorizontalScrollSection({
     });
 
     return () => mm.revert();
-  }, [scrollMultiplier]);
+  }, { scope: outerRef, dependencies: [scrollMultiplier] });
 
   return (
     <div ref={outerRef} className="hscroll-outer">
