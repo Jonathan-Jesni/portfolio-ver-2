@@ -8,22 +8,8 @@ export const PROJECTS = [
     tech: "Python, Scikit-learn, Implicit ALS, Steam API",
     tags: ["Machine Learning", "Recommendation Systems", "Python"],
     github: "https://github.com/Jonathan-Jesni/Ludex",
-    image: "/assets/ludex-recommendations.png",
-    imageAlt: "Ludex personalized game recommendations interface",
-  },
-  {
-    id: "file-converter",
-    title: "File Converter",
-    subtitle: "Document Processing Engine",
-    description:
-      "A deterministic two-pass document conversion engine — structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic.",
-    tech: "Python, Two-Pass Architecture",
-    tags: ["Python", "Document Processing", "Systems Design"],
-    github: "https://github.com/Jonathan-Jesni/pdf_converter",
-    image: null,
-    imageAlt: null,
-    pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
-    note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
+    images: ["/assets/ludex-login.png", "/assets/ludex-recommendations.png"],
+    imageAlts: ["Ludex login interface", "Ludex personalized game recommendations interface"],
   },
   {
     id: "webguardian",
@@ -34,8 +20,8 @@ export const PROJECTS = [
     tech: "Python, Char-CNN + LSTM, MobileNetV2, Chrome Extension",
     tags: ["Deep Learning", "Cybersecurity", "Computer Vision"],
     github: "https://github.com/Jonathan-Jesni",
-    image: "/assets/webguardian-phishing.png",
-    imageAlt: "Phishing detection warning overlay",
+    images: ["/assets/webguardian-phishing.png", "/assets/webguardian-safe.png"],
+    imageAlts: ["Phishing detection warning overlay", "WebGuardian safe browsing mode"],
   },
   {
     id: "synthetic-data",
@@ -47,8 +33,22 @@ export const PROJECTS = [
     tags: ["Computer Vision", "Synthetic Data", "Deep Learning"],
     github:
       "https://github.com/Jonathan-Jesni/synthetic-data-object-detection",
-    image: "/assets/object-detection-main.png",
-    imageAlt: "Synthetic object detection with bounding boxes",
+    images: ["/assets/object-detection-main.png", "/assets/object-detection-alt.png"],
+    imageAlts: ["Synthetic object detection with bounding boxes", "Alternative view of object detection"],
+  },
+  {
+    id: "file-converter",
+    title: "File Converter",
+    subtitle: "Document Processing Engine",
+    description:
+      "A deterministic two-pass document conversion engine — structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic.",
+    tech: "Python, Two-Pass Architecture",
+    tags: ["Python", "Document Processing", "Systems Design"],
+    github: "https://github.com/Jonathan-Jesni/pdf_converter",
+    images: null,
+    imageAlts: null,
+    pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
+    note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
   },
 ] as const;
 

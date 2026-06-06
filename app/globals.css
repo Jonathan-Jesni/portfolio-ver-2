@@ -2325,7 +2325,7 @@ canvas.glass-image-canvas {
   max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 48px;
-  align-items: start; /* critical: don't stretch columns */
+  /* Columns stretch natively so their bottom edges align perfectly */
 }
 
 @media (max-width: 900px) {
@@ -2336,54 +2336,45 @@ canvas.glass-image-canvas {
   }
 }
 
-/* ── LEFT: sticky text panel ───────────────────────────────── */
+/* ── LEFT: physical scrolling text track ───────────────────────────────── */
 .sd-split-left {
-  position: sticky;
-  /* Change 1: anchor at 25vh instead of 20vh to reveal header */
-  top: 25vh;
-  align-self: start;
-  /* Increased height to prevent description cut-off */
-  min-height: 540px;
+  height: 100%;
 }
 
 @media (max-width: 900px) {
-  /* On mobile, text panel is not sticky — flows normally above image */
   .sd-split-left {
-    position: static;
     min-height: auto;
   }
 }
 
-/* Text track: all panels are absolutely stacked on top of each other.
-   The wrapper height is set by its own min-height above, preventing
-   layout shifts as active panel changes.                              */
 .sd-text-track {
-  position: relative;
-  width: 100%;
-  min-height: 540px;
-}
-
-/* Individual text panel — all invisible by default */
-.sd-text-panel {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  /* Slide up slightly when entering — adds directionality to the crossfade */
-  transform: translateY(12px);
-  transition:
-    opacity  0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  gap: 0;
-  pointer-events: none;
+  gap: 60vh;
+  width: 100%;
+  height: 100%;
 }
 
-/* Active panel */
-.sd-text-panel.is-active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+.sd-text-panel {
+  position: sticky;
+  top: calc(25vh + calc(var(--card-index, 0) * 16px));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0;
+  will-change: transform, opacity, filter;
+  transform-origin: center top;
+  z-index: 2;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+}
+
+/* Invisible spacer that perfectly matches the aspect ratio of an image card,
+   keeping the left and right columns physically synchronized */
+.sd-text-spacer {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  pointer-events: none;
 }
 
 .sd-text-header {
@@ -2407,8 +2398,7 @@ canvas.glass-image-canvas {
   display: flex;
   flex-direction: column;
   gap: 60vh;
-  /* No padding-bottom here — we use a physical .sd-spacer child instead
-     so the last card has real scroll track to stick on.                */
+  height: 100%;
 }
 
 /* Physical spacer at the bottom of the image column.
@@ -2512,6 +2502,18 @@ canvas.glass-image-canvas {
 .sd-pipeline-arrow {
   font-size: 11px;
   color: rgba(255,255,255,0.10);
+  animation: pulseArrow 2s infinite ease-in-out;
+}
+
+@keyframes pulseArrow {
+  0%, 100% {
+    color: rgba(255,255,255,0.10);
+    text-shadow: none;
+  }
+  50% {
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 0 8px rgba(255,255,255,0.6);
+  }
 }
 
 /* Generic placeholder */

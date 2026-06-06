@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -22,28 +22,53 @@ export default function StickyDeckSection() {
   const sectionRef  = useRef<HTMLElement>(null);
   const rightColRef = useRef<HTMLDivElement>(null);
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  /* Flatten the projects array so multi-image projects render separate physical cards */
+  const flattenedCards: {
+    projectIndex: number;
+    project: typeof PROJECTS[number];
+    type: "image" | "pipeline" | "placeholder";
+    imageUrl?: string;
+    imageAlt?: string;
+    key: string;
+  }[] = [];
+
+  PROJECTS.forEach((project, pIdx) => {
+    if ('images' in project && project.images && project.images.length > 0) {
+      project.images.forEach((img, i) => {
+        flattenedCards.push({
+          projectIndex: pIdx,
+          project: project,
+          type: "image",
+          imageUrl: img,
+          imageAlt: project.imageAlts?.[i] ?? project.title,
+          key: `${project.id}-img-${i}`,
+        });
+      });
+    } else if ('pipeline' in project && project.pipeline) {
+      flattenedCards.push({
+        projectIndex: pIdx,
+        project: project,
+        type: "pipeline",
+        key: `${project.id}-pipeline`,
+      });
+    } else {
+      flattenedCards.push({
+        projectIndex: pIdx,
+        project: project,
+        type: "placeholder",
+        key: `${project.id}-placeholder`,
+      });
+    }
+  });
 
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
       const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
       if (imageCards.length < 1) return;
 
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
       imageCards.forEach((card, i) => {
-        /* Crossfade the left text panel when this image card enters view */
-        ScrollTrigger.create({
-          trigger: card,
-          start:   "top 60%",
-          end:     "bottom 40%",
-          onEnter:     () => setActiveIndex(i),
-          onEnterBack: () => setActiveIndex(i),
-        });
-
-        /* Depth stacking: cards below the active one scale + blur out.
-           For the last card, we use the .sd-spacer as the scroll trigger
-           so it also fades back gracefully before the CTA appears. */
         const isLast = i === imageCards.length - 1;
         const nextEl = isLast ? document.querySelector(".sd-spacer") : imageCards[i + 1];
 
@@ -61,27 +86,29 @@ export default function StickyDeckSection() {
         });
       });
 
+      /* ── Dual-Deck: Stack text panels natively ── */
+      const textCards = gsap.utils.toArray<HTMLElement>(".sd-text-panel");
+      textCards.forEach((textCard, i) => {
+        /* Depth stacking: cards below the active one scale + blur out */
+        const isLast = i === textCards.length - 1;
+        const nextEl = isLast ? document.querySelector(".sd-spacer") : textCards[i + 1];
+
+        gsap.to(textCard, {
+          scale:   0.95,
+          filter:  "blur(2px)",
+          ease:    "none",
+          scrollTrigger: {
+            trigger: nextEl,
+            start:   "top 25vh",
+            end:     isLast ? "bottom 60%" : "top 20%",
+            scrub:   0.8,
+          },
+        });
+      });
+
       return () => {
         ScrollTrigger.getAll().forEach((st) => st.kill());
       };
-    });
-
-    mm.add("(prefers-reduced-motion: reduce)", () => {
-      /* Under reduced motion, sync active index on scroll via IntersectionObserver */
-      const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
-      const obs = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const idx = imageCards.indexOf(entry.target as HTMLElement);
-              if (idx !== -1) setActiveIndex(idx);
-            }
-          });
-        },
-        { threshold: 0.5 }
-      );
-      imageCards.forEach((card) => obs.observe(card));
-      return () => obs.disconnect();
     });
 
     return () => mm.revert();
@@ -107,21 +134,36 @@ export default function StickyDeckSection() {
         {/* ── LEFT: sticky glass text panel ───────────────────────── */}
         <div className="sd-split-left">
           <div className="sd-text-track">
-            {PROJECTS.map((project, idx) => {
+            {flattenedCards.map((card, idx) => {
+              const isFirstOfProject = idx === 0 || flattenedCards[idx - 1].projectIndex !== card.projectIndex;
+              
+              if (!isFirstOfProject) {
+                return <div key={`spacer-${card.key}`} className="sd-text-spacer" aria-hidden="true" />;
+              }
+
+              const project = card.project;
               const hue  = CARD_HUES[project.id] ?? "210, 80%, 56%";
               const tags = project.tags as readonly string[];
               const note = (project as { note?: string }).note;
 
               return (
                 <div
-                  key={project.id}
-                  className={`sd-text-panel${activeIndex === idx ? " is-active" : ""}`}
-                  aria-hidden={activeIndex !== idx}
+                  key={`text-${card.key}`}
+                  className="sd-text-panel"
+                  data-project-id={project.id}
+                  style={{ "--card-index": card.projectIndex } as React.CSSProperties}
                 >
                   {/* Glass card shell */}
                   <div
-                    className="sd-text-card"
-                    style={{ "--card-hue": hue } as React.CSSProperties}
+                    className="glass-panel"
+                    style={{ 
+                      "--card-hue": hue,
+                      borderLeft: `2px solid hsl(${hue})`,
+                      padding: "40px",
+                      position: "relative",
+                      zIndex: 1,
+                      backgroundColor: "rgba(3, 4, 7, 0.85)" 
+                    } as React.CSSProperties}
                   >
                     {/* Top-edge accent line matches the image card */}
                     <div className="sd-card-accent" aria-hidden="true" />
@@ -168,34 +210,36 @@ export default function StickyDeckSection() {
                 </div>
               );
             })}
+            <div className="sd-spacer" aria-hidden="true" />
           </div>
         </div>
 
         {/* ── RIGHT: stacking image cards ─────────────────────────── */}
         <div ref={rightColRef} className="sd-split-right">
-          {PROJECTS.map((project, idx) => {
+          {flattenedCards.map((card, idx) => {
+            const project = card.project;
             const hue     = CARD_HUES[project.id] ?? "210, 80%, 56%";
-            const hasImg  = !!project.image;
-            const hasPipe = !hasImg && "pipeline" in project;
 
             return (
               <div
-                key={project.id}
+                key={card.key}
                 className="sd-img-card"
                 style={{
                   "--card-index": idx,
                   "--card-hue":   hue,
                 } as React.CSSProperties}
-                id={`project-card-${project.id}`}
+                id={`project-card-${card.key}`}
+                data-project-index={card.projectIndex}
+                data-project-id={project.id}
                 aria-label={`Project visual: ${project.title}`}
               >
                 <div className="sd-card-accent" aria-hidden="true" />
 
-                {hasImg ? (
+                {card.type === "image" ? (
                   <div className="sd-img-frame">
                     <Image
-                      src={project.image as string}
-                      alt={(project as { imageAlt?: string | null }).imageAlt ?? project.title}
+                      src={card.imageUrl!}
+                      alt={card.imageAlt!}
                       fill
                       sizes="(max-width: 900px) 100vw, 50vw"
                       className="sd-img"
@@ -203,17 +247,23 @@ export default function StickyDeckSection() {
                     />
                     <div className="sd-img-vignette" aria-hidden="true" />
                   </div>
-                ) : hasPipe ? (
+                ) : card.type === "pipeline" ? (
                   <div
                     className="sd-pipeline"
                     style={{ background: `hsl(${hue.split(",")[0]}, 22%, 5%)` }}
                     aria-label="Processing pipeline"
                   >
-                    {(project as { pipeline: readonly string[] }).pipeline.map((step, si, arr) => (
+                    {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
                       <div key={step} className="sd-pipeline-step">
                         <span className="sd-pipeline-label mono">{step}</span>
                         {si < arr.length - 1 && (
-                          <span className="sd-pipeline-arrow" aria-hidden="true">→</span>
+                          <span 
+                            className="sd-pipeline-arrow" 
+                            aria-hidden="true"
+                            style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
+                          >
+                            →
+                          </span>
                         )}
                       </div>
                     ))}
@@ -225,7 +275,7 @@ export default function StickyDeckSection() {
                     aria-hidden="true"
                   >
                     <span className="sd-placeholder-label mono">
-                      {(project as { title: string }).title.toUpperCase()}
+                      {project.title.toUpperCase()}
                     </span>
                   </div>
                 )}
