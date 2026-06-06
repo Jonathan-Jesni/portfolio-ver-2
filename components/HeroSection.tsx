@@ -9,7 +9,7 @@ import { GitHubIcon } from "./icons";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-const CanvasSequence = dynamic(() => import("./CanvasSequence"), { ssr: false });
+const InteractiveModel = dynamic(() => import("./InteractiveModel"), { ssr: false });
 
 const TOP = ["J", "O", "N", "A"];
 const BOTTOM = ["T", "H", "A", "N"];
@@ -21,7 +21,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   const topCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const botCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const subContentRef = useRef<HTMLDivElement>(null);
-  const canvasWrapRef = useRef<HTMLDivElement>(null);
 
   /* ── Magnetic character repulsion (pointer interaction) ── */
   useGSAP(() => {
@@ -141,7 +140,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       ],
       { opacity: 0, y: -80 }
     );
-    gsap.set(".hero-canvas-wrap", { opacity: 0 });
+    gsap.set(".hero-3d-layer", { opacity: 0 });
   }, { scope: runwayRef });
 
   /* ── Entrance animation (fires after preloader) ── */
@@ -167,7 +166,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         }
       );
 
-      gsap.to(".hero-canvas-wrap", {
+      gsap.to(".hero-3d-layer", {
         opacity: 1,
         duration: 1.4,
         ease: "power2.out",
@@ -181,7 +180,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         [".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
-      gsap.set(".hero-canvas-wrap", { opacity: 1 });
+      gsap.set(".hero-3d-layer", { opacity: 1 });
     });
 
     return () => mm.revert();
@@ -201,15 +200,11 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         },
       });
 
-      tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
-        .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
-        .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0)
-        .fromTo(
-          canvasWrapRef.current,
-          { opacity: 1, scale: 1 },
-          { opacity: 0, scale: 1.08, ease: "power2.in", duration: 0.4 },
-          0
-        );
+      // The 3D model handles its own exit via the explode shader —
+      // we only animate the text columns here.
+      tl.to(topGroupRef.current,    { y: "-120vh", ease: "power2.in" }, 0)
+        .to(bottomGroupRef.current, { y: "120vh",  ease: "power2.in" }, 0)
+        .to(subContentRef.current,  { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0);
     });
 
     return () => mm.revert();
@@ -217,82 +212,78 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
 
   return (
     <div ref={runwayRef} className="hero-runway" id="hero-runway">
-      <div className="hero-sticky" id="hero">
+      {/*
+        The full-screen Canvas sits here as an absolute background layer.
+        It covers the entire hero sticky area so shards can fly across
+        the whole viewport without being clipped by any CSS column.
+      */}
+      <div className="hero-3d-layer" aria-hidden="true">
+        <InteractiveModel />
+      </div>
+
+      <div className="hero-sticky" id="hero" style={{ pointerEvents: "none" }}>
         <div className="container">
+          {/* Restore inner grid so the text is constrained to the 55fr left column */}
           <div className="hero-inner-grid">
-            <div className="hero-text-col">
-              <h1 className="hero-name-split" aria-label="Jonathan">
-                <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
-                  {TOP.map((ch, i) => (
-                    <span
-                      key={`t${i}`}
-                      ref={(el) => { topCharRefs.current[i] = el; }}
-                      className="hero-char"
-                    >
-                      {ch}
-                    </span>
-                  ))}
-                </span>
-                <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
-                  {BOTTOM.map((ch, i) => (
-                    <span
-                      key={`b${i}`}
-                      ref={(el) => { botCharRefs.current[i] = el; }}
-                      className="hero-char"
-                    >
-                      {ch}
-                    </span>
-                  ))}
-                </span>
-              </h1>
-
-              <div ref={subContentRef} className="hero-sub-content">
-                <h2 className="hero-tagline">
-                  I build AI-powered tools and systems<br />
-                  that solve real-world problems.
-                </h2>
-
-                <p className="hero-sub">
-                  CS student focused on AI, cybersecurity, and scalable systems.
-                </p>
-
-                <div className="hero-buttons">
-                  <a
-                    href="https://github.com/Jonathan-Jesni"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                    id="hero-github-btn"
+            <div className="hero-text-col" style={{ pointerEvents: "auto" }}>
+            <h1 className="hero-name-split" aria-label="Jonathan">
+              <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
+                {TOP.map((ch, i) => (
+                  <span
+                    key={`t${i}`}
+                    ref={(el) => { topCharRefs.current[i] = el; }}
+                    className="hero-char"
                   >
-                    <GitHubIcon size={16} />
-                    View My Work
-                    <span className="btn-arrow" aria-hidden="true">↗</span>
-                  </a>
-                  <a
-                    href="/assets/Jonathan_Resume.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline"
-                    id="hero-resume-btn"
+                    {ch}
+                  </span>
+                ))}
+              </span>
+              <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
+                {BOTTOM.map((ch, i) => (
+                  <span
+                    key={`b${i}`}
+                    ref={(el) => { botCharRefs.current[i] = el; }}
+                    className="hero-char"
                   >
-                    Resume
-                  </a>
-                </div>
+                    {ch}
+                  </span>
+                ))}
+              </span>
+            </h1>
+
+            <div ref={subContentRef} className="hero-sub-content">
+              <h2 className="hero-tagline">
+                I build AI-powered tools and systems<br />
+                that solve real-world problems.
+              </h2>
+
+              <p className="hero-sub">
+                CS student focused on AI, cybersecurity, and scalable systems.
+              </p>
+
+              <div className="hero-buttons">
+                <a
+                  href="https://github.com/Jonathan-Jesni"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                  id="hero-github-btn"
+                >
+                  <GitHubIcon size={16} />
+                  View My Work
+                  <span className="btn-arrow" aria-hidden="true">↗</span>
+                </a>
+                <a
+                  href="/assets/Jonathan_Resume.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline"
+                  id="hero-resume-btn"
+                >
+                  Resume
+                </a>
               </div>
-            </div>
-
-            <div ref={canvasWrapRef} className="hero-canvas-wrap" aria-hidden="true">
-              <CanvasSequence
-                runwaySelector="#hero-runway"
-                totalFrames={120}
-                src="/sequence/frame-[i].webp"
-                padLength={3}
-                placeholder={true}
-                start={0.05}
-                end={0.75}
-                className="hero-sequence-canvas"
-              />
-              <div className="hero-canvas-vignette" aria-hidden="true" />
+              </div>
             </div>
           </div>
         </div>
