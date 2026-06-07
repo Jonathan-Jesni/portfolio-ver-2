@@ -248,7 +248,7 @@ export default function StickyDeckSection() {
                         fill
                         sizes="(max-width: 900px) 100vw, 50vw"
                         className="sd-img"
-                        priority={idx === 0}
+                        priority={true}
                       />
                       <div className="sd-img-vignette" aria-hidden="true" />
                     </div>
