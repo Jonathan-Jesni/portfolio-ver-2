@@ -6,6 +6,8 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
 import { GitHubIcon } from "./ui/icons";
+import { TerminalHighlight } from "./ui/TerminalHighlight";
+import { CircuitUnderline } from "./ui/CircuitUnderline";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -244,12 +246,12 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
 
             <div ref={subContentRef} className="hero-sub-content">
               <h2 className="hero-tagline">
-                I build AI-powered tools and systems<br />
-                that solve real-world problems.
+                I build <TerminalHighlight delay={1.2} animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
+                that solve <CircuitUnderline delay={1.8} color="#00eaff" animate={animate}>real-world problems</CircuitUnderline>.
               </h2>
 
               <p className="hero-sub">
-                CS student focused on AI, cybersecurity, and scalable systems.
+                CS student focused on AI, <CircuitUnderline delay={2.0} animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#b829ff" animate={animate}>scalable systems</TerminalHighlight>.
               </p>
 
               <div className="hero-buttons">

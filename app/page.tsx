@@ -76,10 +76,6 @@ export default function Home() {
 
       <hr className="section-divider" />
 
-      <AboutSection />
-
-      <hr className="section-divider" />
-
       <SpatialSection id="currently-building">
         <div className="container">
           <div className="section-label">
@@ -110,6 +106,10 @@ export default function Home() {
           </div>
         </div>
       </SpatialSection>
+
+      <hr className="section-divider" />
+
+      <AboutSection />
 
       <hr className="section-divider" />
 
