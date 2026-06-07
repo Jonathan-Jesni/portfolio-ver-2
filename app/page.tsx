@@ -9,6 +9,10 @@ import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
 import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/ui/icons";
 import { BUILDING } from "../lib/data";
+import gsap from "gsap";
+import ScrollToPlugin from "gsap/ScrollToPlugin";
+
+gsap.registerPlugin(ScrollToPlugin);
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });

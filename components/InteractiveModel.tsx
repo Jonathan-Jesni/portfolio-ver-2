@@ -388,7 +388,7 @@ export default function InteractiveModel() {
 
   useEffect(() => {
     const st = ScrollTrigger.create({
-      trigger: "#hero-runway",
+      trigger: "#hero",
       start:   "top top",
       end:     "bottom bottom",
       scrub:   true,

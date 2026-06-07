@@ -204,7 +204,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
   }, { scope: runwayRef });
 
   return (
-    <div ref={runwayRef} className="hero-runway" id="hero-runway">
+    <div ref={runwayRef} className="hero-runway" id="hero">
       {/*
         The full-screen Canvas sits here as an absolute background layer.
         It covers the entire hero sticky area so shards can fly across
@@ -214,7 +214,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         <InteractiveModel />
       </div>
 
-      <div className="hero-sticky" id="hero" style={{ pointerEvents: "none" }}>
+      <div className="hero-sticky" style={{ pointerEvents: "none" }}>
         <div className="container">
           {/* Restore inner grid so the text is constrained to the 55fr left column */}
           <div className="hero-inner-grid">
