@@ -109,7 +109,9 @@ export default function SpatialSection({
   }, []);
 
   return (
-    <section ref={runwayRef} id={id} className={`sp-runway ${className}`}>
+    <section ref={runwayRef} className={`sp-runway ${className}`} style={{ position: "relative" }}>
+      {/* Anchor target placed 45% down the runway so content is fully dropped-in */}
+      <div id={id} style={{ position: "absolute", top: "45%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
       <div className="sp-sticky">
         <div ref={contentRef} className="sp-content">
           {children}

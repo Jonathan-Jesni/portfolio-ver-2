@@ -111,10 +111,11 @@ export default function AboutSection() {
   return (
     <section
       ref={runwayRef}
-      id="about"
       className="about-runway"
-      style={{ height: "250vh" }}
+      style={{ height: "250vh", position: "relative" }}
     >
+      {/* Anchor target placed halfway down the runway so text is mostly revealed */}
+      <div id="about" style={{ position: "absolute", top: "45%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
       <div className="about-sticky">
         {/* ---- Inner layout: two columns on desktop ---- */}
         <div className="about-split-container">

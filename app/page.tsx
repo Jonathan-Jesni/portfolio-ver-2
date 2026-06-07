@@ -59,14 +59,15 @@ export default function Home() {
           </button>
         </div>
 
-        <div className={`mobile-menu${isMenuOpen ? " open" : ""}`} id="mobile-menu">
-          <a href="#projects" onClick={closeMobileMenu}>Projects</a>
-          <a href="#skills" onClick={closeMobileMenu}>Skills</a>
-          <a href="#about" onClick={closeMobileMenu}>About</a>
-          <a href="#contact" onClick={closeMobileMenu}>Contact</a>
-          <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
-        </div>
       </nav>
+
+      <div className={`mobile-menu${isMenuOpen ? " open" : ""}`} id="mobile-menu">
+        <a href="#projects" onClick={closeMobileMenu}>Projects</a>
+        <a href="#skills" onClick={closeMobileMenu}>Skills</a>
+        <a href="#about" onClick={closeMobileMenu}>About</a>
+        <a href="#contact" onClick={closeMobileMenu}>Contact</a>
+        <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
+      </div>
 
       <HeroSection animate={preloaderDone} />
 
