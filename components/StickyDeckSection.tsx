@@ -7,6 +7,7 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { PROJECTS } from "../lib/data";
 import { ArrowUpRightIcon } from "./icons";
+import { CometCard } from "@/components/ui/comet-card";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -153,60 +154,63 @@ export default function StickyDeckSection() {
                   data-project-id={project.id}
                   style={{ "--card-index": card.projectIndex } as React.CSSProperties}
                 >
-                  {/* Glass card shell */}
-                  <div
-                    className="glass-panel"
-                    style={{ 
-                      "--card-hue": hue,
-                      borderLeft: `2px solid hsl(${hue})`,
-                      padding: "40px",
-                      position: "relative",
-                      zIndex: 1,
-                      backgroundColor: "rgba(3, 4, 7, 0.85)" 
-                    } as React.CSSProperties}
-                  >
-                    {/* Top-edge accent line matches the image card */}
-                    <div className="sd-card-accent" aria-hidden="true" />
-
-                    {/* Title with inline subtitle */}
-                    <h3 className="sd-text-title">
-                      {project.title}
-                      <span className="sd-text-subtitle"> — {project.subtitle}</span>
-                    </h3>
-
-                    {/* Description */}
-                    <p className="sd-text-description">{project.description}</p>
-
-                    {/* Optional note (e.g. File Converter evolution note) */}
-                    {note && (
-                      <p className="sd-text-note mono">{note}</p>
-                    )}
-
-                    {/* Built with line */}
-                    <p className="sd-text-built-with mono">
-                      Built with: {project.tech}
-                    </p>
-
-                    {/* Tags */}
-                    <ul className="sd-card-tags" aria-label="Technologies">
-                      {tags.map((tag) => (
-                        <li key={tag} className="sd-tag mono">{tag}</li>
-                      ))}
-                    </ul>
-
-                    {/* GitHub link */}
-                    <a
-                      href={project.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="sd-card-link sd-text-link"
-                      id={`${project.id}-source-link`}
-                      aria-label={`View ${project.title} source code on GitHub`}
+                  <CometCard rotateDepth={8} translateDepth={6}>
+                    {/* Glass card shell */}
+                    <div
+                      className="glass-panel"
+                      style={{ 
+                        "--card-hue": hue,
+                        borderLeft: `2px solid hsl(${hue})`,
+                        padding: "40px",
+                        position: "relative",
+                        zIndex: 1,
+                        backgroundColor: "rgba(3, 4, 7, 0.85)",
+                        height: "100%",
+                      } as React.CSSProperties}
                     >
-                      <span>View Source</span>
-                      <ArrowUpRightIcon />
-                    </a>
-                  </div>
+                      {/* Top-edge accent line matches the image card */}
+                      <div className="sd-card-accent" aria-hidden="true" />
+
+                      {/* Title with inline subtitle */}
+                      <h3 className="sd-text-title">
+                        {project.title}
+                        <span className="sd-text-subtitle"> — {project.subtitle}</span>
+                      </h3>
+
+                      {/* Description */}
+                      <p className="sd-text-description">{project.description}</p>
+
+                      {/* Optional note (e.g. File Converter evolution note) */}
+                      {note && (
+                        <p className="sd-text-note mono">{note}</p>
+                      )}
+
+                      {/* Built with line */}
+                      <p className="sd-text-built-with mono">
+                        Built with: {project.tech}
+                      </p>
+
+                      {/* Tags */}
+                      <ul className="sd-card-tags" aria-label="Technologies">
+                        {tags.map((tag) => (
+                          <li key={tag} className="sd-tag mono">{tag}</li>
+                        ))}
+                      </ul>
+
+                      {/* GitHub link */}
+                      <a
+                        href={project.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="sd-card-link sd-text-link"
+                        id={`${project.id}-source-link`}
+                        aria-label={`View ${project.title} source code on GitHub`}
+                      >
+                        <span>View Source</span>
+                        <ArrowUpRightIcon />
+                      </a>
+                    </div>
+                  </CometCard>
                 </div>
               );
             })}
@@ -233,56 +237,58 @@ export default function StickyDeckSection() {
                 data-project-id={project.id}
                 aria-label={`Project visual: ${project.title}`}
               >
-                <div className="sd-card-accent" aria-hidden="true" />
+                <CometCard rotateDepth={12} translateDepth={8}>
+                  <div className="sd-card-accent" aria-hidden="true" />
 
-                {card.type === "image" ? (
-                  <div className="sd-img-frame">
-                    <Image
-                      src={card.imageUrl!}
-                      alt={card.imageAlt!}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 50vw"
-                      className="sd-img"
-                      priority={idx === 0}
-                    />
-                    <div className="sd-img-vignette" aria-hidden="true" />
-                  </div>
-                ) : card.type === "pipeline" ? (
-                  <div
-                    className="sd-pipeline"
-                    style={{ background: `hsl(${hue.split(",")[0]}, 22%, 5%)` }}
-                    aria-label="Processing pipeline"
-                  >
-                    {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
-                      <React.Fragment key={step}>
-                        <div 
-                          className="sd-pipeline-node"
-                          style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
-                        >
-                          {step}
-                        </div>
-                        {si < arr.length - 1 && (
-                          <div className="sd-pipeline-wire">
-                            <div 
-                              className="sd-pipeline-pulse"
-                              style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
-                            />
+                  {card.type === "image" ? (
+                    <div className="sd-img-frame">
+                      <Image
+                        src={card.imageUrl!}
+                        alt={card.imageAlt!}
+                        fill
+                        sizes="(max-width: 900px) 100vw, 50vw"
+                        className="sd-img"
+                        priority={idx === 0}
+                      />
+                      <div className="sd-img-vignette" aria-hidden="true" />
+                    </div>
+                  ) : card.type === "pipeline" ? (
+                    <div
+                      className="sd-pipeline"
+                      style={{ background: `hsl(${hue.split(",")[0]}, 22%, 5%)` }}
+                      aria-label="Processing pipeline"
+                    >
+                      {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
+                        <React.Fragment key={step}>
+                          <div 
+                            className="sd-pipeline-node"
+                            style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
+                          >
+                            {step}
                           </div>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="sd-placeholder"
-                    style={{ background: `hsl(${hue.split(",")[0]}, 16%, 6%)` }}
-                    aria-hidden="true"
-                  >
-                    <span className="sd-placeholder-label mono">
-                      {project.title.toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                          {si < arr.length - 1 && (
+                            <div className="sd-pipeline-wire">
+                              <div 
+                                className="sd-pipeline-pulse"
+                                style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
+                              />
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="sd-placeholder"
+                      style={{ background: `hsl(${hue.split(",")[0]}, 16%, 6%)` }}
+                      aria-hidden="true"
+                    >
+                      <span className="sd-placeholder-label mono">
+                        {project.title.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </CometCard>
               </div>
             );
           })}

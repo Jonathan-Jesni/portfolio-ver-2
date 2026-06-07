@@ -1288,15 +1288,7 @@ img {
 
 /* Building card â€” Double-Bezel */
 .building-card {
-  /* Outer shell */
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-hairline);
-  border-radius: 20px;
-  padding: 3px;
-  box-shadow: var(--shadow-card);
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition: border-color var(--t-mid), box-shadow var(--t-mid);
+  /* CometCard inside owns all visual bezel styling */
 }
 
 .building-card-inner {
@@ -1322,12 +1314,7 @@ img {
   border-radius: inherit;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .building-card:hover {
-    border-color: var(--border-subtle);
-    box-shadow: var(--shadow-hover);
-  }
-}
+/* .building-card hover now handled by .comet-card-wrap:hover .comet-card-shell */
 
 /* Status row */
 .building-status {
@@ -2418,18 +2405,8 @@ canvas.glass-image-canvas {
   will-change: transform, opacity, filter;
   transform-origin: center top;
 
-  /* Double-bezel outer shell */
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid var(--border-hairline);
-  border-radius: 16px;
-  padding: 3px;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.8),
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    0 32px 80px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-
-  /* Fixed aspect ratio for the image panel — feels monumental */
+  /* Fixed aspect ratio for the image panel — feels monumental.
+     CometCard nested inside owns all visual bezel styling.     */
   aspect-ratio: 4 / 3;
 }
 
@@ -2809,3 +2786,66 @@ canvas.glass-image-canvas {
     display: block;
   }
 }
+
+/* ============================================================
+   COMET CARD — Perspective tilt card (Perplexity Comet style)
+   Architecture: wrap → shell (outer bezel) → core (inner bezel)
+   Motion: RAF lerp via inline transform on .comet-card-wrap
+   ============================================================ */
+
+/* ── Outermost wrapper: owns the perspective transform ── */
+.comet-card-wrap {
+  /* transform is applied via JS — keep GPU on this layer */
+  will-change: transform;
+  transform-style: preserve-3d;
+  /* Smooth snap back when JS resets to identity */
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Honour system motion preference — freeze the card flat */
+@media (prefers-reduced-motion: reduce) {
+  .comet-card-wrap {
+    transform: none !important;
+    will-change: auto;
+  }
+}
+
+/* ── Outer shell: 1 px glass border + ambient glow ── */
+.comet-card-shell {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  padding: 3px;
+  box-shadow:
+    0 1px 0   rgba(255, 255, 255, 0.06) inset, /* top edge refraction */
+    var(--shadow-card);
+  overflow: hidden;
+  transition:
+    border-color 300ms var(--ease-out-expo),
+    box-shadow   300ms var(--ease-out-expo);
+}
+
+.comet-card-wrap:hover .comet-card-shell {
+  border-color: var(--border-subtle);
+  box-shadow:
+    0 1px 0   rgba(255, 255, 255, 0.09) inset,
+    var(--shadow-hover);
+}
+
+/* ── Inner core: OLED black pane, inner refraction on top edge ── */
+.comet-card-core {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-1);         /* #0a0a0a */
+  border-radius: calc(18px - 3px);      /* concentric curve math */
+  box-shadow: inset 0 1px 0 var(--edge-top);  /* 1 px inner refraction */
+  overflow: hidden;
+  position: relative;
+}
+
