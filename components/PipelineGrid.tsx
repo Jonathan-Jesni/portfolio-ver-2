@@ -1,17 +1,14 @@
 "use client";
 
-import { useRef } from "react";
 import type { BuildingItem } from "@/lib/data";
 import { CometCard } from "@/components/ui/comet-card";
+import MotionBorder from "@/components/ui/motion-border";
 
 export default function PipelineGrid({ items }: { items: readonly BuildingItem[] }) {
-  const gridRef = useRef<HTMLDivElement>(null);
-
   return (
     <div
       className="pipeline-wrapper"
-      ref={gridRef}
-      style={{ touchAction: "pan-y" }}
+      style={{ touchAction: "pan-y", position: "relative" }}
     >
       {/* Dot-grid background texture */}
       <svg className="pipeline-grid-bg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -23,7 +20,25 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
         <rect width="100%" height="100%" fill="url(#pipeline-dot-grid)" />
       </svg>
 
-      <div className="building-grid">
+      <div className="building-grid" style={{ position: "relative" }}>
+        {/*
+          MotionBorder — "H" circuit that connects both cards.
+          Sits directly INSIDE .building-grid so its 100% height
+          tightly hugs the cards and ignores the wrapper's 32px padding.
+        */}
+        <MotionBorder
+          cardGapPx={64}
+          borderRadius={18}
+          borderPadding={12}
+          bridgePosition={0.38}
+          bridgeCurveRadius={10}
+          duration={12}
+          dotColor="rgba(255,255,255,0.9)"
+          dotSize={5}
+          trackColor="rgba(255,255,255,0.06)"
+          trackWidth={1}
+        />
+
         {items.map((item, idx) => (
           <CometCard
             key={item.id}
@@ -50,7 +65,6 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
 
                 <h3 className="pipeline-title">{item.title}</h3>
 
-                {/* Pipeline steps — static labels, no playhead */}
                 <div className="pipe-steps-row" aria-label="Pipeline steps">
                   {item.steps.map((step, si) => (
                     <span key={step} className="pipe-step">

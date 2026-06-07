@@ -16,14 +16,14 @@ export interface CometCardProps {
 
 /* ─── Component ──────────────────────────────────────────────────────── */
 export function CometCard({
-  rotateDepth = 17.5,
+  rotateDepth    = 17.5,
   translateDepth = 20,
-  className = "",
+  className      = "",
   children,
 }: CometCardProps) {
   const wrapRef  = useRef<HTMLDivElement>(null);
   const rafRef   = useRef<number | null>(null);
-  const stateRef = useRef({ rx: 0, ry: 0, tx: 0, ty: 0, active: false });
+  const stateRef = useRef({ rx: 0, ry: 0, tx: 0, ty: 0 });
 
   /* ── Derive the target tilt/translate from pointer position ── */
   const handleMouseMove = useCallback(
@@ -31,17 +31,16 @@ export function CometCard({
       const el = wrapRef.current;
       if (!el) return;
 
-      const r   = el.getBoundingClientRect();
+      const r  = el.getBoundingClientRect();
       /* Normalised coords: -1 to +1 from centre */
-      const nx  = (e.clientX - r.left  - r.width  / 2) / (r.width  / 2);
-      const ny  = (e.clientY - r.top   - r.height / 2) / (r.height / 2);
+      const nx = (e.clientX - r.left  - r.width  / 2) / (r.width  / 2);
+      const ny = (e.clientY - r.top   - r.height / 2) / (r.height / 2);
 
       stateRef.current = {
         rx: -ny * rotateDepth,
         ry:  nx * rotateDepth,
         tx:  nx * translateDepth,
         ty:  ny * translateDepth,
-        active: true,
       };
     },
     [rotateDepth, translateDepth],
@@ -49,15 +48,12 @@ export function CometCard({
 
   /* ── Reset on leave ── */
   const handleMouseLeave = useCallback(() => {
-    stateRef.current = { rx: 0, ry: 0, tx: 0, ty: 0, active: false };
+    stateRef.current = { rx: 0, ry: 0, tx: 0, ty: 0 };
   }, []);
 
   /* ── Animate: lerp the current transform toward the target each frame ── */
   useEffect(() => {
-    /* current animated values */
     let crx = 0, cry = 0, ctx = 0, cty = 0;
-
-    /* Lerp factor — lower = heavier/slower, higher = snappier */
     const LERP = 0.09;
 
     function tick() {
@@ -105,7 +101,6 @@ export function CometCard({
     <div
       ref={wrapRef}
       className={`comet-card-wrap ${className}`}
-      /* Reduced-motion: transform is overridden to none via CSS */
     >
       {/* ── Double-bezel outer shell ── */}
       <div className="comet-card-shell">
