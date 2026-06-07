@@ -140,7 +140,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
       ],
       { opacity: 0, y: -80 }
     );
-    gsap.set(".hero-3d-layer", { opacity: 0 });
   }, { scope: runwayRef });
 
   /* ── Entrance animation (fires after preloader) ── */
@@ -165,13 +164,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
           stagger: 0.08,
         }
       );
-
-      gsap.to(".hero-3d-layer", {
-        opacity: 1,
-        duration: 1.4,
-        ease: "power2.out",
-        delay: 0.5,
-      });
     });
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
@@ -180,7 +172,6 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         [".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
-      gsap.set(".hero-3d-layer", { opacity: 1 });
     });
 
     return () => mm.revert();

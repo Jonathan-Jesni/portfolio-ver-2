@@ -10,6 +10,154 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 /* ─────────────────────────────────────────────────────────────────────
+   DOT GRID — GPU particle background
+   All physics (repulsion, spring-return, twinkle) live in GLSL.
+   The only CPU work is writing uMouse once per mousemove event.
+   ───────────────────────────────────────────────────────────────── */
+const dotGridVertexShader = /* glsl */ `
+  uniform float uTime;
+  uniform vec2  uMouse;      // NDC -1..+1 per axis, canvas-local
+  uniform float uRepelRadius;  // world-units repulsion radius
+  uniform float uRepelStrength;
+  uniform float uAspect;     // canvas W/H for correct NDC→world mapping
+
+  attribute float aSeed;   // per-vertex random [0,1] for twinkle
+
+  varying float vOpacity;
+
+  void main() {
+    // ── 1. Start at rest position ──
+    vec3 pos = position;
+
+    // ── 2. Convert mouse from NDC → world-space XY ──
+    // Camera sits at z=6.5 with fov=45. At z=0 plane:
+    //   half_h = tan(fov/2) * 6.5  ≈  2.69
+    //   half_w = half_h * aspect
+    float halfH = 2.693;
+    float halfW = halfH * uAspect;
+    vec2 mouseWorld = vec2(uMouse.x * halfW, uMouse.y * halfH);
+
+    // ── 3. Repulsion ──
+    vec2  delta = pos.xy - mouseWorld;
+    float dist  = length(delta);
+    if (dist < uRepelRadius && dist > 0.0001) {
+      // Smooth falloff: strongest at center, zero at edge
+      float strength = pow(1.0 - dist / uRepelRadius, 2.5) * uRepelStrength;
+      pos.xy += normalize(delta) * strength;
+    }
+
+    // ── 4. Twinkle — noise from seed + time ──
+    float twinkle = 0.5 + 0.5 * sin(uTime * (1.2 + aSeed * 2.8) + aSeed * 6.2831);
+    // Occasional bright flash
+    float flash = step(0.97, fract(aSeed * 17.31 + uTime * (0.08 + aSeed * 0.12)));
+    vOpacity = mix(0.04, 0.18, twinkle) + flash * 0.22;
+
+    gl_Position  = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    gl_PointSize = 1.8;
+  }
+`;
+
+const dotGridFragmentShader = /* glsl */ `
+  varying float vOpacity;
+
+  void main() {
+    // Soft circular dot (anti-aliased disc inside gl_PointSize quad)
+    vec2  uv   = gl_PointCoord - 0.5;
+    float disc = 1.0 - smoothstep(0.35, 0.5, length(uv));
+    gl_FragColor = vec4(1.0, 1.0, 1.0, vOpacity * disc);
+  }
+`;
+
+const DotGridMaterial = shaderMaterial(
+  {
+    uTime:          0,
+    uMouse:         new THREE.Vector2(0, 0),
+    uRepelRadius:   1.1,
+    uRepelStrength: 0.55,
+    uAspect:        1.0,
+  },
+  dotGridVertexShader,
+  dotGridFragmentShader
+);
+
+extend({ DotGridMaterial });
+
+declare module "@react-three/fiber" {
+  interface ThreeElements {
+    dotGridMaterial: React.PropsWithChildren<{
+      ref?:            React.Ref<THREE.ShaderMaterial & DotGridUniforms>;
+      uTime?:          number;
+      uMouse?:         THREE.Vector2;
+      uRepelRadius?:   number;
+      uRepelStrength?: number;
+      uAspect?:        number;
+      transparent?:    boolean;
+      depthWrite?:     boolean;
+    }>;
+  }
+}
+
+interface DotGridUniforms {
+  uTime:          number;
+  uMouse:         THREE.Vector2;
+  uRepelRadius:   number;
+  uRepelStrength: number;
+  uAspect:        number;
+}
+
+function DotGrid() {
+  const matRef  = useRef<THREE.ShaderMaterial & DotGridUniforms>(null);
+  const { size } = useThree();
+
+  // Build flat grid geometry once
+  const [geometry, seedAttr] = useMemo(() => {
+    const cols = 80;
+    const rows = 45;
+    const spacingX = 0.175;
+    const spacingY = 0.175;
+    const totalW = (cols - 1) * spacingX;
+    const totalH = (rows - 1) * spacingY;
+
+    const positions = new Float32Array(cols * rows * 3);
+    const seeds     = new Float32Array(cols * rows);
+    let idx = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        positions[idx * 3 + 0] = c * spacingX - totalW / 2;
+        positions[idx * 3 + 1] = r * spacingY - totalH / 2;
+        positions[idx * 3 + 2] = 0;
+        seeds[idx] = Math.random();
+        idx++;
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const seedBuf = new THREE.BufferAttribute(seeds, 1);
+    geo.setAttribute('aSeed', seedBuf);
+    return [geo, seedBuf] as const;
+  }, []);
+
+  useFrame((state, delta) => {
+    const mat = matRef.current;
+    if (!mat) return;
+    mat.uTime      += delta;
+    mat.uMouse.copy(state.pointer);
+    mat.uAspect     = size.width / size.height;
+  });
+
+  return (
+    <points geometry={geometry}>
+      <dotGridMaterial
+        ref={matRef}
+        transparent
+        depthWrite={false}
+      />
+    </points>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    VERTEX SHADER
    uExplodeProgress 0→1: pushes vertices out along their normals with
    strong lateral (X/Y) bias so the center clears completely by ~0.6.
@@ -214,7 +362,7 @@ function CyberCore({ explodeRef }: CyberCoreProps) {
    but the <canvas> itself re-enables pointer-events for drag.
    ─────────────────────────────────────────────────────────────────── */
 export default function InteractiveModel() {
-  const explodeRef = useRef(0);
+  const explodeRef  = useRef(0);
 
   useEffect(() => {
     const st = ScrollTrigger.create({
@@ -255,6 +403,8 @@ export default function InteractiveModel() {
           display: "block",
         }}
       >
+        {/* DotGrid renders BEFORE CyberCore so it is behind the hologram */}
+        <DotGrid />
         <CyberCore explodeRef={explodeRef} />
       </Canvas>
 
