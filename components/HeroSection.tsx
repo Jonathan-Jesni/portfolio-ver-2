@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
-import { GitHubIcon } from "./icons";
+import { GitHubIcon } from "./ui/icons";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 

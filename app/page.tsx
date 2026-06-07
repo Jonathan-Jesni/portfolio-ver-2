@@ -7,7 +7,7 @@ import HeroSection from "../components/HeroSection";
 import StickyDeckSection from "../components/StickyDeckSection";
 import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
-import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/icons";
+import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/ui/icons";
 import { BUILDING } from "../lib/data";
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });

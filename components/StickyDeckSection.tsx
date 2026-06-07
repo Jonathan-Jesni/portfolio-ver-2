@@ -6,7 +6,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { PROJECTS } from "../lib/data";
-import { ArrowUpRightIcon } from "./icons";
+import { ArrowUpRightIcon } from "./ui/icons";
 import { CometCard } from "@/components/ui/comet-card";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
