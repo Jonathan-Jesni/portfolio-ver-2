@@ -10,58 +10,27 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 /* ─────────────────────────────────────────────────────────────────────
-   DOT GRID — GPU particle background
-   All physics (repulsion, spring-return, twinkle) live in GLSL.
-   The only CPU work is writing uMouse once per mousemove event.
+   DOT GRID — Premium CPU Physics + GPU Twinkle
    ───────────────────────────────────────────────────────────────── */
 const dotGridVertexShader = /* glsl */ `
   uniform float uTime;
-  uniform vec2  uMouse;      // NDC -1..+1 per axis, canvas-local
-  uniform float uRepelRadius;  // world-units repulsion radius
-  uniform float uRepelStrength;
-  uniform float uAspect;     // canvas W/H for correct NDC→world mapping
-
-  attribute float aSeed;   // per-vertex random [0,1] for twinkle
-
+  attribute float aSeed;
   varying float vOpacity;
 
   void main() {
-    // ── 1. Start at rest position ──
-    vec3 pos = position;
-
-    // ── 2. Convert mouse from NDC → world-space XY ──
-    // Camera sits at z=6.5 with fov=45. At z=0 plane:
-    //   half_h = tan(fov/2) * 6.5  ≈  2.69
-    //   half_w = half_h * aspect
-    float halfH = 2.693;
-    float halfW = halfH * uAspect;
-    vec2 mouseWorld = vec2(uMouse.x * halfW, uMouse.y * halfH);
-
-    // ── 3. Repulsion ──
-    vec2  delta = pos.xy - mouseWorld;
-    float dist  = length(delta);
-    if (dist < uRepelRadius && dist > 0.0001) {
-      // Smooth falloff: strongest at center, zero at edge
-      float strength = pow(1.0 - dist / uRepelRadius, 2.5) * uRepelStrength;
-      pos.xy += normalize(delta) * strength;
-    }
-
-    // ── 4. Twinkle — noise from seed + time ──
+    // ── 1. Twinkle — noise from seed + time ──
     float twinkle = 0.5 + 0.5 * sin(uTime * (1.2 + aSeed * 2.8) + aSeed * 6.2831);
-    // Occasional bright flash
     float flash = step(0.97, fract(aSeed * 17.31 + uTime * (0.08 + aSeed * 0.12)));
     vOpacity = mix(0.04, 0.18, twinkle) + flash * 0.22;
 
-    gl_Position  = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = 1.8;
   }
 `;
 
 const dotGridFragmentShader = /* glsl */ `
   varying float vOpacity;
-
   void main() {
-    // Soft circular dot (anti-aliased disc inside gl_PointSize quad)
     vec2  uv   = gl_PointCoord - 0.5;
     float disc = 1.0 - smoothstep(0.35, 0.5, length(uv));
     gl_FragColor = vec4(1.0, 1.0, 1.0, vOpacity * disc);
@@ -69,90 +38,143 @@ const dotGridFragmentShader = /* glsl */ `
 `;
 
 const DotGridMaterial = shaderMaterial(
-  {
-    uTime:          0,
-    uMouse:         new THREE.Vector2(0, 0),
-    uRepelRadius:   1.1,
-    uRepelStrength: 0.55,
-    uAspect:        1.0,
-  },
+  { uTime: 0 },
   dotGridVertexShader,
   dotGridFragmentShader
 );
-
 extend({ DotGridMaterial });
 
 declare module "@react-three/fiber" {
   interface ThreeElements {
     dotGridMaterial: React.PropsWithChildren<{
-      ref?:            React.Ref<THREE.ShaderMaterial & DotGridUniforms>;
-      uTime?:          number;
-      uMouse?:         THREE.Vector2;
-      uRepelRadius?:   number;
-      uRepelStrength?: number;
-      uAspect?:        number;
-      transparent?:    boolean;
-      depthWrite?:     boolean;
+      ref?: React.Ref<THREE.ShaderMaterial & { uTime: number }>;
+      uTime?: number;
+      transparent?: boolean;
+      depthWrite?: boolean;
     }>;
   }
 }
 
-interface DotGridUniforms {
-  uTime:          number;
-  uMouse:         THREE.Vector2;
-  uRepelRadius:   number;
-  uRepelStrength: number;
-  uAspect:        number;
-}
-
 function DotGrid() {
-  const matRef  = useRef<THREE.ShaderMaterial & DotGridUniforms>(null);
-  const { size } = useThree();
+  const matRef = useRef<THREE.ShaderMaterial & { uTime: number }>(null);
+  const geoRef = useRef<THREE.BufferGeometry>(null);
+  const { size, camera } = useThree();
 
-  // Build flat grid geometry once
-  const [geometry, seedAttr] = useMemo(() => {
+  // Physics constants
+  const repelRadius = 1.4;
+  const repelForce = 0.04;
+  const returnSpeed = 0.08;
+  const friction = 0.82;
+
+  // Initialize data buffers
+  const { cols, rows, basePos, currentPos, velocities, seeds } = useMemo(() => {
     const cols = 80;
     const rows = 45;
+    const N = cols * rows;
     const spacingX = 0.175;
     const spacingY = 0.175;
     const totalW = (cols - 1) * spacingX;
     const totalH = (rows - 1) * spacingY;
 
-    const positions = new Float32Array(cols * rows * 3);
-    const seeds     = new Float32Array(cols * rows);
+    const basePos = new Float32Array(N * 3);
+    const currentPos = new Float32Array(N * 3);
+    const velocities = new Float32Array(N * 3);
+    const seeds = new Float32Array(N);
+
     let idx = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        positions[idx * 3 + 0] = c * spacingX - totalW / 2;
-        positions[idx * 3 + 1] = r * spacingY - totalH / 2;
-        positions[idx * 3 + 2] = 0;
+        const x = c * spacingX - totalW / 2;
+        const y = r * spacingY - totalH / 2;
+        
+        basePos[idx * 3 + 0] = x;
+        basePos[idx * 3 + 1] = y;
+        basePos[idx * 3 + 2] = 0;
+
+        currentPos[idx * 3 + 0] = x;
+        currentPos[idx * 3 + 1] = y;
+        currentPos[idx * 3 + 2] = 0;
+
         seeds[idx] = Math.random();
         idx++;
       }
     }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const seedBuf = new THREE.BufferAttribute(seeds, 1);
-    geo.setAttribute('aSeed', seedBuf);
-    return [geo, seedBuf] as const;
+    return { cols, rows, basePos, currentPos, velocities, seeds };
   }, []);
 
   useFrame((state, delta) => {
-    const mat = matRef.current;
-    if (!mat) return;
-    mat.uTime      += delta;
-    mat.uMouse.copy(state.pointer);
-    mat.uAspect     = size.width / size.height;
+    if (matRef.current) matRef.current.uTime += delta;
+    if (!geoRef.current) return;
+
+    // Convert mouse NDC to World Space (Z=0 plane)
+    const aspect = size.width / size.height;
+    const halfH = 2.693; // tan(45/2) * 6.5
+    const halfW = halfH * aspect;
+    const mx = state.pointer.x * halfW;
+    const my = state.pointer.y * halfH;
+
+    const N = cols * rows;
+    for (let i = 0; i < N; i++) {
+      const i3 = i * 3;
+      
+      const bx = basePos[i3 + 0];
+      const by = basePos[i3 + 1];
+      
+      let cx = currentPos[i3 + 0];
+      let cy = currentPos[i3 + 1];
+      
+      let vx = velocities[i3 + 0];
+      let vy = velocities[i3 + 1];
+
+      // 1. Mouse Repulsion
+      const dx = cx - mx;
+      const dy = cy - my;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist < repelRadius && dist > 0.001) {
+        const force = Math.pow(1.0 - dist / repelRadius, 2.0) * repelForce;
+        vx += (dx / dist) * force;
+        vy += (dy / dist) * force;
+      }
+
+      // 2. Spring return to base position
+      vx += (bx - cx) * returnSpeed;
+      vy += (by - cy) * returnSpeed;
+
+      // 3. Friction
+      vx *= friction;
+      vy *= friction;
+
+      // 4. Update positions
+      cx += vx;
+      cy += vy;
+
+      currentPos[i3 + 0] = cx;
+      currentPos[i3 + 1] = cy;
+      velocities[i3 + 0] = vx;
+      velocities[i3 + 1] = vy;
+    }
+
+    const posAttr = geoRef.current.attributes.position as THREE.BufferAttribute;
+    posAttr.copyArray(currentPos);
+    posAttr.needsUpdate = true;
   });
 
   return (
-    <points geometry={geometry}>
-      <dotGridMaterial
-        ref={matRef}
-        transparent
-        depthWrite={false}
-      />
+    <points>
+      <bufferGeometry ref={geoRef}>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[currentPos, 3]}
+          count={currentPos.length / 3}
+        />
+        <bufferAttribute
+          attach="attributes-aSeed"
+          args={[seeds, 1]}
+          count={seeds.length}
+        />
+      </bufferGeometry>
+      <dotGridMaterial ref={matRef} transparent depthWrite={false} />
     </points>
   );
 }
