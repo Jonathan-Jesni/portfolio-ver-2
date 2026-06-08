@@ -67,7 +67,7 @@ export default function SpatialSection({
           tl.to(
             el,
             {
-              clipPath: "inset(0 0 0% 0)",
+              clipPath: "inset(-20% -20% -20% -20%)",
               yPercent: 0,
               ease: "back.out(1.5)",
               duration: 0.12,

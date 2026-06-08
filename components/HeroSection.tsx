@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
-import { GitHubIcon } from "./ui/icons";
+import { GitHubIcon, LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
 import { CircuitUnderline } from "./ui/CircuitUnderline";
 
@@ -264,7 +264,16 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                 >
                   <GitHubIcon size={16} />
                   View My Work
-                  <span className="btn-arrow" aria-hidden="true">↗</span>
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline"
+                  id="hero-linkedin-btn"
+                >
+                  <LinkedInIcon size={16} />
+                  LinkedIn
                 </a>
                 <a
                   href="/assets/Jonathan_Resume.pdf"
@@ -274,6 +283,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
                   id="hero-resume-btn"
                 >
                   Resume
+                  <span className="btn-arrow" aria-hidden="true">↗</span>
                 </a>
               </div>
               </div>

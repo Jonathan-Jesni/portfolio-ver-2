@@ -5,6 +5,7 @@ html.lenis,
 html.lenis body {
   height: auto;
 }
+
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
@@ -75,7 +76,8 @@ img {
   background-size: 200px 200px;
 }
 
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+@media (max-width: 768px),
+(prefers-reduced-motion: reduce) {
   .grain-overlay {
     display: none;
   }
@@ -147,12 +149,18 @@ img {
   --t-slow: 500ms var(--ease-out-expo);
 
   /* Semantic z-index scale — never use arbitrary values elsewhere */
-  --z-grain: 9999;        /* film-grain overlay: always on top */
-  --z-preloader: 9998;    /* preloader curtain */
-  --z-nav: 100;           /* floating nav pill */
-  --z-mobile-menu: 99;    /* full-screen mobile overlay */
-  --z-above: 10;          /* in-card elevated elements */
-  --z-base: 1;            /* default stacking context */
+  --z-grain: 9999;
+  /* film-grain overlay: always on top */
+  --z-preloader: 9998;
+  /* preloader curtain */
+  --z-nav: 100;
+  /* floating nav pill */
+  --z-mobile-menu: 99;
+  /* full-screen mobile overlay */
+  --z-above: 10;
+  /* in-card elevated elements */
+  --z-base: 1;
+  /* default stacking context */
 }
 
 /* ---- Mono utility â€” strict use for code, numbers, labels only ---- */
@@ -511,9 +519,9 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 12px 12px 20px;
+  padding: 11px 18px;
   font-family: var(--font-jakarta), sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 100px;
   transition: transform var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
@@ -726,12 +734,12 @@ img {
 }
 
 .sp-reveal {
-  overflow: hidden;
+  overflow: visible;
   will-change: clip-path, transform;
 }
 
 /* ============================================================
-   GRAVITY PIT â€” Matter.js DOM-based physics playground
+   GRAVITY PIT — Matter.js DOM-based physics playground
    Default: static, silent, premium grid layout
    Physics only activates on user interaction
    ============================================================ */
@@ -1304,10 +1312,7 @@ img {
   }
 }
 
-/* Building card â€” Double-Bezel */
-.building-card {
-  /* CometCard inside owns all visual bezel styling */
-}
+/* .building-card: CometCard inside owns all visual bezel styling */
 
 .building-card-inner {
   /* Inner core */
@@ -2023,7 +2028,8 @@ img {
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--border-hairline);
-  cursor: crosshair; /* signals interactivity without being distracting */
+  cursor: crosshair;
+  /* signals interactivity without being distracting */
 }
 
 .glass-image-canvas {
@@ -2083,8 +2089,10 @@ canvas.glass-image-canvas {
 .sc-card--3d .sc-card-inner {
   /* Inner core also participates in 3D space */
   transform-style: preserve-3d;
-  overflow: visible; /* allow z-layer children to visually pop */
+  overflow: visible;
+  /* allow z-layer children to visually pop */
 }
+
 .fade-in-delay-1 {
   transition-delay: 0.08s;
 }
@@ -2217,7 +2225,8 @@ canvas.glass-image-canvas {
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--border-hairline);
-  cursor: crosshair; /* signals interactivity without being distracting */
+  cursor: crosshair;
+  /* signals interactivity without being distracting */
 }
 
 .glass-image-canvas {
@@ -2277,7 +2286,8 @@ canvas.glass-image-canvas {
 .sc-card--3d .sc-card-inner {
   /* Inner core also participates in 3D space */
   transform-style: preserve-3d;
-  overflow: visible; /* allow z-layer children to visually pop */
+  overflow: visible;
+  /* allow z-layer children to visually pop */
 }
 
 /* Z-layer utility — inner elements that float at different depths */
@@ -2318,8 +2328,14 @@ canvas.glass-image-canvas {
 }
 
 @media (max-width: 767px) {
-  .sd-header { padding-top: 80px; padding-bottom: 48px; }
-  .sticky-deck-section { padding-bottom: 80px; }
+  .sd-header {
+    padding-top: 80px;
+    padding-bottom: 48px;
+  }
+
+  .sticky-deck-section {
+    padding-bottom: 80px;
+  }
 }
 
 /* ── Top-level split grid ──────────────────────────────────── */
@@ -2435,14 +2451,12 @@ canvas.glass-image-canvas {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 30%,
-    hsl(var(--card-hue, "210, 100%, 56%") / 0.9) 50%,
-    hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 70%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 30%,
+      hsl(var(--card-hue, "210, 100%, 56%") / 0.9) 50%,
+      hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 70%,
+      transparent 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -2464,7 +2478,7 @@ canvas.glass-image-canvas {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.55) 100%);
+    linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
   pointer-events: none;
   z-index: 1;
 }
@@ -2529,22 +2543,34 @@ canvas.glass-image-canvas {
 }
 
 @keyframes wirePulse {
-  0% { transform: translateX(-100%); }
-  10% { transform: translateX(100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  10% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes nodeIlluminate {
-  0%, 100% {
+
+  0%,
+  100% {
     color: var(--ink-4);
     border-color: var(--border-hairline);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
+
   10% {
     color: var(--ink-0);
     border-color: hsl(var(--card-hue));
     box-shadow: 0 0 12px hsla(var(--card-hue), 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
   }
+
   25% {
     color: var(--ink-4);
     border-color: var(--border-hairline);
@@ -2565,7 +2591,7 @@ canvas.glass-image-canvas {
 .sd-placeholder-label {
   font-size: 11px;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.10);
+  color: rgba(255, 255, 255, 0.10);
 }
 
 /* ── Shared text styles ─────────────────────────────────────── */
@@ -2648,7 +2674,9 @@ canvas.glass-image-canvas {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .sd-card-link:hover { color: var(--accent); }
+  .sd-card-link:hover {
+    color: var(--accent);
+  }
 }
 
 /* ── Glass text card ──────────────────────────────────────────── */
@@ -2690,7 +2718,8 @@ canvas.glass-image-canvas {
 
 /* Inline subtitle: dimmer, same font but lower weight */
 .sd-text-subtitle {
-  font-size: 0.6em;         /* relative to h3 — scales with the title */
+  font-size: 0.6em;
+  /* relative to h3 — scales with the title */
   font-weight: 400;
   color: var(--ink-3);
   letter-spacing: -0.01em;
@@ -2765,6 +2794,7 @@ canvas.glass-image-canvas {
     opacity: 1 !important;
     filter: none !important;
   }
+
   .sd-text-panel {
     transition: none;
   }
@@ -2774,7 +2804,10 @@ canvas.glass-image-canvas {
    REDUCED MOTION — mandatory accessibility
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -2841,18 +2874,19 @@ canvas.glass-image-canvas {
   border-radius: 18px;
   padding: 3px;
   box-shadow:
-    0 1px 0   rgba(255, 255, 255, 0.06) inset, /* top edge refraction */
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    /* top edge refraction */
     var(--shadow-card);
   overflow: hidden;
   transition:
     border-color 300ms var(--ease-out-expo),
-    box-shadow   300ms var(--ease-out-expo);
+    box-shadow 300ms var(--ease-out-expo);
 }
 
 .comet-card-wrap:hover .comet-card-shell {
   border-color: var(--border-subtle);
   box-shadow:
-    0 1px 0   rgba(255, 255, 255, 0.09) inset,
+    0 1px 0 rgba(255, 255, 255, 0.09) inset,
     var(--shadow-hover);
 }
 
@@ -2860,10 +2894,12 @@ canvas.glass-image-canvas {
 .comet-card-core {
   width: 100%;
   height: 100%;
-  background: var(--surface-1);         /* #0a0a0a */
-  border-radius: calc(18px - 3px);      /* concentric curve math */
-  box-shadow: inset 0 1px 0 var(--edge-top);  /* 1 px inner refraction */
+  background: var(--surface-1);
+  /* #0a0a0a */
+  border-radius: calc(18px - 3px);
+  /* concentric curve math */
+  box-shadow: inset 0 1px 0 var(--edge-top);
+  /* 1 px inner refraction */
   overflow: hidden;
   position: relative;
 }
-
