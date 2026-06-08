@@ -55,51 +55,18 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
   const dot2Refs = useRef<Array<SVGCircleElement | null>>([]);
 
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [pathD, setPathD] = useState('');
 
   const N = 200; // super dense trail particle count
   const pathPointsRef = useRef<{ x: number; y: number }[]>([]);
   const pathLengthRef = useRef<number>(0);
 
-  // Precompute the high-resolution LUT when the path changes
-  useLayoutEffect(() => {
-    if (!pathD || !pathRef.current) return;
-    const path = pathRef.current;
-    const pathLength = path.getTotalLength();
-    pathLengthRef.current = pathLength;
-
-    const pointsCount = 5000;
-    const points: { x: number; y: number }[] = [];
-    for (let i = 0; i < pointsCount; i++) {
-      const p = path.getPointAtLength((i / (pointsCount - 1)) * pathLength);
-      points.push({ x: p.x, y: p.y });
-    }
-    pathPointsRef.current = points;
-  }, [pathD]);
-
-  // Observe parent size
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg || !svg.parentElement) return;
-    const parent = svg.parentElement;
-
-    const ro = new ResizeObserver(() => {
-      setSize({ w: parent.clientWidth, h: parent.clientHeight });
-    });
-
-    ro.observe(parent);
-    setSize({ w: parent.clientWidth, h: parent.clientHeight });
-    return () => ro.disconnect();
-  }, []);
-
   // Compute the H path from the live parent dimensions
-  useLayoutEffect(() => {
-    if (size.w === 0 || size.h === 0) return;
+  const pathD = React.useMemo(() => {
+    if (size.w === 0 || size.h === 0) return '';
 
     // Hide on mobile (single-column stack)
     if (size.w <= 640) {
-      setPathD('');
-      return;
+      return '';
     }
 
     const W = size.w;
@@ -129,7 +96,7 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
     const upperBridgeY = lT + (lB - lT) * bridgePosition;
     const lowerBridgeY = lB - (lB - lT) * bridgePosition;
 
-    const d = [
+    return [
       // ═══ TOP-LEFT CORNER of left card ═══
       `M ${lL + r},${lT}`,
 
@@ -191,9 +158,40 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
 
       'Z',
     ].join(' ');
-
-    setPathD(d);
   }, [size, borderRadius, borderPadding, bridgePosition, bridgeCurveRadius, cardGapPx]);
+
+  // Precompute the high-resolution LUT when the path changes
+  useLayoutEffect(() => {
+    if (!pathD || !pathRef.current) return;
+    const path = pathRef.current;
+    const pathLength = path.getTotalLength();
+    pathLengthRef.current = pathLength;
+
+    const pointsCount = 5000;
+    const points: { x: number; y: number }[] = [];
+    for (let i = 0; i < pointsCount; i++) {
+      const p = path.getPointAtLength((i / (pointsCount - 1)) * pathLength);
+      points.push({ x: p.x, y: p.y });
+    }
+    pathPointsRef.current = points;
+  }, [pathD]);
+
+  // Observe parent size
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || !svg.parentElement) return;
+    const parent = svg.parentElement;
+
+    const ro = new ResizeObserver(() => {
+      setSize({ w: parent.clientWidth, h: parent.clientHeight });
+    });
+
+    ro.observe(parent);
+    setSize({ w: parent.clientWidth, h: parent.clientHeight });
+    return () => ro.disconnect();
+  }, []);
+
+
 
   // Animate two dots along the path with smooth tapering trails (LUT-based)
   useGSAP(

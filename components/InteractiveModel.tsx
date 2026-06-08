@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/purity */
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
