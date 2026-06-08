@@ -133,7 +133,7 @@ export default function Home() {
       <SpatialSection id="contact">
         <div className="container">
           <div className="contact-inner">
-            <RollingHeadline text="Get In Touch" className="contact-heading" animate={preloaderDone} />
+            <RollingHeadline text="Get In Touch" className="contact-heading sp-reveal" animate={preloaderDone} />
             <p className="contact-text sp-reveal">
               I&apos;m actively looking for internships and opportunities to build impactful systems.
               Whether you have a question, a project idea, or just want to connect — my inbox is open.

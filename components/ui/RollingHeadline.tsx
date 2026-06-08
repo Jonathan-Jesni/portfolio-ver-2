@@ -19,6 +19,8 @@ export function RollingHeadline({ text, className = "", animate = true }: Rollin
   useGSAP(() => {
     if (!animate || !containerRef.current) return;
 
+    const runway = containerRef.current.closest('.sp-runway');
+
     // Use GSAP native scoped selector string with fromTo to guarantee the start coordinates are mapped
     gsap.fromTo(".char-track", 
       { yPercent: 0 },
@@ -28,8 +30,8 @@ export function RollingHeadline({ text, className = "", animate = true }: Rollin
         duration: 1.0, // Slower, longer duration for more rolls
         stagger: 0.02, // Slightly more relaxed stagger
         scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 95%", // Trigger as it enters viewport
+          trigger: runway || containerRef.current,
+          start: runway ? "top -40%" : "top 95%", // Delay if inside a SpatialSection runway
           toggleActions: "restart none none reset", // Roll on enter, snap back on leave reverse
         },
       }
