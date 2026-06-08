@@ -7,12 +7,13 @@ import HeroSection from "../components/HeroSection";
 import StickyDeckSection from "../components/StickyDeckSection";
 import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
-import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/ui/icons";
+import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "../components/ui/icons";
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { RollingHeadline } from "../components/ui/RollingHeadline";
+import { HoverScrambleText } from "../components/ui/HoverScrambleText";
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
@@ -47,10 +48,10 @@ export default function Home() {
             <span className="bracket">&#123;</span>J<span className="bracket">&#125;</span>
           </a>
           <ul className="nav-links">
-            <li><a href="#projects">Projects</a></li>
-            <li><a href="#skills">Skills</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
+            <li><a href="#projects"><HoverScrambleText text="Projects" /></a></li>
+            <li><a href="#skills"><HoverScrambleText text="Skills" /></a></li>
+            <li><a href="#about"><HoverScrambleText text="About" /></a></li>
+            <li><a href="#contact"><HoverScrambleText text="Contact" /></a></li>
           </ul>
           <a
             href="/assets/Jonathan_Resume.pdf"
@@ -59,7 +60,7 @@ export default function Home() {
             className="nav-resume"
             id="nav-resume-btn"
           >
-            Resume
+            <HoverScrambleText text="Resume" />
             <span className="nav-resume-arrow" aria-hidden="true">↗</span>
           </a>
           <button
@@ -141,18 +142,19 @@ export default function Home() {
             <div className="contact-links sp-reveal">
               <a href="mailto:jonathanjesni@gmail.com" className="contact-link" id="contact-email-btn">
                 <MailIcon />
-                Email
+                <HoverScrambleText text="Let's Work Together" />
               </a>
-              <a href="https://github.com/Jonathan-Jesni" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-github-btn">
+              <a href="#projects" className="contact-link" id="contact-projects-btn">
                 <GitHubIcon />
-                GitHub
+                <HoverScrambleText text="View Projects" />
               </a>
               <a href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-linkedin-btn">
                 <LinkedInIcon />
-                LinkedIn
+                <HoverScrambleText text="Connect on LinkedIn" />
               </a>
               <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-resume-btn">
-                Resume ↗
+                <DownloadIcon />
+                <HoverScrambleText text="View Resume ↗" />
               </a>
             </div>
           </div>

@@ -1652,16 +1652,26 @@ img {
 }
 
 .contact-links {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.contact-links > :nth-child(odd) {
+  justify-self: end;
+}
+
+.contact-links > :nth-child(even) {
+  justify-self: start;
 }
 
 /* Contact link â€” same bezel-shell pattern at small scale */
 .contact-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 11px 18px;
   font-family: var(--font-jakarta), sans-serif;

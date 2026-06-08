@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { GitHubIcon, LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
 import { CircuitUnderline } from "./ui/CircuitUnderline";
+import { HoverScrambleText } from "./ui/HoverScrambleText";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -195,9 +196,9 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
 
       // The 3D model handles its own exit via the explode shader —
       // we only animate the text columns here.
-      tl.to(topGroupRef.current,    { y: "-120vh", ease: "power2.in" }, 0)
-        .to(bottomGroupRef.current, { y: "120vh",  ease: "power2.in" }, 0)
-        .to(subContentRef.current,  { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0);
+      tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
+        .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
+        .to(subContentRef.current, { opacity: 0, y: 28, ease: "none", duration: 0.20 }, 0);
     });
 
     return () => mm.revert();
@@ -219,73 +220,73 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
           {/* Restore inner grid so the text is constrained to the 55fr left column */}
           <div className="hero-inner-grid">
             <div className="hero-text-col" style={{ pointerEvents: "auto" }}>
-            <h1 className="hero-name-split" aria-label="Jonathan">
-              <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
-                {TOP.map((ch, i) => (
-                  <span
-                    key={`t${i}`}
-                    ref={(el) => { topCharRefs.current[i] = el; }}
-                    className="hero-char"
+              <h1 className="hero-name-split" aria-label="Jonathan">
+                <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
+                  {TOP.map((ch, i) => (
+                    <span
+                      key={`t${i}`}
+                      ref={(el) => { topCharRefs.current[i] = el; }}
+                      className="hero-char"
+                    >
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+                <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
+                  {BOTTOM.map((ch, i) => (
+                    <span
+                      key={`b${i}`}
+                      ref={(el) => { botCharRefs.current[i] = el; }}
+                      className="hero-char"
+                    >
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+              </h1>
+
+              <div ref={subContentRef} className="hero-sub-content">
+                <h2 className="hero-tagline">
+                  I build <TerminalHighlight delay={1.2} animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
+                  that solve <CircuitUnderline delay={1.8} color="#00eaff" animate={animate}>real-world problems</CircuitUnderline>.
+                </h2>
+
+                <p className="hero-sub">
+                  CS student focused on AI, <CircuitUnderline delay={2.0} animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#b829ff" animate={animate}>scalable systems</TerminalHighlight>.
+                </p>
+
+                <div className="hero-buttons">
+                  <a
+                    href="https://github.com/Jonathan-Jesni"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    id="hero-github-btn"
                   >
-                    {ch}
-                  </span>
-                ))}
-              </span>
-              <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
-                {BOTTOM.map((ch, i) => (
-                  <span
-                    key={`b${i}`}
-                    ref={(el) => { botCharRefs.current[i] = el; }}
-                    className="hero-char"
+                    <GitHubIcon size={16} />
+                    <HoverScrambleText text="View My Work" />
+                  </a>
+                  <a
+                    href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    id="hero-linkedin-btn"
                   >
-                    {ch}
-                  </span>
-                ))}
-              </span>
-            </h1>
-
-            <div ref={subContentRef} className="hero-sub-content">
-              <h2 className="hero-tagline">
-                I build <TerminalHighlight delay={1.2} animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
-                that solve <CircuitUnderline delay={1.8} color="#00eaff" animate={animate}>real-world problems</CircuitUnderline>.
-              </h2>
-
-              <p className="hero-sub">
-                CS student focused on AI, <CircuitUnderline delay={2.0} animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#b829ff" animate={animate}>scalable systems</TerminalHighlight>.
-              </p>
-
-              <div className="hero-buttons">
-                <a
-                  href="https://github.com/Jonathan-Jesni"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                  id="hero-github-btn"
-                >
-                  <GitHubIcon size={16} />
-                  View My Work
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-outline"
-                  id="hero-linkedin-btn"
-                >
-                  <LinkedInIcon size={16} />
-                  LinkedIn
-                </a>
-                <a
-                  href="/assets/Jonathan_Resume.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-outline"
-                  id="hero-resume-btn"
-                >
-                  Resume
-                  <span className="btn-arrow" aria-hidden="true">↗</span>
-                </a>
-              </div>
+                    <LinkedInIcon size={16} />
+                    <HoverScrambleText text="Connect" />
+                  </a>
+                  <a
+                    href="/assets/Jonathan_Resume.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    id="hero-resume-btn"
+                  >
+                    <HoverScrambleText text="Resume" />
+                    <span className="btn-arrow" aria-hidden="true">↗</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
