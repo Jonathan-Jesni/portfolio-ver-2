@@ -11,32 +11,46 @@ interface RollingHeadlineProps {
   text: string;
   className?: string;
   animate?: boolean;
+  manualTrigger?: boolean;
 }
 
-export function RollingHeadline({ text, className = "", animate = true }: RollingHeadlineProps) {
+export function RollingHeadline({ text, className = "", animate = true, manualTrigger = false }: RollingHeadlineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     if (!animate || !containerRef.current) return;
 
-    const runway = containerRef.current.closest('.sp-runway');
+    if (manualTrigger) {
+      // Play immediately without a ScrollTrigger (triggered programmatically)
+      gsap.fromTo(".char-track", 
+        { yPercent: 0 },
+        {
+          yPercent: -500, // Translate up by 500% to roll through 5 ghost characters
+          ease: "power4.out", // High-acceleration curve gives a snappy start and smooth settle
+          duration: 1.0, // Slower, longer duration for more rolls
+          stagger: 0.02, // Slightly more relaxed stagger
+        }
+      );
+    } else {
+      const runway = containerRef.current.closest('.sp-runway');
 
-    // Use GSAP native scoped selector string with fromTo to guarantee the start coordinates are mapped
-    gsap.fromTo(".char-track", 
-      { yPercent: 0 },
-      {
-        yPercent: -500, // Translate up by 500% to roll through 5 ghost characters
-        ease: "power4.out", // High-acceleration curve gives a snappy start and smooth settle
-        duration: 1.0, // Slower, longer duration for more rolls
-        stagger: 0.02, // Slightly more relaxed stagger
-        scrollTrigger: {
-          trigger: runway || containerRef.current,
-          start: runway ? "top -40%" : "top 95%", // Delay if inside a SpatialSection runway
-          toggleActions: "restart none none reset", // Roll on enter, snap back on leave reverse
-        },
-      }
-    );
-  }, { scope: containerRef, dependencies: [animate] });
+      // Use GSAP native scoped selector string with fromTo to guarantee the start coordinates are mapped
+      gsap.fromTo(".char-track", 
+        { yPercent: 0 },
+        {
+          yPercent: -500, // Translate up by 500% to roll through 5 ghost characters
+          ease: "power4.out", // High-acceleration curve gives a snappy start and smooth settle
+          duration: 1.0, // Slower, longer duration for more rolls
+          stagger: 0.02, // Slightly more relaxed stagger
+          scrollTrigger: {
+            trigger: runway || containerRef.current,
+            start: runway ? "top -40%" : "top 95%", // Delay if inside a SpatialSection runway
+            toggleActions: "restart none none reset", // Roll on enter, snap back on leave reverse
+          },
+        }
+      );
+    }
+  }, { scope: containerRef, dependencies: [animate, manualTrigger] });
 
   return (
     <div

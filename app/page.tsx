@@ -7,14 +7,13 @@ import HeroSection from "../components/HeroSection";
 import StickyDeckSection from "../components/StickyDeckSection";
 import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
-import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "../components/ui/icons";
+import ContactSection from "../components/ContactSection";
+
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { RollingHeadline } from "../components/ui/RollingHeadline";
 import { HoverScrambleText } from "../components/ui/HoverScrambleText";
-
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
@@ -131,35 +130,7 @@ export default function Home() {
 
       <hr className="section-divider" />
 
-      <SpatialSection id="contact">
-        <div className="container">
-          <div className="contact-inner">
-            <RollingHeadline text="Get In Touch" className="contact-heading sp-reveal" animate={preloaderDone} />
-            <p className="contact-text sp-reveal">
-              I&apos;m actively looking for internships and opportunities to build impactful systems.
-              Whether you have a question, a project idea, or just want to connect — my inbox is open.
-            </p>
-            <div className="contact-links sp-reveal">
-              <a href="mailto:jonathanjesni@gmail.com" className="contact-link" id="contact-email-btn">
-                <MailIcon />
-                <HoverScrambleText text="Let's Work Together" />
-              </a>
-              <a href="#projects" className="contact-link" id="contact-projects-btn">
-                <GitHubIcon />
-                <HoverScrambleText text="View Projects" />
-              </a>
-              <a href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-linkedin-btn">
-                <LinkedInIcon />
-                <HoverScrambleText text="Connect on LinkedIn" />
-              </a>
-              <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" className="contact-link" id="contact-resume-btn">
-                <DownloadIcon />
-                <HoverScrambleText text="View Resume ↗" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </SpatialSection>
+      <ContactSection animate={preloaderDone} />
 
       <footer className="footer" id="footer">
         <p>Designed & Built by Jonathan</p>
