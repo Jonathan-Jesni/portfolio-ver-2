@@ -19,23 +19,27 @@ export function TerminalHighlight({
 }: TerminalHighlightProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
   const sweepRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
 
   useGSAP(() => {
-    if (!sweepRef.current || !containerRef.current || !animate) return;
+    if (!sweepRef.current || !containerRef.current || !textRef.current || !animate) return;
 
-    gsap.fromTo(
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: "top 85%", // Triggers when slightly into view
+      },
+      delay: delay,
+    });
+
+    tl.fromTo(
       sweepRef.current,
-      { clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)" },
-      {
-        clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-        ease: "power4.inOut",
-        duration: 1.1, // Slowed down from 0.65
-        delay: delay,
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 85%", // Triggers when slightly into view
-        },
-      }
+      { scaleX: 0, transformOrigin: "left center" },
+      { scaleX: 1, ease: "power4.inOut", duration: 0.5 }
+    ).to(
+      textRef.current,
+      { color: "#000", duration: 0.15 },
+      "-=0.25"
     );
   }, { scope: containerRef, dependencies: [animate, delay] });
 
@@ -43,34 +47,24 @@ export function TerminalHighlight({
     <span
       ref={containerRef}
       style={{
-        display: "inline-grid",
-        whiteSpace: "nowrap",
+        position: "relative",
+        display: "inline-block",
+        padding: "0 4px",
         margin: "0 2px",
+        whiteSpace: "nowrap",
       }}
     >
-      {/* Base Layer: Normal Text */}
-      <span
-        style={{
-          gridArea: "1 / 1",
-          padding: "0 4px",
-        }}
-      >
-        {children}
-      </span>
-
-      {/* Sweep Layer: Neon Background + Black Text */}
       <span
         ref={sweepRef}
         aria-hidden="true"
         style={{
-          gridArea: "1 / 1",
-          padding: "0 4px",
+          position: "absolute",
+          inset: 0,
           backgroundColor: color,
-          color: "#000",
-          clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-          pointerEvents: "none",
+          zIndex: 0,
         }}
-      >
+      />
+      <span ref={textRef} style={{ position: "relative", zIndex: 1 }}>
         {children}
       </span>
     </span>

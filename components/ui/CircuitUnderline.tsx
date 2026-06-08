@@ -50,7 +50,7 @@ export function CircuitUnderline({
       {
         strokeDashoffset: 0,
         ease: "power3.inOut",
-        duration: 1.5, // Slowed down from 0.85
+        duration: 0.7, // Snappy SVG trace
         delay: delay,
         scrollTrigger: {
           trigger: containerRef.current,

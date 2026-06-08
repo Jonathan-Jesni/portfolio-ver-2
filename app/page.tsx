@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import AboutSection from "../components/AboutSection";
 import HeroSection from "../components/HeroSection";
@@ -11,8 +11,10 @@ import { GitHubIcon, LinkedInIcon, MailIcon } from "../components/ui/icons";
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
+import ScrollTrigger from "gsap/ScrollTrigger";
+import { RollingHeadline } from "../components/ui/RollingHeadline";
 
-gsap.registerPlugin(ScrollToPlugin);
+gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });
@@ -20,6 +22,13 @@ const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false 
 export default function Home() {
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (preloaderDone) {
+      // Refresh ScrollTrigger calculations after preloader finishes and layout settles
+      ScrollTrigger.refresh();
+    }
+  }, [preloaderDone]);
 
   function closeMobileMenu() {
     setIsMenuOpen(false);
@@ -31,7 +40,10 @@ export default function Home() {
 
       <nav className="nav" id="navbar">
         <div className="nav-inner">
-          <a href="#hero" className="nav-logo" id="nav-logo">
+          <a href="#hero" className="nav-logo" id="nav-logo" onClick={(e) => {
+            e.preventDefault();
+            gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: 'power4.inOut' });
+          }}>
             <span className="bracket">&#123;</span>J<span className="bracket">&#125;</span>
           </a>
           <ul className="nav-links">
@@ -121,7 +133,7 @@ export default function Home() {
       <SpatialSection id="contact">
         <div className="container">
           <div className="contact-inner">
-            <h2 className="contact-heading sp-reveal">Get In Touch</h2>
+            <RollingHeadline text="Get In Touch" className="contact-heading" animate={preloaderDone} />
             <p className="contact-text sp-reveal">
               I&apos;m actively looking for internships and opportunities to build impactful systems.
               Whether you have a question, a project idea, or just want to connect — my inbox is open.
