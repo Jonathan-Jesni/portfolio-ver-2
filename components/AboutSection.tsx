@@ -20,8 +20,8 @@ const BIO_PARAGRAPHS = [
     problems.
   </>,
   <>
-    Whether it&apos;s building a multimodal phishing detector as a browser extension, generating
-    synthetic training data in Blender, or engineering a deterministic document converter — I focus
+    Whether it&apos;s training a dual-stacked U-Net for medical image segmentation, generating
+    synthetic disaster scene data in Blender, or engineering a deterministic document converter — I focus
     on software that <strong>works in the real world</strong>.
   </>,
   <>

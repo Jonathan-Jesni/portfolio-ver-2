@@ -15,8 +15,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const CARD_HUES: Record<string, string> = {
   ludex:            "210, 100%, 56%",  /* electric blue  */
   "file-converter": "155,  72%, 48%",  /* teal-green     */
-  webguardian:      "  0,  82%, 58%",  /* crimson        */
-  "synthetic-data": "270,  72%, 62%",  /* violet         */
+  "double-unet":    "  0,  82%, 58%",  /* crimson        */
+  synthrescue:      "270,  72%, 62%",  /* violet         */
 };
 
 export default function StickyDeckSection() {
