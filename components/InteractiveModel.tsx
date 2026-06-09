@@ -3,17 +3,23 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, Suspense } from "react";
 import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
-import { shaderMaterial, PresentationControls, Float } from "@react-three/drei";
+import { shaderMaterial, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, useGSAP);
+
+// Preload assets outside component render loop
+useGLTF.preload("/assets/hardware_laptop.glb");
+useTexture.preload("/assets/textures/mac.png");
+useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
 /* ─────────────────────────────────────────────────────────────────────
-   DOT GRID — Premium CPU Physics + GPU Twinkle
+   DOT GRID — Background Physics Grid (Unchanged)
    ───────────────────────────────────────────────────────────────── */
 const dotGridVertexShader = /* glsl */ `
   uniform float uTime;
@@ -21,7 +27,6 @@ const dotGridVertexShader = /* glsl */ `
   varying float vOpacity;
 
   void main() {
-    // ── 1. Twinkle — noise from seed + time ──
     float twinkle = 0.5 + 0.5 * sin(uTime * (1.2 + aSeed * 2.8) + aSeed * 6.2831);
     float flash = step(0.97, fract(aSeed * 17.31 + uTime * (0.08 + aSeed * 0.12)));
     vOpacity = mix(0.04, 0.18, twinkle) + flash * 0.22;
@@ -61,15 +66,13 @@ declare module "@react-three/fiber" {
 function DotGrid() {
   const matRef = useRef<THREE.ShaderMaterial & { uTime: number }>(null);
   const geoRef = useRef<THREE.BufferGeometry>(null);
-  const { size, camera } = useThree();
+  const { size } = useThree();
 
-  // Physics constants
   const repelRadius = 1.4;
   const repelForce = 0.04;
   const returnSpeed = 0.08;
   const friction = 0.82;
 
-  // Initialize data buffers
   const { cols, rows, basePos, currentPos, velocities, seeds } = useMemo(() => {
     const cols = 80;
     const rows = 45;
@@ -89,7 +92,7 @@ function DotGrid() {
       for (let c = 0; c < cols; c++) {
         const x = c * spacingX - totalW / 2;
         const y = r * spacingY - totalH / 2;
-        
+
         basePos[idx * 3 + 0] = x;
         basePos[idx * 3 + 1] = y;
         basePos[idx * 3 + 2] = 0;
@@ -109,9 +112,8 @@ function DotGrid() {
     if (matRef.current) matRef.current.uTime += delta;
     if (!geoRef.current) return;
 
-    // Convert mouse NDC to World Space (Z=0 plane)
     const aspect = size.width / size.height;
-    const halfH = 2.693; // tan(45/2) * 6.5
+    const halfH = 2.693;
     const halfW = halfH * aspect;
     const mx = state.pointer.x * halfW;
     const my = state.pointer.y * halfH;
@@ -119,36 +121,27 @@ function DotGrid() {
     const N = cols * rows;
     for (let i = 0; i < N; i++) {
       const i3 = i * 3;
-      
       const bx = basePos[i3 + 0];
       const by = basePos[i3 + 1];
-      
       let cx = currentPos[i3 + 0];
       let cy = currentPos[i3 + 1];
-      
       let vx = velocities[i3 + 0];
       let vy = velocities[i3 + 1];
 
-      // 1. Mouse Repulsion
       const dx = cx - mx;
       const dy = cy - my;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      
+
       if (dist < repelRadius && dist > 0.001) {
         const force = Math.pow(1.0 - dist / repelRadius, 2.0) * repelForce;
         vx += (dx / dist) * force;
         vy += (dy / dist) * force;
       }
 
-      // 2. Spring return to base position
       vx += (bx - cx) * returnSpeed;
       vy += (by - cy) * returnSpeed;
-
-      // 3. Friction
       vx *= friction;
       vy *= friction;
-
-      // 4. Update positions
       cx += vx;
       cy += vy;
 
@@ -183,230 +176,147 @@ function DotGrid() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   VERTEX SHADER
-   uExplodeProgress 0→1: pushes vertices out along their normals with
-   strong lateral (X/Y) bias so the center clears completely by ~0.6.
-   ─────────────────────────────────────────────────────────────────── */
-const vertexShader = /* glsl */ `
-  uniform float uExplodeProgress;
-  uniform float uTime;
+   LAPTOP SCENE — Native Hinge Origin and Phased GSAP Timeline
+   ───────────────────────────────────────────────────────────────── */
+function LaptopScene() {
+  const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb") as any;
+  const screenTex = useTexture("/assets/textures/mac.png");
+  const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
 
-  varying vec3 vNormal;
-  varying vec3 vWorldPosition;
+  const globalContainerRef = useRef<THREE.Group>(null);
+  const lidHingeGroupRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
 
-  float hash(vec3 p) {
-    return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
-  }
-
-  void main() {
-    vNormal = normalize(normalMatrix * normal);
-
-    vec3 pos = position;
-
-    if (uExplodeProgress > 0.0) {
-      float rand      = hash(floor(position * 3.5));
-      float randAngle = rand * 6.28318;
-      float randPhase = rand * 3.14159;
-
-      vec3 explodeDir = normalize(normal);
-      explodeDir.x += sin(randAngle) * 2.2;
-      explodeDir.y += cos(randAngle) * 1.8 + 0.4;
-      explodeDir.z *= 0.12;
-
-      // Ease-in²: centre clears fast, shards keep drifting
-      float progress = uExplodeProgress * uExplodeProgress;
-      float dist     = 12.0 * progress;
-      pos += normalize(explodeDir) * dist;
-
-      // Slow weightless float when fully exploded
-      pos.x += sin(uTime * 0.35 + randAngle) * 0.07 * uExplodeProgress;
-      pos.y += cos(uTime * 0.25 + randPhase) * 0.07 * uExplodeProgress;
+  // Texture mapping & material calibrations
+  useMemo(() => {
+    if (screenTex) {
+      screenTex.flipY = false;
+      screenTex.colorSpace = THREE.SRGBColorSpace;
+    }
+    if (keyboardTex) {
+      keyboardTex.flipY = false;
+      keyboardTex.colorSpace = THREE.SRGBColorSpace;
     }
 
-    vec4 worldPos  = modelMatrix * vec4(pos, 1.0);
-    vWorldPosition = worldPos.xyz;
-    gl_Position    = projectionMatrix * viewMatrix * worldPos;
-  }
-`;
+    // Map screen texture with self-emissive glow for dark visibility
+    if (materials.Image) {
+      materials.Image.map = screenTex;
+      materials.Image.emissiveMap = screenTex;
+      materials.Image.emissive = new THREE.Color("#ffffff");
+      materials.Image.emissiveIntensity = 1.0;
+      materials.Image.needsUpdate = true;
+    }
+    if (materials.Screen) {
+      materials.Screen.roughness = 0.2;
+      materials.Screen.metalness = 0.1;
+    }
+    // Map keyboard keys texture
+    if (materials.Keys) {
+      materials.Keys.map = keyboardTex;
+      materials.Keys.roughness = 0.5;
+      materials.Keys.metalness = 0.1;
+      materials.Keys.needsUpdate = true;
+    }
+    // High-end matte silver look for the chassis body
+    if (materials.Laptop) {
+      materials.Laptop.roughness = 0.4;
+      materials.Laptop.metalness = 0.1;
+      materials.Laptop.color.set("#d1d5db");
+    }
+    if (materials.Keyboard) {
+      materials.Keyboard.roughness = 0.5;
+      materials.Keyboard.metalness = 0.1;
+    }
+  }, [screenTex, keyboardTex, materials]);
 
-/* ─────────────────────────────────────────────────────────────────────
-   FRAGMENT SHADER
-   Stealth-wealth OLED: near-black fill, electric cyan + deep violet
-   Fresnel edges, world-space CRT scanlines, glitch chromatic burst.
-   ─────────────────────────────────────────────────────────────────── */
-const fragmentShader = /* glsl */ `
-  uniform float uTime;
-  uniform float uGlitch;
-  uniform float uExplodeProgress;
+  useGSAP(() => {
+    if (!globalContainerRef.current || !lidHingeGroupRef.current) return;
 
-  varying vec3 vNormal;
-  varying vec3 vWorldPosition;
+    // Phase 0: Initialize hardware positions before scrolling starts
+    // Force the laptop lid to its physically closed rotation state
+    lidHingeGroupRef.current.rotation.x = 1.7285;
 
-  void main() {
-    vec3  viewDir  = normalize(cameraPosition - vWorldPosition);
-    float cosTheta = max(dot(normalize(vNormal), viewDir), 0.0);
-    float fresnel  = pow(1.0 - cosTheta, 2.2);
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: "#hero",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+      },
+    });
 
-    float scan = sin(vWorldPosition.y * 42.0 + uTime * 2.0) * 0.5 + 0.5;
-    scan = pow(scan, 7.0) * 0.55;
-
-    vec3 cyan   = vec3(0.0,   0.918, 1.0);
-    vec3 violet = vec3(0.333, 0.0,   0.8);
-    vec3 dark   = vec3(0.012, 0.0,   0.027);
-
-    vec3 edgeColor = mix(violet, cyan, fresnel);
-
-    float glitchPulse = uGlitch * step(0.45, fract(sin(uTime * 80.0) * 43758.5));
-    vec3  glitched    = vec3(
-      edgeColor.r + glitchPulse * 0.45,
-      edgeColor.g,
-      edgeColor.b - glitchPulse * 0.25
+    // Phase 1 (0% to 50% scroll): Open lid smoothly (rotate lidHingeGroupRef.x from 1.7285 to 0)
+    // Simultaneously translate globalContainerRef position.x from 1.7 to 0 (dead center)
+    tl.to(
+      lidHingeGroupRef.current.rotation,
+      {
+        x: 0,
+        duration: 0.5,
+        ease: "power2.inOut",
+      },
+      0
     );
 
-    vec3 finalColor = mix(dark, glitched, fresnel * 0.65 + scan * 0.35);
-    float alpha = (fresnel * 0.55 + scan * 0.30 + 0.04)
-                * mix(1.0, 0.45, uExplodeProgress);
+    tl.to(
+      globalContainerRef.current.position,
+      {
+        x: 0,
+        duration: 0.5,
+        ease: "power2.inOut",
+      },
+      0
+    );
 
-    gl_FragColor = vec4(finalColor, alpha);
-  }
-`;
+    // Phase 2 (50% to 100% scroll): Dolly camera forward smoothly on the Z-axis
+    // Calibrate camera Y and X rotation to frame the open display perfectly center
+    tl.to(
+      camera.position,
+      {
+        z: 1.65,
+        y: 0.58,
+        duration: 0.5,
+        ease: "power2.inOut",
+      },
+      0.5
+    );
 
-/* ─── Custom shader material ────────────────────────────────────────── */
-const HologramMaterial = shaderMaterial(
-  { uTime: 0, uExplodeProgress: 0, uGlitch: 0 },
-  vertexShader,
-  fragmentShader
-);
+    tl.to(
+      camera.rotation,
+      {
+        x: -0.05,
+        duration: 0.5,
+        ease: "power2.inOut",
+      },
+      0.5
+    );
 
-extend({ HologramMaterial });
-
-declare module "@react-three/fiber" {
-  interface ThreeElements {
-    hologramMaterial: React.PropsWithChildren<{
-      ref?: React.Ref<THREE.ShaderMaterial & {
-        uTime: number;
-        uExplodeProgress: number;
-        uGlitch: number;
-      }>;
-      uTime?: number;
-      uExplodeProgress?: number;
-      uGlitch?: number;
-      transparent?: boolean;
-      side?: THREE.Side;
-      depthWrite?: boolean;
-    }>;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   POSITIONED CORE
-   useThree gives us the R3F viewport in world-units. We use its width
-   to shift the mesh rightward so it sits in the right-hand 45% of the
-   screen, even though the Canvas covers the full hero viewport.
-   ─────────────────────────────────────────────────────────────────── */
-interface CyberCoreProps {
-  explodeRef: React.MutableRefObject<number>;
-}
-
-function CyberCore({ explodeRef }: CyberCoreProps) {
-  const { viewport } = useThree();
-
-  const matRef = useRef<THREE.ShaderMaterial & {
-    uTime: number;
-    uExplodeProgress: number;
-    uGlitch: number;
-  }>(null);
-
-  const groupRef       = useRef<THREE.Group>(null);
-  const glitchRef      = useRef(0);
-  const glitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Icosahedron detail=5 → 5120 triangles
-  const geometry = useMemo(() => new THREE.IcosahedronGeometry(1.9, 5), []);
-
-  // Right-hand offset: place the model at ~27.5% from the right edge
-  // (mirrors the CSS grid's 45fr right column center)
-  const xOffset = viewport.width * 0.255;
-
-  useFrame((_, delta) => {
-    const mat = matRef.current;
-    if (!mat) return;
-    mat.uTime            += delta;
-    mat.uExplodeProgress  = explodeRef.current;
-    mat.uGlitch           = glitchRef.current;
-  });
-
-  function triggerGlitch() {
-    glitchRef.current = 1;
-    if (glitchTimerRef.current) clearTimeout(glitchTimerRef.current);
-    glitchTimerRef.current = setTimeout(() => {
-      glitchRef.current = 0;
-    }, 280);
-  }
+  }, [camera]);
 
   return (
-    <group ref={groupRef} position={[xOffset, 0, 0]}>
-      <Float speed={1.1} rotationIntensity={0.25} floatIntensity={0.55}>
-        <PresentationControls
-          global={false}
-          snap={true}
-          speed={1.6}
-          zoom={1}
-          polar={[-Math.PI / 3, Math.PI / 3]}
-          azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
-        >
-          <mesh geometry={geometry} onPointerDown={triggerGlitch}>
-            <hologramMaterial
-              ref={matRef}
-              transparent={true}
-              side={THREE.DoubleSide}
-              depthWrite={false}
-            />
-          </mesh>
+    <group
+      ref={globalContainerRef}
+      position={[1.7, 0, 0]}
+      rotation={[0.18, -0.35, 0.05]}
+    >
+      {/* Nested scale group defines global size and base positioning */}
+      <group scale={[10, 10, 10]} position={[0, -0.65, 0]}>
+        {/* Render base chassis in local flat space */}
+        <primitive object={nodes.Base_Chassis} />
 
-          {/* Inner energy core visible through the hologram gaps */}
-          <mesh>
-            <sphereGeometry args={[0.55, 24, 24]} />
-            <meshBasicMaterial
-              color="#00eaff"
-              transparent={true}
-              opacity={0.06}
-            />
-          </mesh>
-        </PresentationControls>
-      </Float>
+        {/* The Perfect Pivot Anchor Wrapper Tree */}
+        <group ref={lidHingeGroupRef} position={[0, 0.008614, -0.10311]}>
+          <primitive object={nodes.Lid_Screen} position={[0, -0.008614, 0.10311]} />
+        </group>
+      </group>
     </group>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────
    INTERACTIVE MODEL — top-level export
-   The Canvas is now a full-hero absolute layer so shards can fly
-   across the entire screen without being clipped by the CSS column.
-   pointer-events: none on the wrapper lets scroll pass through,
-   but the <canvas> itself re-enables pointer-events for drag.
-   ─────────────────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────────────────── */
 export default function InteractiveModel() {
-  const explodeRef  = useRef(0);
-
-  useEffect(() => {
-    const st = ScrollTrigger.create({
-      trigger: "#hero",
-      start:   "top top",
-      end:     "bottom bottom",
-      scrub:   true,
-      onUpdate(self) {
-        // Explosion starts at 12% scroll, fully dispersed by 68%
-        const raw = (self.progress - 0.12) / 0.56;
-        explodeRef.current = Math.max(0, Math.min(1, raw));
-      },
-    });
-
-    return () => st.kill();
-  }, []);
-
   return (
-    // Full hero coverage — pointer-events:none so scroll isn't blocked
     <div
       style={{
         position: "absolute",
@@ -423,17 +333,23 @@ export default function InteractiveModel() {
         style={{
           width: "100%",
           height: "100%",
-          pointerEvents: "auto",   // re-enable so drag works on the canvas
+          pointerEvents: "auto",
           touchAction: "none",
           display: "block",
         }}
       >
-        {/* DotGrid renders BEFORE CyberCore so it is behind the hologram */}
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[8, 12, 6]} intensity={2.2} />
+        <directionalLight position={[-8, 6, -6]} intensity={0.6} />
+        <pointLight position={[0, 4, 3]} intensity={1.0} />
+
         <DotGrid />
-        <CyberCore explodeRef={explodeRef} />
+        <Suspense fallback={null}>
+          <LaptopScene />
+        </Suspense>
       </Canvas>
 
-      {/* Drag hint — sits in the lower-right quadrant to match the model */}
+      {/* Drag hint */}
       <div
         style={{
           position: "absolute",
@@ -452,7 +368,7 @@ export default function InteractiveModel() {
             color: "rgba(0, 234, 255, 0.3)",
           }}
         >
-          Drag to interact
+          Scroll to open & zoom
         </span>
       </div>
     </div>
