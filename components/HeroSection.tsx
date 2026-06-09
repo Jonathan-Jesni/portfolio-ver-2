@@ -17,7 +17,7 @@ const InteractiveModel = dynamic(() => import("./InteractiveModel"), { ssr: fals
 const TOP = ["J", "O", "N", "A"];
 const BOTTOM = ["T", "H", "A", "N"];
 
-export default function HeroSection({ animate = false }: { animate?: boolean }) {
+export default function HeroSection({ animate = false, portfolioSectionRef }: { animate?: boolean, portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
   const runwayRef = useRef<HTMLDivElement>(null);
   const topGroupRef = useRef<HTMLSpanElement>(null);
   const bottomGroupRef = useRef<HTMLSpanElement>(null);
@@ -212,7 +212,7 @@ export default function HeroSection({ animate = false }: { animate?: boolean }) 
         the whole viewport without being clipped by any CSS column.
       */}
       <div className="hero-3d-layer" aria-hidden="true">
-        <InteractiveModel />
+        <InteractiveModel portfolioSectionRef={portfolioSectionRef} />
       </div>
 
       <div className="hero-sticky" style={{ pointerEvents: "none" }}>

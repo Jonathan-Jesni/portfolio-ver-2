@@ -177,7 +177,15 @@ function DotGrid() {
 /* ─────────────────────────────────────────────────────────────────────
    LAPTOP SCENE — Native Hinge Origin and Phased GSAP Timeline
    ───────────────────────────────────────────────────────────────── */
-function LaptopScene() {
+function LaptopScene({
+  canvasWrapperDOMRef,
+  portfolioSectionRef,
+  headerRef,
+}: {
+  canvasWrapperDOMRef: React.RefObject<HTMLDivElement | null>;
+  portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+  headerRef: React.RefObject<HTMLDivElement | null>;
+}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb") as any;
   const screenTex = useTexture("/assets/textures/mac.png");
@@ -236,6 +244,11 @@ function LaptopScene() {
     // Force the laptop lid to its physically closed rotation state
     lidHingeGroupRef.current.rotation.x = 1.7285;
 
+    // Pre-stage the Monolithic Reveal Typography
+    if (headerRef.current) {
+      gsap.set(headerRef.current, { y: 120, scale: 0.85, opacity: 0 });
+    }
+
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: "#hero",
@@ -245,52 +258,110 @@ function LaptopScene() {
       },
     });
 
-    // Phase 1 (0% to 50% scroll): Open lid smoothly (rotate lidHingeGroupRef.x from 1.7285 to 0)
-    // Simultaneously translate globalContainerRef position.x from 1.7 to 0 (dead center)
+    // Phase 1 (0% to 40% scroll): Calibration & Center Dolly
+    // Smoothly open the laptop lid (1.7285 rad -> 0 rad)
     tl.to(
       lidHingeGroupRef.current.rotation,
       {
         x: 0,
-        duration: 0.5,
+        duration: 0.4,
         ease: "power2.inOut",
       },
       0
     );
 
+    // Translate global container X from 1.7 to 0
     tl.to(
       globalContainerRef.current.position,
       {
         x: 0,
-        duration: 0.5,
+        duration: 0.4,
         ease: "power2.inOut",
       },
       0
     );
 
-    // Phase 2 (50% to 100% scroll): Dolly camera forward smoothly on the Z-axis
-    // Calibrate camera Y and X rotation to frame the open display perfectly center
+    // Un-tilt global container to [0.1577, 0, 0]
+    // (0.1577 rad tilts the base forward perfectly so the 99-degree open screen becomes parallel to the viewport)
+    tl.to(
+      globalContainerRef.current.rotation,
+      {
+        x: 0.1577,
+        y: 0,
+        z: 0,
+        duration: 0.4,
+        ease: "power2.inOut",
+      },
+      0
+    );
+
+    // Phase 2 (40% to 75% scroll): Monolithic Spatial Entrance Reveal
+    // Introduce massive typographic layout overlay
+    if (headerRef.current) {
+      tl.to(
+        headerRef.current,
+        {
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          duration: 0.35, // 0.40 -> 0.75
+          ease: "power3.out",
+        },
+        0.4
+      );
+    }
+
+    // Phase 3a (75% to 100% scroll): Aggressive Camera Dolly Inception
+    // ┌─────────────────────────────────────────────────────────────┐
+    // │ DEVELOPER UX CALIBRATION:                                   │
+    // │ To perfect the Infinite Zoom illusion, adjust `z` and `y`:  │
+    // │ - Decrease `z` (e.g., 0.25) to push the camera deeper       │
+    // │   through the physical bezels of the screen mesh.           │
+    // │ - Adjust `y` (e.g., 0.85) to perfectly align the camera     │
+    // │   height with the geometric center of the open Lid_Screen.  │
+    // └─────────────────────────────────────────────────────────────┘
     tl.to(
       camera.position,
       {
-        z: 1.65,
-        y: 0.58,
-        duration: 0.5,
+        z: 0.35, // aggressive deep plunge through bezels
+        y: 0.85, // targeted dead center of the open display face
+        duration: 0.25, // 0.75 -> 1.00
         ease: "power2.inOut",
       },
-      0.5
+      0.75
     );
 
+    // Force perfect planar alignment so the lens is completely flush/parallel
     tl.to(
       camera.rotation,
       {
-        x: -0.05,
-        duration: 0.5,
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: 0.25,
         ease: "power2.inOut",
       },
-      0.5
+      0.75
     );
 
-  }, [camera]);
+    // Phase 3b (98% scroll): Pixel-Perfect Boundary Hot-Swap
+    if (canvasWrapperDOMRef.current) {
+      tl.set(
+        canvasWrapperDOMRef.current,
+        { display: "none", pointerEvents: "none" },
+        0.98
+      );
+    }
+
+    if (portfolioSectionRef?.current) {
+      tl.set(
+        portfolioSectionRef.current,
+        { opacity: 1, pointerEvents: "auto" },
+        0.98
+      );
+    }
+
+  }, [camera, canvasWrapperDOMRef, portfolioSectionRef, headerRef]);
 
   return (
     <group
@@ -304,6 +375,7 @@ function LaptopScene() {
         <primitive object={nodes.Base_Chassis} />
 
         {/* The Perfect Pivot Anchor Wrapper Tree */}
+        {/* ZERO-OFFSET HINGE TRACKING MATRICES: DO NOT MODIFY */}
         <group ref={lidHingeGroupRef} position={[0, 0.008614, -0.10311]}>
           <primitive object={nodes.Lid_Screen} position={[0, -0.008614, 0.10311]} />
         </group>
@@ -315,13 +387,21 @@ function LaptopScene() {
 /* ─────────────────────────────────────────────────────────────────────
    INTERACTIVE MODEL — top-level export
    ───────────────────────────────────────────────────────────────── */
-export default function InteractiveModel() {
+export interface InteractiveModelProps {
+  portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+}
+
+export default function InteractiveModel({ portfolioSectionRef }: InteractiveModelProps) {
+  const canvasWrapperDOMRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
   return (
     <div
+      ref={canvasWrapperDOMRef}
       style={{
         position: "absolute",
         inset: 0,
-        pointerEvents: "none",
+        pointerEvents: "auto",
         touchAction: "none",
         zIndex: 0,
       }}
@@ -333,8 +413,6 @@ export default function InteractiveModel() {
         style={{
           width: "100%",
           height: "100%",
-          pointerEvents: "auto",
-          touchAction: "none",
           display: "block",
         }}
       >
@@ -345,9 +423,58 @@ export default function InteractiveModel() {
 
         <DotGrid />
         <Suspense fallback={null}>
-          <LaptopScene />
+          <LaptopScene 
+            canvasWrapperDOMRef={canvasWrapperDOMRef} 
+            portfolioSectionRef={portfolioSectionRef}
+            headerRef={headerRef}
+          />
         </Suspense>
       </Canvas>
+
+      {/* Massive Typographic Layout Overlay (Phase 2 Reveal) */}
+      <div
+        ref={headerRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+        aria-hidden="true"
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-jetbrains, monospace)",
+            fontSize: "14px",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "rgba(0, 234, 255, 0.8)",
+            marginBottom: "8px",
+          }}
+        >
+          Engineering
+        </span>
+        <h2
+          style={{
+            fontSize: "clamp(3rem, 8vw, 8rem)",
+            fontFamily: "var(--font-jakarta, sans-serif)",
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            textShadow: "0 20px 40px rgba(0,0,0,0.5)",
+            margin: 0,
+            lineHeight: 1,
+            textAlign: "center",
+          }}
+        >
+          Systems
+        </h2>
+      </div>
 
       {/* Drag hint */}
       <div

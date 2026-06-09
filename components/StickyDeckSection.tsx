@@ -19,8 +19,9 @@ const CARD_HUES: Record<string, string> = {
   synthrescue:      "270,  72%, 62%",  /* violet         */
 };
 
-export default function StickyDeckSection() {
-  const sectionRef  = useRef<HTMLElement>(null);
+export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
+  const fallbackRef = useRef<HTMLElement>(null);
+  const sectionRef = portfolioSectionRef || fallbackRef;
   const rightColRef = useRef<HTMLDivElement>(null);
 
   /* Flatten the projects array so multi-image projects render separate physical cards */
@@ -120,6 +121,7 @@ export default function StickyDeckSection() {
       ref={sectionRef}
       className="sticky-deck-section"
       id="projects"
+      style={{ opacity: 0, pointerEvents: "none" }}
     >
       {/* ── Section header ─────────────────────────────────────────── */}
       <div className="container sd-header">

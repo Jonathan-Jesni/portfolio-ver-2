@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import AboutSection from "../components/AboutSection";
 import HeroSection from "../components/HeroSection";
@@ -22,6 +22,7 @@ const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false 
 export default function Home() {
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const portfolioSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (preloaderDone) {
@@ -85,11 +86,11 @@ export default function Home() {
         <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
       </div>
 
-      <HeroSection animate={preloaderDone} />
+      <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />
 
       <hr className="section-divider" />
 
-      <StickyDeckSection />
+      <StickyDeckSection portfolioSectionRef={portfolioSectionRef} />
 
       <hr className="section-divider" />
 
