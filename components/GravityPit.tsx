@@ -235,7 +235,7 @@ export default function GravityPit() {
     return () => {
       container.removeEventListener("pointerdown", activatePhysics);
     };
-  }, []);
+  }, [reducedMotion]);
 
   /* ── Cleanup physics engine on unmount ── */
   useEffect(() => {

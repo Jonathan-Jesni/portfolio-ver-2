@@ -1,9 +1,8 @@
 /* eslint-disable react-hooks/purity */
 /* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
-import { useRef, useEffect, useMemo, Suspense } from "react";
+import { useRef, useMemo, Suspense } from "react";
 import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
 import { shaderMaterial, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
@@ -179,6 +178,7 @@ function DotGrid() {
    LAPTOP SCENE — Native Hinge Origin and Phased GSAP Timeline
    ───────────────────────────────────────────────────────────────── */
 function LaptopScene() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb") as any;
   const screenTex = useTexture("/assets/textures/mac.png");
   const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
