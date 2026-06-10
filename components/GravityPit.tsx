@@ -270,7 +270,7 @@ export default function GravityPit() {
             fontFamily:    "var(--font-jetbrains), monospace",
             fontSize:      "10px",
             fontWeight:    500,
-            color:         "rgba(240,232,210,0.18)",
+            color:         "rgba(18,22,19,0.30)",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             pointerEvents: "none",

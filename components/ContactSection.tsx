@@ -152,7 +152,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
       style={{
         position: "relative",
         minHeight: "100vh",
-        backgroundColor: "#070B14",
+        backgroundColor: "var(--surface-0)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -237,7 +237,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
 
       {/* ── Atmospheric Shroud Mask ───────────────────────────────────────────
            Sits above the content at z-index 10.
-           Matches the exact obsidian base (#070B14) so it blends seamlessly
+           Matches the exact linen base (#FAFFFA) so it blends seamlessly
            with the body background on arrival.
            GSAP translates this from yPercent: 0 → yPercent: -100
            (sliding off the top) as scroll advances.
@@ -249,14 +249,12 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
           position: "absolute",
           inset: 0,
           zIndex: 10,
-          backgroundColor: "#070B14",
+          backgroundColor: "var(--surface-0)",
           willChange: "transform",
-          // Extend the mask slightly beyond the section top so no gap
-          // is visible when the yPercent tween begins translating it.
           top: "-2px",
           bottom: "-2px",
-          borderBottom: "1px solid rgba(201, 168, 118, 0.3)",
-          boxShadow: "0 20px 50px rgba(201, 168, 118, 0.08)",
+          borderBottom: "1px solid var(--border-subtle)",
+          boxShadow: "0 20px 50px rgba(3, 6, 14, 0.5)",
         }}
       />
     </section>

@@ -1154,7 +1154,7 @@ img {
      so nothing ever slides up underneath the floating nav pill */
   align-items: safe center;
   overflow: hidden;
-  padding-top: clamp(96px, 11vh, 132px);
+  padding-top: clamp(64px, 7vh, 96px);
   padding-bottom: 24px;
 }
 
@@ -1196,7 +1196,7 @@ img {
 .about-bio {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .about-bio-para {
@@ -2433,7 +2433,9 @@ canvas.glass-image-canvas {
    over a clean obsidian field, ready for a 3D background layer to be
    slotted behind it later. */
 .sd-header {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 0;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -2498,6 +2500,9 @@ canvas.glass-image-canvas {
   /* Columns size to their own content — JS equalizes the sticky
      release points so the last pair scrolls away in sync */
   align-items: start;
+  position: relative;
+  z-index: 1;
+  background: var(--surface-0);
 }
 
 @media (max-width: 900px) {
@@ -2922,6 +2927,9 @@ canvas.glass-image-canvas {
 
 /* ── CTA ─────────────────────────────────────────────────────── */
 .sd-cta {
+  position: relative;
+  z-index: 1;
+  background: var(--surface-0);
   padding-top: 80px;
   display: flex;
   align-items: center;
@@ -3193,4 +3201,220 @@ canvas.glass-image-canvas {
 .glass-panel > *:not(.sd-index-ghost):not(.sd-card-accent) {
   position: relative;
   z-index: 1;
+}
+
+/* ============================================================
+   NEWFORMCAP — "EDITORIAL FINANCIAL" DESIGN SYSTEM
+   Light "Linen" theme applied to every section below the Hero.
+   NOTE: these tokens were authored to the brief (Linen #FAFFFA,
+   Obsidian Ink #121613, Editorial-New-role serif display, TWK-
+   Lausanne-role grotesk UI). Swap exact values from the official
+   style guide here when available — everything below reads from
+   these variables.
+   ============================================================ */
+:root {
+  /* Role-based font stacks */
+  --font-display: var(--font-instrument), Georgia, serif;
+  --font-ui: var(--font-hanken), var(--font-jakarta), system-ui, sans-serif;
+
+  /* Editorial type scale */
+  --nf-display-1: clamp(52px, 8vw, 112px);
+  --nf-display-2: clamp(36px, 5vw, 64px);
+  --nf-display-3: clamp(26px, 3.2vw, 40px);
+  --nf-lead: clamp(18px, 2vw, 22px);
+}
+
+.theme-linen {
+  /* Paper surfaces */
+  --surface-0: #FAFFFA;
+  /* linen ground */
+  --surface-1: #FFFFFF;
+  /* card */
+  --surface-2: #F1F6F0;
+  /* recessed panel */
+  --surface-3: #E9EFE7;
+  /* hover */
+
+  /* Obsidian ink scale */
+  --ink-0: #121613;
+  --ink-1: #1D231E;
+  --ink-2: #49514A;
+  --ink-3: #6C746D;
+  --ink-4: #C9CFC7;
+
+  /* Hairlines flip to ink-based */
+  --border-hairline: rgba(18, 22, 19, 0.07);
+  --border-subtle: rgba(18, 22, 19, 0.11);
+  --border-default: rgba(18, 22, 19, 0.16);
+  --border-hover: rgba(18, 22, 19, 0.30);
+
+  /* Edge highlight becomes paper-white refraction */
+  --edge-top: rgba(255, 255, 255, 0.9);
+  --edge-glow: rgba(255, 255, 255, 0.5);
+
+  /* Accent deepens to bronze for contrast on linen */
+  --accent: #8E6F3E;
+  --accent-rgb: 142, 111, 62;
+  --accent-glow: rgba(142, 111, 62, 0.20);
+  --accent-dim: rgba(142, 111, 62, 0.08);
+  --accent-cool: #41608C;
+
+  /* Soft diffused editorial shadows — never harsh */
+  --shadow-card: 0 1px 2px rgba(18, 22, 19, 0.04), 0 8px 28px rgba(18, 22, 19, 0.06), 0 22px 60px rgba(18, 22, 19, 0.05);
+  --shadow-hover: 0 1px 2px rgba(18, 22, 19, 0.05), 0 12px 36px rgba(18, 22, 19, 0.08), 0 30px 72px rgba(18, 22, 19, 0.07);
+
+  /* UI font swap: every rule reading --font-jakarta inside this
+     scope resolves to Hanken Grotesk (TWK Lausanne role) */
+  --font-jakarta: var(--font-hanken);
+
+  background-color: var(--surface-0);
+  color: var(--ink-1);
+}
+
+/* ── Display headings go full editorial serif on linen ── */
+.theme-linen .ed-heading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.0;
+}
+
+.theme-linen .ed-heading em {
+  font-size: 1.0em;
+}
+
+.theme-linen .contact-heading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+/* ── Component re-skins on linen ── */
+.theme-linen .glass-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-card);
+}
+
+.theme-linen .sd-index-ghost {
+  -webkit-text-stroke: 1px rgba(18, 22, 19, 0.15);
+}
+
+.theme-linen .reveal-word {
+  color: rgba(18, 22, 19, 0.14);
+}
+
+.theme-linen .sd-pipeline-node {
+  box-shadow: 0 2px 8px rgba(18, 22, 19, 0.07);
+}
+
+.theme-linen .sd-pipeline-wire {
+  background: var(--surface-3);
+}
+
+.theme-linen .comet-card-shell {
+  background: rgba(18, 22, 19, 0.035);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    var(--shadow-card);
+}
+
+.theme-linen .comet-card-wrap:hover .comet-card-shell {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    var(--shadow-hover);
+}
+
+.theme-linen .comet-card-core {
+  background: var(--surface-1);
+}
+
+.theme-linen .gravity-pit {
+  background-image:
+    linear-gradient(to right, rgba(18, 22, 19, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(18, 22, 19, 0.045) 1px, transparent 1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-card);
+}
+
+.theme-linen .gravity-pill {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(18, 22, 19, 0.08);
+}
+
+.theme-linen .pipe-step-label.pipe-step--lit {
+  color: var(--ink-0);
+  text-shadow: none;
+}
+
+.theme-linen .pipeline-packet {
+  fill: rgba(18, 22, 19, 0.45);
+}
+
+.theme-linen .contact-link {
+  background: var(--surface-1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-linen .contact-link:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* ── Dark islands — terminal panes keep their obsidian palette
+      regardless of the linen scope around them ── */
+.theme-linen .term-shell,
+.theme-linen .about-snippet {
+  --surface-1: #0B111E;
+  --surface-2: #111828;
+  --ink-0: #F4EFE3;
+  --ink-1: #E4DECF;
+  --ink-2: #ABA793;
+  --ink-3: #82806F;
+  --ink-4: #3A4154;
+  --border-hairline: rgba(231, 222, 199, 0.055);
+  --border-subtle: rgba(231, 222, 199, 0.09);
+  --edge-top: rgba(240, 232, 210, 0.09);
+  --accent: #C9A876;
+  --accent-rgb: 201, 168, 118;
+  --accent-cool: #8FA9C9;
+  --shadow-card: 0 1px 2px rgba(18, 22, 19, 0.10), 0 12px 36px rgba(18, 22, 19, 0.16);
+  background: rgba(18, 22, 19, 0.04);
+}
+
+/* ============================================================
+   STACK TRANSITIONS — "String-Tune" scroll choreography
+   Each post-hero section is a sheet. The outgoing section pins,
+   scales back under a darkening veil, while the incoming sheet
+   slides over it with rounded corners that flatten on arrival.
+   All scrub-tied: scrolling up rewinds every frame.
+   ============================================================ */
+.stack-section {
+  position: relative;
+  background: var(--surface-0);
+}
+
+/* Dimming veil — sits above the section's content, faded in by
+   the boundary timeline as the next sheet covers it */
+.stack-veil {
+  position: absolute;
+  inset: 0;
+  background: #121613;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.theme-linen .sd-placeholder-label {
+  color: rgba(18, 22, 19, 0.28);
+}
+
+/* ── Skills section: tighter vertical rhythm + shifted up ── */
+.skills-spatial .sp-sticky {
+  padding-top: clamp(48px, 5vh, 72px);
+}
+
+.skills-spatial .ed-header-row {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
 }

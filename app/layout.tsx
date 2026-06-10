@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif, Hanken_Grotesk } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
 import "./globals.css";
 
@@ -23,6 +23,15 @@ const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument",
   weight: "400",
   style: ["normal", "italic"],
+});
+
+/* TWK Lausanne stand-in — grotesk UI face for the Editorial
+   Financial (linen) sections */
+const hankenGrotesk = Hanken_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-hanken",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -63,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
+      className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${hankenGrotesk.variable}`}
     >
       <body>
         {/* Film-grain noise overlay — fixed, pointer-events-none, adds physical texture */}

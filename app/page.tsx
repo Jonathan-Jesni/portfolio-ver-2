@@ -8,6 +8,7 @@ import StickyDeckSection from "../components/StickyDeckSection";
 import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
 import ContactSection from "../components/ContactSection";
+import StackTransitions from "../components/StackTransitions";
 
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
@@ -88,54 +89,72 @@ export default function Home() {
 
       <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />
 
-      <hr className="section-divider" />
+      {/* ── Linen stack: every section below the hero is a sheet in the
+             Editorial Financial deck. StackTransitions pins each sheet
+             and choreographs the scrub-tied boundary transitions. ── */}
 
-      <StickyDeckSection portfolioSectionRef={portfolioSectionRef} />
+      <div className="stack-section" data-stack style={{ zIndex: 1 }}>
+        <StickyDeckSection portfolioSectionRef={portfolioSectionRef} />
+        <div className="stack-veil" aria-hidden="true" />
+      </div>
 
-      <hr className="section-divider" />
+      <div className="stack-section" data-stack style={{ zIndex: 2 }}>
+        <SpatialSection id="currently-building">
+          <div className="container">
+            <header className="ed-header" style={{ marginBottom: "56px" }}>
+              <div className="ed-header-row sp-reveal">
+                <span className="ed-eyebrow">02 / In Progress</span>
+                <span className="ed-meta mono">live pipelines</span>
+              </div>
+              <h2 className="ed-heading ed-heading--md sp-reveal">
+                Currently <em>building</em>
+              </h2>
+            </header>
 
-      <SpatialSection id="currently-building">
-        <div className="container">
-          <div className="section-label">
-            <span className="section-title sp-reveal mono">currently.building</span>
-            <span className="section-line"></span>
+            <PipelineGrid items={BUILDING} />
           </div>
+        </SpatialSection>
+        <div className="stack-veil" aria-hidden="true" />
+      </div>
 
-          <PipelineGrid items={BUILDING} />
-        </div>
-      </SpatialSection>
-
-      <hr className="section-divider" />
-
-      <SpatialSection id="skills">
-        <div className="container">
-          <div className="section-label">
-            <span className="section-title sp-reveal">Skills</span>
-            <span className="section-line"></span>
+      <div className="stack-section" data-stack style={{ zIndex: 3 }}>
+        <SpatialSection id="skills" className="skills-spatial">
+          <div className="container">
+            <header className="ed-header" style={{ marginBottom: "20px" }}>
+              <div className="ed-header-row sp-reveal">
+                <span className="ed-eyebrow">03 / Capabilities</span>
+                <span className="ed-meta mono">drag to interact</span>
+              </div>
+              <h2 className="ed-heading ed-heading--md sp-reveal">
+                The <em>stack</em>
+              </h2>
+            </header>
+            <p className="sp-reveal" style={{ color: "var(--ink-2)", marginBottom: "20px", fontFamily: "var(--font-jakarta)", fontSize: "15px", letterSpacing: "-0.01em" }}>
+              Technologies and frameworks I use to engineer robust, scalable systems.
+            </p>
+            <div style={{ touchAction: "none" }}>
+              <GravityPit />
+            </div>
           </div>
-          <p className="sp-reveal" style={{ color: "var(--ink-2)", marginBottom: "32px", fontFamily: "var(--font-jakarta)", fontSize: "15px", letterSpacing: "-0.01em" }}>
-            Technologies and frameworks I use to engineer robust, scalable systems.
-          </p>
-          <p className="sp-reveal mono" style={{ color: "var(--ink-3)", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "24px" }}>
-            {"// drag to interact"}
-          </p>
-          <div style={{ touchAction: "none" }}>
-            <GravityPit />
-          </div>
-        </div>
-      </SpatialSection>
+        </SpatialSection>
+        <div className="stack-veil" aria-hidden="true" />
+      </div>
 
-      <hr className="section-divider" />
+      <div className="stack-section" data-stack style={{ zIndex: 4 }}>
+        <AboutSection />
+        <div className="stack-veil" aria-hidden="true" />
+      </div>
 
-      <AboutSection />
+      <div className="stack-section" data-stack style={{ zIndex: 5 }}>
+        <ContactSection animate={preloaderDone} />
 
-      <hr className="section-divider" />
+        <footer className="footer" id="footer">
+          <p>Designed & Built by Jonathan</p>
+        </footer>
+        <div className="stack-veil" aria-hidden="true" />
+      </div>
 
-      <ContactSection animate={preloaderDone} />
-
-      <footer className="footer" id="footer">
-        <p>Designed & Built by Jonathan</p>
-      </footer>
+      <StackTransitions />
     </>
   );
 }

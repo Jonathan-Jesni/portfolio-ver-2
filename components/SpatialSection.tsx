@@ -76,16 +76,8 @@ export default function SpatialSection({
           );
         });
 
-        // 0.72 → 1.0: graceful opacity exit
-        tl.to(
-          content,
-          {
-            opacity: 0,
-            ease: "power1.in",
-            duration: 0.28,
-          },
-          0.72
-        );
+        // Exit is handled by the StackTransitions sheet choreography —
+        // content stays visible while the next section slides over it.
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {

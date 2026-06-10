@@ -109,9 +109,9 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
         });
       });
 
-      return () => {
-        ScrollTrigger.getAll().forEach((st) => st.kill());
-      };
+      /* Cleanup is handled by mm.revert() — never kill triggers
+         globally here: it nukes other components' ScrollTriggers
+         (including the StackTransitions section pins). */
     });
 
     /* ── Release sync ──────────────────────────────────────────────
@@ -308,7 +308,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
                   ) : card.type === "pipeline" ? (
                     <div
                       className="sd-pipeline"
-                      style={{ background: `hsl(${hue.split(",")[0]}, 22%, 5%)` }}
+                      style={{ background: `hsl(${hue.split(",")[0]}, 15%, 8%)` }}
                       aria-label="Processing pipeline"
                     >
                       {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
@@ -333,7 +333,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
                   ) : (
                     <div
                       className="sd-placeholder"
-                      style={{ background: `hsl(${hue.split(",")[0]}, 16%, 6%)` }}
+                      style={{ background: `hsl(${hue.split(",")[0]}, 12%, 8%)` }}
                       aria-hidden="true"
                     >
                       <span className="sd-placeholder-label mono">

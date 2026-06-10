@@ -180,11 +180,9 @@ function DotGrid() {
 function LaptopScene({
   canvasWrapperDOMRef,
   portfolioSectionRef,
-  headerRef,
 }: {
   canvasWrapperDOMRef: React.RefObject<HTMLDivElement | null>;
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
-  headerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb") as any;
@@ -244,11 +242,6 @@ function LaptopScene({
     // Force the laptop lid to its physically closed rotation state
     lidHingeGroupRef.current.rotation.x = 1.7285;
 
-    // Pre-stage the Monolithic Reveal Typography
-    if (headerRef.current) {
-      gsap.set(headerRef.current, { y: 120, scale: 0.85, opacity: 0 });
-    }
-
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: "#hero",
@@ -295,23 +288,7 @@ function LaptopScene({
       0
     );
 
-    // Phase 2 (40% to 75% scroll): Monolithic Spatial Entrance Reveal
-    // Introduce massive typographic layout overlay
-    if (headerRef.current) {
-      tl.to(
-        headerRef.current,
-        {
-          y: 0,
-          scale: 1,
-          opacity: 1,
-          duration: 0.35, // 0.40 -> 0.75
-          ease: "power3.out",
-        },
-        0.4
-      );
-    }
-
-    // Phase 3a (75% to 100% scroll): Aggressive Camera Dolly Inception
+    // Phase 2 (40% to 75% scroll): Camera Dolly Inception
     // ┌─────────────────────────────────────────────────────────────┐
     // │ DEVELOPER UX CALIBRATION:                                   │
     // │ To perfect the Infinite Zoom illusion, adjust `z` and `y`:  │
@@ -361,7 +338,7 @@ function LaptopScene({
       );
     }
 
-  }, [camera, canvasWrapperDOMRef, portfolioSectionRef, headerRef]);
+  }, [camera, canvasWrapperDOMRef, portfolioSectionRef]);
 
   return (
     <group
@@ -393,7 +370,6 @@ export interface InteractiveModelProps {
 
 export default function InteractiveModel({ portfolioSectionRef }: InteractiveModelProps) {
   const canvasWrapperDOMRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
@@ -423,58 +399,12 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
 
         <DotGrid />
         <Suspense fallback={null}>
-          <LaptopScene 
-            canvasWrapperDOMRef={canvasWrapperDOMRef} 
+          <LaptopScene
+            canvasWrapperDOMRef={canvasWrapperDOMRef}
             portfolioSectionRef={portfolioSectionRef}
-            headerRef={headerRef}
           />
         </Suspense>
       </Canvas>
-
-      {/* Massive Typographic Layout Overlay (Phase 2 Reveal) */}
-      <div
-        ref={headerRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          pointerEvents: "none",
-          zIndex: 5,
-        }}
-        aria-hidden="true"
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-jetbrains, monospace)",
-            fontSize: "14px",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "rgba(216, 188, 135, 0.85)",
-            marginBottom: "8px",
-          }}
-        >
-          Engineering
-        </span>
-        <h2
-          style={{
-            fontSize: "clamp(3rem, 8vw, 8rem)",
-            fontFamily: "var(--font-jakarta, sans-serif)",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "-0.03em",
-            color: "#ffffff",
-            textShadow: "0 20px 40px rgba(0,0,0,0.5)",
-            margin: 0,
-            lineHeight: 1,
-            textAlign: "center",
-          }}
-        >
-          Systems
-        </h2>
-      </div>
 
       {/* Drag hint */}
       <div
