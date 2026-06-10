@@ -3465,3 +3465,81 @@ canvas.glass-image-canvas {
   box-shadow: 0 0 60px 12px rgba(var(--accent-rgb), 0.40);
   will-change: transform, opacity, filter;
 }
+
+/* ============================================================
+   SCROLL GLYPH-STAMP — About heading entry (ScrollScrambleText)
+   The heading stamps through raw terminal syntax and freezes into
+   its final state as the section enters, a champagne hairline tick
+   blinking beside it like a metronome. Layout-stable: a hidden sizer
+   reserves the final width so glyph jitter never reflows the line.
+   ============================================================ */
+.scramble {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(14px, 1.2vw, 20px);
+}
+
+/* 50×2px champagne hairline — the mechanical metronome */
+.scramble-tick {
+  flex: 0 0 auto;
+  width: 50px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.85;
+  transform-origin: left center;
+  transition: opacity 0.35s ease;
+}
+
+/* rapid mechanical blink while the text is stamping in */
+.scramble-tick.is-stamping {
+  animation: scramble-tick-blink 0.11s steps(1, end) infinite;
+}
+
+@keyframes scramble-tick-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.18;
+  }
+}
+
+.scramble-stage {
+  position: relative;
+  display: inline-block;
+}
+
+/* sizer holds the final width in flow but stays invisible */
+.scramble-sizer {
+  visibility: hidden;
+}
+
+/* live copy is stacked over the sizer so glyph jitter can't reflow */
+.scramble-live {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+
+/* accessible label for the heading text, visually hidden */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* No stamp on mobile / reduced-motion — heading + tick sit solid */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .scramble-tick {
+    opacity: 1;
+    animation: none;
+  }
+}

@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import TerminalBlock from "./TerminalBlock";
+import ScrollScrambleText from "./ScrollScrambleText";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -129,7 +130,7 @@ export default function AboutSection() {
                 <span className="ed-meta">Pune · Muscat</span>
               </div>
               <h2 className="ed-heading ed-heading--md">
-                About <em>me</em>
+                <ScrollScrambleText segments={[{ text: "About " }, { text: "me", em: true }]} />
               </h2>
             </header>
 
