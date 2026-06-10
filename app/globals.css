@@ -3418,3 +3418,50 @@ canvas.glass-image-canvas {
   margin-bottom: 12px;
   padding-bottom: 10px;
 }
+
+/* ============================================================
+   CRT COLLAPSE — Projects → Building boundary
+   A fixed, full-viewport layer. A champagne field squashes scaleY → 0
+   into a blinding blade across a dark void, then pinches scaleX → 0
+   inward from both sides and winks out, revealing the Building bento.
+   All motion is driven (scaleY / scaleX / opacity / brightness) by
+   StackTransitions on the boundary scrub — these are just the static
+   styles. Desktop only: never injected on mobile / reduced-motion.
+   ============================================================ */
+.crt-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  /* sits above the stacked sections (z 1–5) + veils (z 50),
+     below the floating nav (z 100) and grain (z 9999) */
+  pointer-events: none;
+  contain: strict;
+}
+
+/* dark void that masks the outgoing deck, then clears for the reveal */
+.crt-fx__void {
+  position: absolute;
+  inset: 0;
+  background: #070B14;
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* champagne concentrated at the vertical centre with a white-hot core —
+   squashing scaleY collapses this into the blade; pinching scaleX winks it */
+.crt-fx__blade {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  opacity: 0;
+  background: linear-gradient(180deg,
+      transparent 0%,
+      rgba(var(--accent-rgb), 0) 42%,
+      rgba(var(--accent-rgb), 0.85) 48.5%,
+      #F4EFE3 50%,
+      rgba(var(--accent-rgb), 0.85) 51.5%,
+      rgba(var(--accent-rgb), 0) 58%,
+      transparent 100%);
+  box-shadow: 0 0 60px 12px rgba(var(--accent-rgb), 0.40);
+  will-change: transform, opacity, filter;
+}

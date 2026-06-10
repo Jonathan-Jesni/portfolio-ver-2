@@ -54,6 +54,9 @@ export default function StackTransitions() {
     /* Desktop + full motion only — on mobile and reduced-motion the
        sections flow natively with no pinning */
     mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+      /* Overlay nodes we inject (e.g. the CRT bezel-iris) — torn down on revert */
+      const createdEls: HTMLElement[] = [];
+
       sections.forEach((section, i) => {
         const next = sections[i + 1];
         if (!next) return;
@@ -92,7 +95,64 @@ export default function StackTransitions() {
           0
         );
 
-        if (veil) {
+        /* ── Boundary 0 · Projects → Building — CRT collapse (no shader) ──
+           A fixed, full-viewport layer is the whole trick: scaling it about
+           its own centre IS the viewport centre, so the blade forms dead
+           centre regardless of how the tall, pinned Projects section sits.
+
+             · a dark void establishes over the outgoing deck
+             · a champagne field SQUASHES scaleY 1 → 0.005 while its
+               brightness is driven sky-high, concentrating into a blinding
+               gold blade across the centre of the void
+             · the blade PINCHES scaleX 1 → 0 inward from both sides and
+               winks out as the void clears, revealing the Building bento
+
+           Fully scrub-tied — scrolling up rewinds the whole power cycle. */
+        if (i === 0) {
+          const fx = document.createElement("div");
+          fx.className = "crt-fx";
+          fx.setAttribute("aria-hidden", "true");
+          fx.innerHTML =
+            '<div class="crt-fx__void"></div>' +
+            '<div class="crt-fx__blade"></div>';
+          document.body.appendChild(fx);
+          createdEls.push(fx);
+
+          const voidEl = fx.querySelector<HTMLElement>(".crt-fx__void");
+          const blade = fx.querySelector<HTMLElement>(".crt-fx__blade");
+
+          /* the dark void establishes over the pinned deck … */
+          if (voidEl) {
+            tl.fromTo(
+              voidEl,
+              { opacity: 0 },
+              { opacity: 1, ease: "power2.out", duration: 0.22 },
+              0
+            );
+            /* … then clears right at the end to reveal Building underneath */
+            tl.to(voidEl, { opacity: 0, ease: "power2.in", duration: 0.2 }, 0.74);
+          }
+
+          if (blade) {
+            /* champagne field flicks on … */
+            tl.fromTo(
+              blade,
+              { opacity: 0 },
+              { opacity: 0.95, ease: "power1.out", duration: 0.12 },
+              0.04
+            );
+            /* … then SQUASHES into a blade while brightness goes sky-high */
+            tl.fromTo(
+              blade,
+              { scaleY: 1, scaleX: 1, transformOrigin: "center center", filter: "brightness(1)" },
+              { scaleY: 0.005, filter: "brightness(3.4)", ease: "power3.in", duration: 0.5 },
+              0.06
+            );
+            /* PINCH — the blade winks inward from left + right, then gone */
+            tl.to(blade, { scaleX: 0, ease: "power2.in", duration: 0.3 }, 0.6);
+            tl.to(blade, { opacity: 0, ease: "none", duration: 0.05 }, 0.9);
+          }
+        } else if (veil) {
           /* Color-temperature drift: as a sheet is buried it doesn't just
              darken — it cools off the blue ground (#070B14) toward the
              warmer neutral obsidian ink (#121613), reading as physical
@@ -117,6 +177,10 @@ export default function StackTransitions() {
           0
         );
       });
+
+      return () => {
+        createdEls.forEach((el) => el.remove());
+      };
     });
 
     return () => mm.revert();
