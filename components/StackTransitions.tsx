@@ -93,7 +93,16 @@ export default function StackTransitions() {
         );
 
         if (veil) {
-          tl.to(veil, { opacity: cfg.veil, ease: "none" }, 0);
+          /* Color-temperature drift: as a sheet is buried it doesn't just
+             darken — it cools off the blue ground (#070B14) toward the
+             warmer neutral obsidian ink (#121613), reading as physical
+             depth/distance. Data-only; rides the same scrub. */
+          tl.fromTo(
+            veil,
+            { backgroundColor: "#070B14", opacity: 0 },
+            { backgroundColor: "#121613", opacity: cfg.veil, ease: "none" },
+            0
+          );
         }
 
         tl.fromTo(

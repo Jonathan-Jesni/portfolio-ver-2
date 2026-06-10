@@ -353,7 +353,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       </div>
 
       {/* ── CTA ── */}
-      <div className="container sd-cta">
+      <div className="container sd-cta" data-skew>
         <p>There&apos;s more on GitHub.</p>
         <a
           href="https://github.com/Jonathan-Jesni?tab=repositories"

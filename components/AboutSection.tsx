@@ -135,7 +135,7 @@ export default function AboutSection() {
 
             {/* Bio paragraphs — each word is individually animatable;
                 the first paragraph reads as an oversized editorial lede */}
-            <div className="about-bio">
+            <div className="about-bio" data-skew>
               {BIO_PARAGRAPHS.map((para, idx) => (
                 <p
                   key={idx}

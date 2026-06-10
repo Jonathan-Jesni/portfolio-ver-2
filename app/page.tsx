@@ -9,6 +9,8 @@ import PipelineGrid from "../components/PipelineGrid";
 import SpatialSection from "../components/SpatialSection";
 import ContactSection from "../components/ContactSection";
 import StackTransitions from "../components/StackTransitions";
+import HeadlineReveal from "../components/HeadlineReveal";
+import ScrollVelocitySkew from "../components/ScrollVelocitySkew";
 
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
@@ -155,6 +157,8 @@ export default function Home() {
       </div>
 
       <StackTransitions />
+      <HeadlineReveal />
+      <ScrollVelocitySkew />
     </>
   );
 }
