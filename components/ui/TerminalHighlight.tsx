@@ -13,7 +13,7 @@ interface TerminalHighlightProps {
 
 export function TerminalHighlight({
   children,
-  color = "#00eaff", // default neon cyan
+  color = "#C9A876", // default champagne gold
   delay = 0,
   animate = true,
 }: TerminalHighlightProps) {
@@ -38,7 +38,7 @@ export function TerminalHighlight({
       { scaleX: 1, ease: "power4.inOut", duration: 0.5 }
     ).to(
       textRef.current,
-      { color: "#000", duration: 0.15 },
+      { color: "#070B14", duration: 0.15 },
       "-=0.25"
     );
   }, { scope: containerRef, dependencies: [animate, delay] });

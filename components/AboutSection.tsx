@@ -64,7 +64,7 @@ export default function AboutSection() {
         tl.to(
           words,
           {
-            color: "rgba(255, 255, 255, 1)",
+            color: "rgba(244, 239, 227, 1)",
             ease: "none",
             stagger: {
               each: 0.04,
@@ -90,7 +90,7 @@ export default function AboutSection() {
       /* Words are immediately visible; terminal fades in once */
       if (textColRef.current) {
         const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
-        gsap.set(words, { color: "rgba(255,255,255,1)" });
+        gsap.set(words, { color: "rgba(244,239,227,1)" });
       }
       if (terminalRef.current) {
         gsap.set(terminalRef.current, { opacity: 0 });
@@ -122,16 +122,25 @@ export default function AboutSection() {
 
           {/* ===== LEFT: Section header + bio ===== */}
           <div ref={textColRef} className="about-split-text">
-            {/* Section label */}
-            <div className="section-label" style={{ marginBottom: "48px" }}>
-              <span className="section-title">About</span>
-              <span className="section-line" />
-            </div>
+            {/* Section header — editorial display heading */}
+            <header className="ed-header" style={{ marginBottom: "56px" }}>
+              <div className="ed-header-row">
+                <span className="ed-eyebrow">02 / Profile</span>
+                <span className="ed-meta">Pune · Muscat</span>
+              </div>
+              <h2 className="ed-heading ed-heading--md">
+                About <em>me</em>
+              </h2>
+            </header>
 
-            {/* Bio paragraphs — each word is individually animatable */}
+            {/* Bio paragraphs — each word is individually animatable;
+                the first paragraph reads as an oversized editorial lede */}
             <div className="about-bio">
               {BIO_PARAGRAPHS.map((para, idx) => (
-                <p key={idx} className="about-bio-para">
+                <p
+                  key={idx}
+                  className={idx === 0 ? "about-bio-para about-bio-para--lede" : "about-bio-para"}
+                >
                   <BioWords node={para} />
                 </p>
               ))}

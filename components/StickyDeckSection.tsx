@@ -13,10 +13,10 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
-  ludex:            "210, 100%, 56%",  /* electric blue  */
-  "file-converter": "155,  72%, 48%",  /* teal-green     */
-  "double-unet":    "  0,  82%, 58%",  /* crimson        */
-  synthrescue:      "270,  72%, 62%",  /* violet         */
+  ludex:            "214, 84%, 64%",  /* sapphire       */
+  "file-converter": "158, 48%, 52%",  /* muted jade     */
+  "double-unet":    "  6, 64%, 60%",  /* burnt coral    */
+  synthrescue:      "268, 52%, 66%",  /* dusty violet   */
 };
 
 export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
@@ -70,9 +70,12 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       if (imageCards.length < 1) return;
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
+      /* Depth stacking: each card scales + blurs out as the next one
+         arrives. The LAST card is deliberately skipped — the final
+         text/image pair stays crisp and pinned, then both columns
+         release simultaneously and scroll away as one stack. */
       imageCards.forEach((card, i) => {
-        const isLast = i === imageCards.length - 1;
-        const nextEl = isLast ? document.querySelector(".sd-split-right .sd-spacer") : imageCards[i + 1];
+        if (i === imageCards.length - 1) return;
 
         gsap.to(card, {
           scale:   0.95,
@@ -80,9 +83,9 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
           filter:  "blur(2px)",
           ease:    "none",
           scrollTrigger: {
-            trigger: nextEl,
-            start:   "top 25vh",
-            end:     isLast ? "bottom 60%" : "top 20%",
+            trigger: imageCards[i + 1],
+            start:   "top 13vh",
+            end:     "top 7%",
             scrub:   0.8,
           },
         });
@@ -91,18 +94,16 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       /* ── Dual-Deck: Stack text panels natively ── */
       const textCards = gsap.utils.toArray<HTMLElement>(".sd-text-panel");
       textCards.forEach((textCard, i) => {
-        /* Depth stacking: cards below the active one scale + blur out */
-        const isLast = i === textCards.length - 1;
-        const nextEl = isLast ? document.querySelector(".sd-split-left .sd-spacer") : textCards[i + 1];
+        if (i === textCards.length - 1) return;
 
         gsap.to(textCard, {
           scale:   0.95,
           filter:  "blur(2px)",
           ease:    "none",
           scrollTrigger: {
-            trigger: nextEl,
-            start:   "top 25vh",
-            end:     isLast ? "bottom 60%" : "top 20%",
+            trigger: textCards[i + 1],
+            start:   "top 13vh",
+            end:     "top 7%",
             scrub:   0.8,
           },
         });
@@ -113,7 +114,51 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       };
     });
 
-    return () => mm.revert();
+    /* ── Release sync ──────────────────────────────────────────────
+       The text panels are content-tall while the image cards keep a
+       4/3 aspect, so the two columns would un-stick at different
+       scroll positions. Measure both decks and size the left
+       column's trailing spacer so the final text/image pair releases
+       at the exact same scroll — they leave as one stack. */
+    const root = sectionRef.current;
+    const leftSpacer = root?.querySelector<HTMLElement>(".sd-split-left .sd-spacer");
+    const leftTrack = root?.querySelector<HTMLElement>(".sd-text-track");
+    const rightCol = root?.querySelector<HTMLElement>(".sd-split-right");
+
+    const syncRelease = () => {
+      if (!leftSpacer || !leftTrack || !rightCol) return;
+
+      /* Mobile: single column, no parallel decks to synchronize */
+      if (!window.matchMedia("(min-width: 901px)").matches) {
+        leftSpacer.style.height = "";
+        return;
+      }
+
+      const txts = leftTrack.querySelectorAll<HTMLElement>(".sd-text-panel");
+      const imgs = rightCol.querySelectorAll<HTMLElement>(".sd-img-card");
+      const lastTxt = txts[txts.length - 1];
+      const lastImg = imgs[imgs.length - 1];
+      if (!lastTxt || !lastImg) return;
+
+      /* Measure with the spacer collapsed, then size it to the gap
+         between the two columns' natural release points */
+      leftSpacer.style.height = "0px";
+      const stickyTop = (el: HTMLElement) => parseFloat(getComputedStyle(el).top) || 0;
+      const releaseTxt =
+        leftTrack.getBoundingClientRect().bottom - stickyTop(lastTxt) - lastTxt.offsetHeight;
+      const releaseImg =
+        rightCol.getBoundingClientRect().bottom - stickyTop(lastImg) - lastImg.offsetHeight;
+      leftSpacer.style.height = `${Math.max(0, Math.round(releaseImg - releaseTxt))}px`;
+    };
+
+    syncRelease();
+    ScrollTrigger.addEventListener("refreshInit", syncRelease);
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+
+    return () => {
+      ScrollTrigger.removeEventListener("refreshInit", syncRelease);
+      mm.revert();
+    };
   }, { scope: sectionRef });
 
   return (
@@ -123,12 +168,18 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       id="projects"
       style={{ opacity: 0, pointerEvents: "none" }}
     >
-      {/* ── Section header ─────────────────────────────────────────── */}
+      {/* ── Section header — standalone full-viewport page.
+             The 3D laptop background will layer behind this later. ── */}
       <div className="container sd-header">
-        <div className="section-label">
-          <span className="section-title">Selected Work</span>
-          <span className="section-line" />
-        </div>
+        <header className="ed-header">
+          <div className="ed-header-row">
+            <span className="ed-eyebrow">01 / Projects</span>
+          </div>
+          <h2 className="ed-heading ed-heading--indent">
+            Selected <em>Work</em>
+          </h2>
+        </header>
+        <span className="sd-header-cue" aria-hidden="true">scroll ↓</span>
       </div>
 
       {/* ── Asymmetric split ─────────────────────────────────────────── */}
@@ -160,18 +211,18 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
                     {/* Glass card shell */}
                     <div
                       className="glass-panel"
-                      style={{ 
+                      style={{
                         "--card-hue": hue,
                         borderLeft: `2px solid hsl(${hue})`,
-                        padding: "40px",
-                        position: "relative",
-                        zIndex: 1,
-                        backgroundColor: "rgba(3, 4, 7, 0.85)",
-                        height: "100%",
                       } as React.CSSProperties}
                     >
                       {/* Top-edge accent line matches the image card */}
                       <div className="sd-card-accent" aria-hidden="true" />
+
+                      {/* Ghost folio numeral — editorial magazine index */}
+                      <span className="sd-index-ghost mono" aria-hidden="true">
+                        {String(card.projectIndex + 1).padStart(2, "0")}
+                      </span>
 
                       {/* Title with inline subtitle */}
                       <h3 className="sd-text-title">

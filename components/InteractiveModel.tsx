@@ -452,7 +452,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
             fontSize: "14px",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "rgba(0, 234, 255, 0.8)",
+            color: "rgba(216, 188, 135, 0.85)",
             marginBottom: "8px",
           }}
         >
@@ -492,7 +492,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
             fontFamily: "var(--font-jetbrains, monospace)",
             textTransform: "uppercase",
             letterSpacing: "0.12em",
-            color: "rgba(0, 234, 255, 0.3)",
+            color: "rgba(216, 188, 135, 0.35)",
           }}
         >
           Scroll to open & zoom

@@ -136,6 +136,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
   useGSAP(() => {
     gsap.set(
       [
+        ".hero-eyebrow",
         ".hero-name-split",
         ".hero-tagline",
         ".hero-sub",
@@ -154,6 +155,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       gsap.to(
         [
+          ".hero-eyebrow",
           ".hero-name-split",
           ".hero-tagline",
           ".hero-sub",
@@ -172,7 +174,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     mm.add("(prefers-reduced-motion: reduce)", () => {
       /* Instant reveal — no transforms */
       gsap.set(
-        [".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
+        [".hero-eyebrow", ".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
     });
@@ -220,6 +222,11 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
           {/* Restore inner grid so the text is constrained to the 55fr left column */}
           <div className="hero-inner-grid">
             <div className="hero-text-col" style={{ pointerEvents: "auto" }}>
+              <div className="hero-eyebrow">
+                <span className="hero-eyebrow-dot" aria-hidden="true" />
+                Available for internships — 2026
+              </div>
+
               <h1 className="hero-name-split" aria-label="Jonathan">
                 <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
                   {TOP.map((ch, i) => (
@@ -247,12 +254,12 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
               <div ref={subContentRef} className="hero-sub-content">
                 <h2 className="hero-tagline">
-                  I build <TerminalHighlight delay={1.2} animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
-                  that solve <CircuitUnderline delay={1.8} color="#00eaff" animate={animate}>real-world problems</CircuitUnderline>.
+                  I build <TerminalHighlight delay={1.2} color="#C9A876" animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
+                  that solve <em>real-world problems</em>.
                 </h2>
 
                 <p className="hero-sub">
-                  CS student focused on AI, <CircuitUnderline delay={2.0} animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#b829ff" animate={animate}>scalable systems</TerminalHighlight>.
+                  CS student focused on AI, <CircuitUnderline delay={2.0} color="#C9A876" animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#8FA9C9" animate={animate}>scalable systems</TerminalHighlight>.
                 </p>
 
                 <div className="hero-buttons">

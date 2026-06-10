@@ -13,7 +13,7 @@ interface CircuitUnderlineProps {
 
 export function CircuitUnderline({
   children,
-  color = "#8a2be2", // deep violet default
+  color = "#C9A876", // champagne gold default
   delay = 0,
   animate = true,
 }: CircuitUnderlineProps) {

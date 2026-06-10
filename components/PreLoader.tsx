@@ -197,13 +197,13 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         style={{
           position:        "absolute",
           inset:           0,
-          backgroundColor: "#050505",
+          backgroundColor: "#070B14",
           zIndex:          1,
           /* GPU promotion — this element will be translated */
           willChange:      "transform",
           /* A single horizontal hairline at the curtain's bottom edge
              draws attention to the panel as it lifts */
-          boxShadow:       "0 -1px 0 rgba(255,255,255,0.06)",
+          boxShadow:       "0 -1px 0 rgba(240,232,210,0.06)",
         }}
       />
 
@@ -234,10 +234,10 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
             fontWeight:     600,
             lineHeight:     1,
             letterSpacing:  "-0.04em",
-            color:          "rgba(255,255,255,0.92)",
+            color:          "rgba(244,239,227,0.94)",
             fontVariantNumeric: "tabular-nums",
-            /* Subtle text-shadow gives it weight against pure black */
-            textShadow:     "0 0 80px rgba(255,255,255,0.08)",
+            /* Subtle text-shadow gives it weight against the obsidian ground */
+            textShadow:     "0 0 80px rgba(240,232,210,0.08)",
           }}
         >
           00
@@ -250,7 +250,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
             fontFamily:    "var(--font-jetbrains), 'JetBrains Mono', monospace",
             fontSize:      "11px",
             fontWeight:    500,
-            color:         "rgba(255,255,255,0.25)",
+            color:         "rgba(244,239,227,0.28)",
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             margin:        0,

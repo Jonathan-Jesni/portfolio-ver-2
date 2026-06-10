@@ -41,8 +41,8 @@ html {
 }
 
 body {
-  background-color: #050505;
-  color: #e8e8e8;
+  background-color: #070B14;
+  color: #E4DECF;
   font-family: var(--font-jakarta), system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   overflow-x: hidden;
@@ -85,46 +85,49 @@ img {
 
 /* ---------- CSS Custom Properties ---------- */
 :root {
-  /* Surface palette â€” OLED hierarchy */
-  --surface-0: #050505;
-  /* deepest OLED base */
-  --surface-1: #0a0a0a;
+  /* Surface palette â€” Obsidian Blue hierarchy */
+  --surface-0: #070B14;
+  /* deepest obsidian base */
+  --surface-1: #0B111E;
   /* card floor */
-  --surface-2: #111111;
+  --surface-2: #111828;
   /* elevated card */
-  --surface-3: #161616;
+  --surface-3: #182033;
   /* hover state */
 
-  /* Ink palette */
-  --ink-0: #ffffff;
-  /* pure white â€” display headings only */
-  --ink-1: #e8e8e8;
+  /* Ink palette â€” warm cream on cool obsidian */
+  --ink-0: #F4EFE3;
+  /* cream white â€” display headings only */
+  --ink-1: #E4DECF;
   /* primary body text */
-  --ink-2: #a0a0a0;
+  --ink-2: #ABA793;
   /* secondary text */
-  --ink-3: #787878;
-  /* muted â€” lifted from #5a5a5a for WCAG AA on #0a0a0a (~4.8:1) */
-  --ink-4: #3e3e3e;
-  /* hairline structures â€” lifted from #2e2e2e */
+  --ink-3: #82806F;
+  /* muted â€” warm grey, WCAG AA on --surface-1 */
+  --ink-4: #3A4154;
+  /* hairline structures â€” cool slate, recedes into the blue ground */
 
-  /* Borders â€” glass-plate system */
-  --border-hairline: rgba(255, 255, 255, 0.05);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.11);
-  --border-hover: rgba(255, 255, 255, 0.20);
+  /* Borders â€” champagne-tinted glass-plate system */
+  --border-hairline: rgba(231, 222, 199, 0.055);
+  --border-subtle: rgba(231, 222, 199, 0.09);
+  --border-default: rgba(231, 222, 199, 0.13);
+  --border-hover: rgba(231, 222, 199, 0.22);
 
   /* Inner edge highlights for Double-Bezel architecture */
-  --edge-top: rgba(255, 255, 255, 0.10);
-  --edge-glow: rgba(255, 255, 255, 0.04);
+  --edge-top: rgba(240, 232, 210, 0.09);
+  --edge-glow: rgba(240, 232, 210, 0.04);
 
-  /* Accent â€” Electric Blue. Used ONLY for hover micro-states & arrows */
-  --accent: #00A8FF;
-  --accent-glow: rgba(0, 168, 255, 0.18);
-  --accent-dim: rgba(0, 168, 255, 0.08);
+  /* Accent â€” Champagne Gold. Used ONLY for hover micro-states, arrows & serif italics */
+  --accent: #C9A876;
+  --accent-rgb: 201, 168, 118;
+  --accent-glow: rgba(201, 168, 118, 0.20);
+  --accent-dim: rgba(201, 168, 118, 0.09);
+  /* Secondary cool accent â€” steel blue for terminal chrome */
+  --accent-cool: #8FA9C9;
 
-  /* Physical shadows â€” tinted to match OLED black, not pure black drop shadows */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.8), 0 8px 32px rgba(0, 0, 0, 0.6), 0 24px 64px rgba(0, 0, 0, 0.4);
-  --shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.9), 0 12px 40px rgba(0, 0, 0, 0.7), 0 32px 80px rgba(0, 0, 0, 0.5);
+  /* Physical shadows â€” tinted to the obsidian ground, not pure black drop shadows */
+  --shadow-card: 0 1px 2px rgba(3, 6, 14, 0.8), 0 8px 32px rgba(3, 6, 14, 0.6), 0 24px 64px rgba(3, 6, 14, 0.4);
+  --shadow-hover: 0 1px 2px rgba(3, 6, 14, 0.9), 0 12px 40px rgba(3, 6, 14, 0.7), 0 32px 80px rgba(3, 6, 14, 0.5);
 
   /* Typography scale */
   --text-label: 11px;
@@ -187,7 +190,7 @@ img {
    Usage: Wrap content in .bezel-shell > .bezel-core
    ============================================================ */
 .bezel-shell {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(240, 232, 210, 0.025);
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
   padding: 3px;
@@ -206,7 +209,7 @@ img {
   border-radius: calc(20px - 3px);
   /* concentric curve math */
   /* Inner edge highlight â€” simulates edge refraction of machined glass */
-  box-shadow: inset 0 1px 0 var(--edge-top), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 1px 0 var(--edge-top), inset 0 0 0 1px rgba(240, 232, 210, 0.02);
   overflow: hidden;
   position: relative;
 }
@@ -220,7 +223,7 @@ img {
   background: linear-gradient(90deg,
       transparent 0%,
       var(--edge-top) 30%,
-      rgba(255, 255, 255, 0.18) 50%,
+      rgba(240, 232, 210, 0.18) 50%,
       var(--edge-top) 70%,
       transparent 100%);
   pointer-events: none;
@@ -272,16 +275,16 @@ img {
   transform: translateX(-50%);
   z-index: var(--z-nav);
   /* The pill itself */
-  background: rgba(5, 5, 5, 0.75);
+  background: rgba(7, 11, 20, 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   border-radius: 100px;
   /* Top-edge refraction highlight */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 4px 24px rgba(0, 0, 0, 0.6),
-    0 1px 2px rgba(0, 0, 0, 0.8);
+    inset 0 1px 0 rgba(240, 232, 210, 0.08),
+    0 4px 24px rgba(3, 6, 14, 0.6),
+    0 1px 2px rgba(3, 6, 14, 0.8);
   transition: box-shadow var(--t-mid);
 }
 
@@ -336,7 +339,7 @@ img {
 
 .nav-links a:hover {
   color: var(--ink-1);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(240, 232, 210, 0.06);
 }
 
 /* Resume CTA â€” "Button-in-Button" pill architecture */
@@ -374,14 +377,14 @@ img {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(3, 6, 14, 0.12);
   font-size: 11px;
   transition: transform var(--t-fast), background var(--t-fast);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .nav-resume:hover .nav-resume-arrow {
-    background: rgba(0, 168, 255, 0.2);
+    background: rgba(var(--accent-rgb), 0.2);
     color: var(--accent);
     transform: translate(1px, -1px) scale(1.05);
   }
@@ -407,7 +410,7 @@ img {
 }
 
 .mobile-toggle:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(240, 232, 210, 0.06);
 }
 
 .mobile-toggle span {
@@ -436,7 +439,7 @@ img {
 .mobile-menu {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 5, 0.96);
+  background: rgba(7, 11, 20, 0.96);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   padding: 32px;
@@ -489,13 +492,23 @@ img {
 
 .hero-tagline {
   font-family: var(--font-jakarta), sans-serif;
-  font-size: clamp(18px, 3vw, 22px);
+  font-size: clamp(20px, 3vw, 25px);
   font-weight: 400;
-  color: var(--ink-2);
+  color: var(--ink-1);
   line-height: 1.55;
-  max-width: 580px;
+  max-width: 600px;
   margin-bottom: 12px;
   letter-spacing: -0.02em;
+}
+
+/* Serif italic counterpoint inside the tagline */
+.hero-tagline em {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.1em;
+  letter-spacing: 0;
+  color: var(--accent);
 }
 
 .hero-sub {
@@ -556,7 +569,7 @@ img {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.10);
+  background: rgba(3, 6, 14, 0.10);
   font-size: 13px;
   flex-shrink: 0;
   transition: transform var(--t-fast), background var(--t-fast), color var(--t-fast);
@@ -564,7 +577,7 @@ img {
 
 @media (hover: hover) and (pointer: fine) {
   .btn-primary:hover .btn-arrow {
-    background: rgba(0, 168, 255, 0.20);
+    background: rgba(var(--accent-rgb), 0.20);
     color: var(--accent);
     transform: translate(1px, -1px) scale(1.08);
   }
@@ -582,7 +595,7 @@ img {
   .btn-outline:hover {
     border-color: var(--border-hover);
     color: var(--ink-1);
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(240, 232, 210, 0.04);
   }
 }
 
@@ -605,6 +618,8 @@ img {
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
+  /* Keep centered content clear of the floating nav pill */
+  padding-top: clamp(80px, 9vh, 116px);
 }
 
 /* JONATHAN split heading */
@@ -613,11 +628,11 @@ img {
   flex-wrap: nowrap;
   gap: 0;
   font-family: var(--font-jakarta), sans-serif;
-  font-size: clamp(56px, 11vw, 96px);
+  font-size: clamp(60px, 10.5vw, 112px);
   font-weight: 800;
   letter-spacing: -0.04em;
   /* floor per design rules: â‰¥ -0.04em */
-  line-height: 0.93;
+  line-height: 0.9;
   color: var(--ink-0);
   margin-bottom: 36px;
   text-wrap: nowrap;
@@ -628,19 +643,76 @@ img {
   will-change: transform;
 }
 
+/* Each character carries a brushed-cream metallic gradient */
 .hero-char {
   display: inline-block;
   will-change: transform;
   cursor: default;
   user-select: none;
-  transition: color var(--t-fast);
+  background: linear-gradient(180deg, #FAF6EB 0%, #EFE8D3 52%, #C8BEA1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: -webkit-text-fill-color var(--t-fast);
 }
 
-/* Electric blue flicker on individual char hover */
+/* Champagne flicker on individual char hover */
 @media (hover: hover) and (pointer: fine) {
   .hero-char:hover {
-    color: var(--accent);
+    -webkit-text-fill-color: var(--accent);
   }
+}
+
+/* ── Hero eyebrow — availability badge above the name ── */
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  padding: 8px 16px 8px 13px;
+  margin-bottom: 36px;
+  border: 1px solid rgba(var(--accent-rgb), 0.20);
+  border-radius: 100px;
+  background: rgba(var(--accent-rgb), 0.05);
+  box-shadow: inset 0 1px 0 rgba(240, 232, 210, 0.05);
+}
+
+.hero-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d27b;
+  box-shadow: 0 0 8px rgba(52, 210, 123, 0.7);
+  animation: heroDotPulse 2.2s var(--ease-in-out-expo) infinite;
+  flex-shrink: 0;
+}
+
+@keyframes heroDotPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ── Atmospheric color field — champagne + deep blue orbs ── */
+.hero-sticky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 44% 38% at 16% 24%, rgba(var(--accent-rgb), 0.07), transparent 70%),
+    radial-gradient(ellipse 52% 46% at 84% 74%, rgba(72, 104, 168, 0.10), transparent 70%);
 }
 
 .hero-sub-content {
@@ -673,7 +745,7 @@ img {
   width: min(740px, 90vw);
   max-width: none;
   /* Outer shell of the bezel */
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
   padding: 3px;
@@ -696,7 +768,7 @@ img {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(255, 255, 255, 0.15) 50%, var(--edge-top) 60%, transparent);
+  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(240, 232, 210, 0.15) 50%, var(--edge-top) 60%, transparent);
   pointer-events: none;
   z-index: 1;
 }
@@ -724,8 +796,12 @@ img {
   top: 0;
   height: 100vh;
   display: flex;
-  align-items: center;
+  /* "safe" falls back to start-alignment when content overflows,
+     so nothing ever slides up underneath the floating nav pill */
+  align-items: safe center;
   overflow: visible;
+  padding-top: clamp(96px, 11vh, 132px);
+  padding-bottom: 24px;
 }
 
 .sp-content {
@@ -754,8 +830,8 @@ img {
   background: var(--surface-1);
   /* Subtle grid pattern */
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, rgba(240, 232, 210, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(240, 232, 210, 0.025) 1px, transparent 1px);
   background-size: 48px 48px;
   /* Top-edge refraction highlight */
   box-shadow:
@@ -799,9 +875,9 @@ img {
   will-change: transform;
   /* Machined glass inner-edge highlight */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-    0 1px 2px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(240, 232, 210, 0.08),
+    inset 0 -1px 0 rgba(3, 6, 14, 0.3),
+    0 1px 2px rgba(3, 6, 14, 0.6);
   transition:
     background var(--t-mid),
     border-color var(--t-mid),
@@ -816,8 +892,8 @@ img {
 /* Hover state â€” electric blue micro-accent */
 @media (hover: hover) and (pointer: fine) {
   .gravity-pit.physics-active .gravity-pill:hover {
-    background: rgba(0, 168, 255, 0.08);
-    border-color: rgba(0, 168, 255, 0.25);
+    background: rgba(var(--accent-rgb), 0.08);
+    border-color: rgba(var(--accent-rgb), 0.25);
     color: var(--ink-1);
   }
 }
@@ -849,7 +925,7 @@ img {
 
 /* Project card â€” Double-Bezel outer shell */
 .project-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
   padding: 3px;
@@ -886,7 +962,7 @@ img {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(255, 255, 255, 0.12) 50%, var(--edge-top) 60%, transparent);
+  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(240, 232, 210, 0.12) 50%, var(--edge-top) 60%, transparent);
   pointer-events: none;
   z-index: 1;
 }
@@ -953,7 +1029,7 @@ img {
   padding: 4px 10px;
   border: 1px solid var(--border-hairline);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(240, 232, 210, 0.025);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1052,7 +1128,7 @@ img {
   padding: 4px 10px;
   border: 1px solid var(--border-hairline);
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   letter-spacing: 0.04em;
 }
 
@@ -1074,8 +1150,12 @@ img {
   top: 0;
   height: 100vh;
   display: flex;
-  align-items: center;
+  /* "safe" falls back to start-alignment when content overflows,
+     so nothing ever slides up underneath the floating nav pill */
+  align-items: safe center;
   overflow: hidden;
+  padding-top: clamp(96px, 11vh, 132px);
+  padding-bottom: 24px;
 }
 
 .about-split-container {
@@ -1097,8 +1177,14 @@ img {
 
 @media (min-width: 900px) {
   .about-split-container {
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
+    /* Asymmetric editorial split — prose leads, terminal recedes */
+    grid-template-columns: 1.12fr 0.88fr;
+    gap: 96px;
+  }
+
+  /* Staggered baseline: terminal drops below the prose's optical line */
+  .about-terminal-wrap {
+    margin-top: clamp(40px, 12vh, 130px);
   }
 }
 
@@ -1121,13 +1207,25 @@ img {
 }
 
 .about-bio-para strong {
-  font-weight: 700;
+  /* Editorial emphasis — serif italic at a slightly larger optical size */
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.14em;
+  letter-spacing: 0;
   color: inherit;
+}
+
+/* Opening paragraph reads as an editorial lede */
+.about-bio-para--lede {
+  font-size: clamp(20px, 2.3vw, 27px);
+  line-height: 1.55;
+  letter-spacing: -0.025em;
 }
 
 .reveal-word {
   display: inline;
-  color: rgba(255, 255, 255, 0.12);
+  color: rgba(240, 232, 210, 0.12);
   transition: color 80ms ease;
   will-change: color;
 }
@@ -1145,7 +1243,7 @@ img {
 .about-snippet {
   width: 100%;
   /* Outer shell */
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 16px;
   padding: 3px;
@@ -1153,7 +1251,7 @@ img {
 }
 
 .about-snippet-inner {
-  background: #0a0a0a;
+  background: var(--surface-1);
   border-radius: calc(16px - 3px);
   box-shadow: inset 0 1px 0 var(--edge-top);
   overflow: hidden;
@@ -1165,7 +1263,7 @@ img {
   gap: 6px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-hairline);
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(240, 232, 210, 0.015);
 }
 
 .snippet-dot {
@@ -1256,7 +1354,7 @@ img {
 }
 
 .pipeline-packet {
-  fill: rgba(255, 255, 255, 0.5);
+  fill: rgba(240, 232, 210, 0.5);
   opacity: 0;
   filter: blur(0.5px);
 }
@@ -1332,7 +1430,7 @@ img {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(255, 255, 255, 0.12) 50%, var(--edge-top) 60%, transparent);
+  background: linear-gradient(90deg, transparent, var(--edge-top) 40%, rgba(240, 232, 210, 0.12) 50%, var(--edge-top) 60%, transparent);
   pointer-events: none;
   border-radius: inherit;
 }
@@ -1425,7 +1523,7 @@ img {
   align-items: center;
   gap: 4px 2px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 8px;
   position: relative;
@@ -1447,8 +1545,8 @@ img {
 }
 
 .pipe-step-label.pipe-step--lit {
-  color: rgba(255, 255, 255, 0.80);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.12);
+  color: rgba(240, 232, 210, 0.80);
+  text-shadow: 0 0 8px rgba(240, 232, 210, 0.3), 0 0 16px rgba(240, 232, 210, 0.12);
 }
 
 .pipe-arrow {
@@ -1491,8 +1589,8 @@ img {
   touch-action: none;
   user-select: none;
   box-shadow:
-    0 0 6px rgba(0, 168, 255, 0.5),
-    0 0 16px rgba(0, 168, 255, 0.18);
+    0 0 6px rgba(var(--accent-rgb), 0.5),
+    0 0 16px rgba(var(--accent-rgb), 0.18);
   opacity: 0.7;
   transition: opacity var(--t-fast), box-shadow var(--t-fast);
 }
@@ -1502,8 +1600,8 @@ img {
   cursor: grabbing;
   opacity: 1;
   box-shadow:
-    0 0 8px rgba(0, 168, 255, 0.75),
-    0 0 22px rgba(0, 168, 255, 0.32);
+    0 0 8px rgba(var(--accent-rgb), 0.75),
+    0 0 22px rgba(var(--accent-rgb), 0.32);
 }
 
 .pipeline-card--executing {
@@ -1512,13 +1610,13 @@ img {
 
 @keyframes cardExecute {
   0% {
-    border-color: rgba(0, 168, 255, 0.45);
-    box-shadow: 0 0 0 1px rgba(0, 168, 255, 0.18), var(--shadow-card);
+    border-color: rgba(var(--accent-rgb), 0.45);
+    box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.18), var(--shadow-card);
   }
 
   50% {
-    border-color: rgba(0, 168, 255, 0.15);
-    box-shadow: 0 0 0 2px rgba(0, 168, 255, 0.08), var(--shadow-card);
+    border-color: rgba(var(--accent-rgb), 0.15);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.08), var(--shadow-card);
   }
 
   100% {
@@ -1678,7 +1776,7 @@ img {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-2);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-subtle);
   border-radius: 100px;
   letter-spacing: -0.01em;
@@ -1693,7 +1791,7 @@ img {
   .contact-link:hover {
     border-color: var(--border-hover);
     color: var(--ink-1);
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(240, 232, 210, 0.04);
     transform: translateY(-1px);
   }
 }
@@ -1740,7 +1838,7 @@ img {
    ============================================================ */
 .term-shell {
   width: 100%;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 16px;
   padding: 3px;
@@ -1748,7 +1846,7 @@ img {
 }
 
 .term-shell-inner {
-  background: #0a0a0a;
+  background: #0A0F1B;
   border-radius: calc(16px - 3px);
   box-shadow: inset 0 1px 0 var(--edge-top);
   overflow: hidden;
@@ -1758,7 +1856,7 @@ img {
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(240, 232, 210, 0.015);
   border-bottom: 1px solid var(--border-hairline);
 }
 
@@ -1820,12 +1918,12 @@ img {
 }
 
 .term-prompt-arrow {
-  color: #4ade80;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
 .term-prompt-dir {
-  color: #60a5fa;
+  color: var(--accent-cool);
   flex-shrink: 0;
 }
 
@@ -1843,15 +1941,15 @@ img {
 }
 
 .term-key {
-  color: #82aaff;
+  color: #D8BC87;
 }
 
 .term-str {
-  color: #c3e88d;
+  color: #AEC6A4;
 }
 
 .term-punct {
-  color: #4a4a5a;
+  color: #525E78;
 }
 
 .terminal-cursor {
@@ -1954,7 +2052,7 @@ img {
    SELECTION
    ============================================================ */
 ::selection {
-  background: rgba(0, 168, 255, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
   color: var(--ink-0);
 }
 
@@ -2010,8 +2108,8 @@ img {
   /* Subtle inner glow â€” makes the canvas feel like it's emitting light */
   box-shadow:
     0 0 0 1px var(--border-hairline),
-    0 0 60px rgba(0, 168, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 0 60px rgba(var(--accent-rgb), 0.06),
+    inset 0 1px 0 rgba(240, 232, 210, 0.04);
 }
 
 /* Vignette overlay â€” blends the canvas edges into the dark background.
@@ -2022,7 +2120,7 @@ img {
   border-radius: 20px;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #0a0a0c 100%);
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #070B14 100%);
   opacity: 0.8;
 }
 
@@ -2151,7 +2249,7 @@ canvas.glass-image-canvas {
    SELECTION
    ============================================================ */
 ::selection {
-  background: rgba(0, 168, 255, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
   color: var(--ink-0);
 }
 
@@ -2207,8 +2305,8 @@ canvas.glass-image-canvas {
   /* Subtle inner glow — makes the canvas feel like it's emitting light */
   box-shadow:
     0 0 0 1px var(--border-hairline),
-    0 0 60px rgba(0, 168, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 0 60px rgba(var(--accent-rgb), 0.06),
+    inset 0 1px 0 rgba(240, 232, 210, 0.04);
 }
 
 /* Vignette overlay — blends the canvas edges into the dark background.
@@ -2219,7 +2317,7 @@ canvas.glass-image-canvas {
   border-radius: 20px;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #0a0a0c 100%);
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #070B14 100%);
   opacity: 0.8;
 }
 
@@ -2331,16 +2429,53 @@ canvas.glass-image-canvas {
   padding-bottom: 128px;
 }
 
-/* Section header */
+/* Section header — a full standalone page. Centered display heading
+   over a clean obsidian field, ready for a 3D background layer to be
+   slotted behind it later. */
 .sd-header {
-  padding-top: 128px;
-  padding-bottom: 72px;
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 96px;
+  padding-bottom: 48px;
+}
+
+.sd-header .ed-header {
+  margin-bottom: 0;
+}
+
+/* Scroll cue — anchored to the page's bottom-left grid edge */
+.sd-header-cue {
+  position: absolute;
+  bottom: 44px;
+  left: 48px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.20em;
+  animation: cueFloat 2.6s var(--ease-in-out-expo) infinite;
+}
+
+@keyframes cueFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(7px);
+  }
 }
 
 @media (max-width: 767px) {
-  .sd-header {
-    padding-top: 80px;
-    padding-bottom: 48px;
+  .sd-header-cue {
+    left: 24px;
+    bottom: 32px;
   }
 
   .sticky-deck-section {
@@ -2348,15 +2483,21 @@ canvas.glass-image-canvas {
   }
 }
 
-/* ── Top-level split grid ──────────────────────────────────── */
+/* ── Top-level split grid ──────────────────────────────────────
+   Equal columns are required: both sticky decks must release at
+   the exact same scroll position so the final pair scrolls away
+   as one stack. Asymmetry comes from the right column's 140px
+   staggered start instead. */
 .sd-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  gap: 72px;
   max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 48px;
-  /* Columns stretch natively so their bottom edges align perfectly */
+  /* Columns size to their own content — JS equalizes the sticky
+     release points so the last pair scrolls away in sync */
+  align-items: start;
 }
 
 @media (max-width: 900px) {
@@ -2369,7 +2510,7 @@ canvas.glass-image-canvas {
 
 /* ── LEFT: physical scrolling text track ───────────────────────────────── */
 .sd-split-left {
-  height: 100%;
+  height: auto;
 }
 
 @media (max-width: 900px) {
@@ -2383,12 +2524,13 @@ canvas.glass-image-canvas {
   flex-direction: column;
   gap: 60vh;
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 
 .sd-text-panel {
   position: sticky;
-  top: calc(25vh + calc(var(--card-index, 0) * 16px));
+  /* max() keeps the pinned card clear of the floating nav pill */
+  top: calc(max(96px, 13vh) + calc(var(--card-index, 0) * 14px));
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -2429,14 +2571,22 @@ canvas.glass-image-canvas {
   display: flex;
   flex-direction: column;
   gap: 60vh;
-  height: 100%;
+  height: auto;
+  /* Staggered editorial baseline — image column starts lower than text */
+  margin-top: 140px;
 }
 
-/* Physical spacer at the bottom of the image column.
-   Height = one full viewport so the last card sits sticky
-   before the CTA section takes over.                                  */
+@media (max-width: 900px) {
+  .sd-split-right {
+    margin-top: 0;
+  }
+}
+
+/* Physical spacer at the bottom of each column.
+   Gives the final pinned pair a short hold, then both columns
+   release simultaneously and scroll away as one stack. */
 .sd-spacer {
-  height: 100vh;
+  height: 60vh;
   flex-shrink: 0;
   pointer-events: none;
 }
@@ -2444,8 +2594,8 @@ canvas.glass-image-canvas {
 /* ── Image card: the sticky visual unit ─────────────────────── */
 .sd-img-card {
   position: sticky;
-  /* Matches the text panel anchor — both columns align at 25vh */
-  top: calc(25vh + calc(var(--card-index, 0) * 16px));
+  /* Matches the text panel anchor — both columns pin clear of the nav */
+  top: calc(max(96px, 13vh) + calc(var(--card-index, 0) * 14px));
   will-change: transform, opacity, filter;
   transform-origin: center top;
 
@@ -2488,7 +2638,7 @@ canvas.glass-image-canvas {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
+    linear-gradient(to bottom, transparent 60%, rgba(3, 6, 14, 0.55) 100%);
   pointer-events: none;
   z-index: 1;
 }
@@ -2524,7 +2674,7 @@ canvas.glass-image-canvas {
   color: var(--ink-4);
   position: relative;
   z-index: 2;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(3, 6, 14, 0.4);
   animation: nodeIlluminate 4s infinite;
   will-change: color, border-color, box-shadow;
 }
@@ -2572,19 +2722,19 @@ canvas.glass-image-canvas {
   100% {
     color: var(--ink-4);
     border-color: var(--border-hairline);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(3, 6, 14, 0.4);
   }
 
   10% {
     color: var(--ink-0);
     border-color: hsl(var(--card-hue));
-    box-shadow: 0 0 12px hsla(var(--card-hue), 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 12px hsla(var(--card-hue), 0.3), 0 4px 12px rgba(3, 6, 14, 0.4);
   }
 
   25% {
     color: var(--ink-4);
     border-color: var(--border-hairline);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(3, 6, 14, 0.4);
   }
 }
 
@@ -2601,7 +2751,7 @@ canvas.glass-image-canvas {
 .sd-placeholder-label {
   font-size: 11px;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.10);
+  color: rgba(240, 232, 210, 0.10);
 }
 
 /* ── Shared text styles ─────────────────────────────────────── */
@@ -2694,13 +2844,13 @@ canvas.glass-image-canvas {
    that mirrors the image cards' double-bezel language.       */
 .sd-text-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(240, 232, 210, 0.02);
   border: 1px solid var(--border-hairline);
   border-radius: 16px;
   padding: 40px;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.6),
-    0 8px 32px rgba(0, 0, 0, 0.4);
+    0 1px 2px rgba(3, 6, 14, 0.6),
+    0 8px 32px rgba(3, 6, 14, 0.4);
   /* Accent line is positioned inside this card, same as image cards */
   overflow: hidden;
 }
@@ -2717,22 +2867,24 @@ canvas.glass-image-canvas {
 /* Main title with inline subtitle — restores old design's hierarchy */
 .sd-text-title {
   font-family: var(--font-jakarta), sans-serif;
-  font-size: clamp(22px, 2.4vw, 34px);
+  font-size: clamp(26px, 2.8vw, 40px);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
   color: var(--ink-0);
   text-wrap: balance;
   margin-bottom: 20px;
 }
 
-/* Inline subtitle: dimmer, same font but lower weight */
+/* Inline subtitle: serif italic — editorial counterpoint to the bold title */
 .sd-text-subtitle {
-  font-size: 0.6em;
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: 0.62em;
   /* relative to h3 — scales with the title */
   font-weight: 400;
-  color: var(--ink-3);
-  letter-spacing: -0.01em;
+  color: var(--ink-2);
+  letter-spacing: 0;
 }
 
 /* Description body */
@@ -2782,9 +2934,11 @@ canvas.glass-image-canvas {
 }
 
 .sd-cta p {
-  font-family: var(--font-jakarta), sans-serif;
-  font-size: 15px;
-  color: var(--ink-3);
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: 21px;
+  letter-spacing: 0.005em;
+  color: var(--ink-2);
 }
 
 @media (max-width: 767px) {
@@ -2879,12 +3033,12 @@ canvas.glass-image-canvas {
 .comet-card-shell {
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.028);
+  background: rgba(240, 232, 210, 0.028);
   border: 1px solid var(--border-hairline);
   border-radius: 18px;
   padding: 3px;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 1px 0 rgba(240, 232, 210, 0.06) inset,
     /* top edge refraction */
     var(--shadow-card);
   overflow: hidden;
@@ -2896,7 +3050,7 @@ canvas.glass-image-canvas {
 .comet-card-wrap:hover .comet-card-shell {
   border-color: var(--border-subtle);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.09) inset,
+    0 1px 0 rgba(240, 232, 210, 0.09) inset,
     var(--shadow-hover);
 }
 
@@ -2912,4 +3066,131 @@ canvas.glass-image-canvas {
   /* 1 px inner refraction */
   overflow: hidden;
   position: relative;
+}
+/* ============================================================
+   EDITORIAL HEADER SYSTEM
+   Oversized asymmetric display headings with serif-italic
+   accents — replaces the tiny mono section labels in the
+   Projects and About sections.
+   ============================================================ */
+.ed-header {
+  margin-bottom: 88px;
+}
+
+@media (max-width: 767px) {
+  .ed-header {
+    margin-bottom: 56px;
+  }
+}
+
+.ed-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: 16px;
+}
+
+.ed-eyebrow {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.ed-meta {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.ed-heading {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: clamp(44px, 7vw, 86px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  color: var(--ink-0);
+  text-wrap: balance;
+}
+
+/* Serif italic counterpoint — the single most editorial gesture */
+.ed-heading em {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.05em;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  margin-right: 0.06em;
+}
+
+/* Asymmetric shove — heading steps off the left margin grid */
+.ed-heading--indent {
+  margin-left: clamp(0px, 9vw, 150px);
+}
+
+@media (max-width: 767px) {
+  .ed-heading--indent {
+    margin-left: 0;
+  }
+}
+
+/* Medium variant — for headers living inside a split column */
+.ed-heading--md {
+  font-size: clamp(34px, 4.2vw, 56px);
+}
+
+/* ============================================================
+   GLASS PANEL — project text card on obsidian ground
+   ============================================================ */
+.glass-panel {
+  position: relative;
+  height: 100%;
+  background: rgba(11, 17, 30, 0.88);
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  padding: 44px 40px 40px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 var(--edge-top),
+    0 1px 2px rgba(3, 6, 14, 0.6),
+    0 8px 32px rgba(3, 6, 14, 0.4);
+}
+
+@media (max-width: 767px) {
+  .glass-panel {
+    padding: 32px 24px 28px;
+  }
+}
+
+/* Ghost folio numeral — oversized magazine-style index in the
+   top-right corner of each project text panel */
+.sd-index-ghost {
+  position: absolute;
+  top: 14px;
+  right: 22px;
+  font-size: clamp(56px, 6vw, 96px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(240, 232, 210, 0.13);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* Keep real panel content above the ghost numeral
+   (accent line excluded — it positions itself absolutely) */
+.glass-panel > *:not(.sd-index-ghost):not(.sd-card-accent) {
+  position: relative;
+  z-index: 1;
 }
