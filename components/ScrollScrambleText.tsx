@@ -138,11 +138,13 @@ export default function ScrollScrambleText({
   );
 
   /* Slice the live string back into the original segments so the <em>
-     word keeps its serif-italic accent styling while it scrambles */
-  let cursor = 0;
+     word keeps its serif-italic accent styling while it scrambles.
+     Offsets are derived per segment (no render-scope reassignment). */
   const liveSegments = segments.map((seg, i) => {
-    const slice = display.slice(cursor, cursor + seg.text.length);
-    cursor += seg.text.length;
+    const start = segments
+      .slice(0, i)
+      .reduce((len, s) => len + s.text.length, 0);
+    const slice = display.slice(start, start + seg.text.length);
     return seg.em ? (
       <em key={i}>{slice}</em>
     ) : (

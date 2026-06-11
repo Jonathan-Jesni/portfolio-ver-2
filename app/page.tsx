@@ -93,8 +93,9 @@ export default function Home() {
       <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />
 
       {/* ── Linen stack: every section below the hero is a sheet in the
-             Editorial Financial deck. StackTransitions pins each sheet
-             and choreographs the scrub-tied boundary transitions. ── */}
+             Editorial Financial deck. StackTransitions choreographs the
+             scrub-tied boundary transitions (pinned slide-overs, the CRT
+             collapse, and the About → Contact WebGL burn). ── */}
 
       <div className="stack-section" data-stack style={{ zIndex: 1 }}>
         <StickyDeckSection portfolioSectionRef={portfolioSectionRef} />
@@ -143,7 +144,12 @@ export default function Home() {
         <div className="stack-veil" aria-hidden="true" />
       </div>
 
-      <div className="stack-section" data-stack style={{ zIndex: 4 }}>
+      {/* About sits ABOVE Contact (z6 vs z5): during the burn overlap the
+          fire + clip wipe eat About away to reveal Contact beneath it.
+          Its surface paint lives on .about-sticky (wrapper is transparent)
+          so only the viewport-locked sticky occludes Contact, never the
+          full-height runway box. */}
+      <div className="stack-section stack-section--about" data-stack style={{ zIndex: 6 }}>
         <AboutSection />
         <div className="stack-veil" aria-hidden="true" />
       </div>

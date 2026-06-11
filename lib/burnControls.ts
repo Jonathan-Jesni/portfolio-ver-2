@@ -27,7 +27,6 @@ interface BurnStore {
   progress: number;
   active: boolean;
   invalidateFn: (() => void) | null;
-  activeListeners: Set<(active: boolean) => void>;
   headlineListeners: Set<(forward: boolean) => void>;
 }
 
@@ -37,7 +36,6 @@ const store: BurnStore = (g.__BURN_STORE__ ??= {
   progress: 0,
   active: false,
   invalidateFn: null,
-  activeListeners: new Set(),
   headlineListeners: new Set(),
 });
 
@@ -60,22 +58,16 @@ export const burnControls = {
     store.invalidateFn?.();
   },
 
-  /* active — gates the overlay's alpha. Pokes invalidate() so the
-     demand-loop repaints the moment the boundary toggles. */
+  /* active — gates the overlay's alpha (polled by useFrame). Pokes
+     invalidate() so the demand-loop repaints the moment the boundary
+     toggles. */
   setActive(a: boolean) {
     if (store.active === a) return;
     store.active = a;
-    store.activeListeners.forEach((l) => l(a));
     store.invalidateFn?.();
   },
   getActive() {
     return store.active;
-  },
-  onActive(listener: (active: boolean) => void) {
-    store.activeListeners.add(listener);
-    return () => {
-      store.activeListeners.delete(listener);
-    };
   },
 
   /* headline — fired once as the burn crosses its midpoint.
@@ -90,10 +82,3 @@ export const burnControls = {
     };
   },
 };
-
-/* Dev-only console handle: window.__burnControls.getActive()/.getProgress()
-   to confirm the GSAP scrub is actually reaching the overlay. Stripped in
-   production builds. */
-if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
-  (window as unknown as Record<string, unknown>).__burnControls = burnControls;
-}

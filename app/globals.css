@@ -3479,16 +3479,20 @@ canvas.glass-image-canvas {
    Same z-slot as .crt-fx: above sheets (z 1–5) + veils (z 50),
    below the floating nav (z 100) and grain (z 9999).
    ============================================================ */
+.burn-fx,
+.burn-fx canvas {
+  pointer-events: none;
+}
+
 .burn-fx {
   position: fixed;
   inset: 0;
   z-index: 60;
-  pointer-events: none;
 }
 
 /* Contact burn runway (desktop only). The 200vh track gives the burn
    100vh of sticky travel; the inner .contact-sticky holds Contact
-   dead-still at top:0 while the orange scrubs away over it. Sticky
+   dead-still at top:0 while the fire scrubs away over it. Sticky
    rather than a ScrollTrigger pin — a pin engaging under Lenis momentum
    at the page bottom dead-locks the main thread. On mobile the wrapper
    is display:contents (a no-op) so the section flows natively. */
@@ -3496,11 +3500,45 @@ canvas.glass-image-canvas {
   position: relative;
 }
 
+/* ── About → Contact burn choreography (desktop + full motion only) ──
+   The About runway gains a 100vh dead-still tail (350vh total: 150vh
+   word-reveal + 100vh hold + 100vh burn) and the Contact runway is
+   pulled up underneath it by 200vh. During the entire burn BOTH
+   stickies sit overlapped at top:0 — About (z6, background moved onto
+   its sticky) above, Contact (z5) hidden beneath — and the shader +
+   clip-path wipe swap them in place with zero Y translation.
+   Gated on the same media as StackTransitions, so mobile and
+   reduced-motion keep the plain stacked flow with no overlap. */
+.stack-section--about {
+  background: transparent;
+}
+
+.stack-section--about .about-sticky {
+  background: var(--surface-0);
+}
+
+.about-runway {
+  height: 250vh;
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .about-runway {
+    height: 350vh;
+  }
+
+  .contact-runway {
+    margin-top: -200vh;
+  }
+}
+
 .contact-sticky {
   display: contents;
 }
 
-@media (min-width: 768px) {
+/* Motion-gated like the overlap above: with reduced motion there is no
+   burn, so the runway/sticky would only add a dead 100vh frozen hold —
+   fall through to natural flow instead. */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .contact-runway {
     height: 200vh;
   }

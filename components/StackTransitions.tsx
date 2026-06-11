@@ -11,14 +11,20 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
    StackTransitions — "String-Tune" boundary choreography
 
    Every element marked [data-stack] becomes a sheet in a deck.
-   At each boundary the outgoing section pins to the viewport
-   (pinSpacing: false, so the incoming section keeps flowing and
-   physically slides over it) while a scrub-tied timeline:
+   At each generic boundary the outgoing section pins to the
+   viewport (pinSpacing: false, so the incoming section keeps
+   flowing and physically slides over it) while a scrub-tied
+   timeline:
 
      · scales the outgoing sheet back and nudges it upward
      · fades in its obsidian veil (depth cue)
      · un-clips the incoming sheet from a rounded, inset "card"
        into a full-bleed surface as it reaches the top
+
+   Two boundaries override the generic recipe:
+     · 0 (Projects → Building) adds the CRT-collapse overlay
+     · 3 (About → Contact) is the WebGL burn — no pin at all;
+       see the dedicated block inside the loop
 
    scrub: 1 keeps everything bound to scroll — scrolling up
    rewinds the transition frame-perfectly.
@@ -37,12 +43,13 @@ interface BoundaryConfig {
   radius: number;
 }
 
-/* Index i = transition from stack section i to i+1 */
+/* Index i = transition from stack section i to i+1.
+   (About → Contact has no entry: boundary 3 is the WebGL burn and
+   never reads this config.) */
 const BOUNDARIES: BoundaryConfig[] = [
   { scale: 0.94, y: -4, veil: 0.32, inset: 3, radius: 44 }, /* Projects → Building  (sheet) */
   { scale: 0.97, y: -14, veil: 0.22, inset: 0, radius: 36 }, /* Building → Skills    (push)  */
   { scale: 0.92, y: -2, veil: 0.40, inset: 4, radius: 52 }, /* Skills   → About     (deep)  */
-  { scale: 0.95, y: -6, veil: 0.30, inset: 0, radius: 32 }, /* About    → Contact   (slide) */
 ];
 
 export default function StackTransitions() {
@@ -61,9 +68,6 @@ export default function StackTransitions() {
       sections.forEach((section, i) => {
         const next = sections[i + 1];
         if (!next) return;
-
-        const cfg = BOUNDARIES[Math.min(i, BOUNDARIES.length - 1)];
-        const veil = section.querySelector<HTMLElement>(":scope > .stack-veil");
 
         /* ═══════════════════════════════════════════════════════════════
            Boundary 3 · About → Contact — BURN AWAY (sticky, NO pin)
@@ -84,10 +88,22 @@ export default function StackTransitions() {
            This trigger only READS scroll (scrub, no pin): it scrubs the
            burn 0 → 1 across the runway's 100vh of sticky travel, fires
            the headline at the midpoint, and toggles the overlay's alpha.
-           Contact sits dead-still the whole time; the footer follows
-           naturally after the runway.
+
+           Overlap geometry (globals.css, desktop + full-motion only):
+           .about-runway grows to 350vh (words finish at 150vh) and
+           .contact-runway is pulled up by -200vh, so for the WHOLE burn
+           window BOTH stickies sit overlapped dead-still at top:0 —
+           About (z6, opaque sticky) above, Contact (z5) hidden beneath.
+           The swap happens in place: unburned shader pixels are
+           TRANSPARENT (the real About DOM shows through — no shroud
+           pop), and a clip-path wipe on .about-sticky rides exactly
+           behind the ember front's centerline (enters ~0.23, tops out
+           ~0.80), removing About just as the fire chars it to reveal
+           Contact through the burn holes. clip-path also clips
+           hit-testing, so the spent About never blocks Contact's links.
            ═══════════════════════════════════════════════════════════════ */
         if (i === 3) {
+          const aboutSticky = section.querySelector<HTMLElement>(".about-sticky");
           const burnProxy = { value: 0 };
           const tl = gsap.timeline({
             scrollTrigger: {
@@ -114,6 +130,29 @@ export default function StackTransitions() {
             0
           );
 
+          // Wipe the real About DOM bottom-up, riding exactly behind the
+          // shader's front centerline: with field = mix(noise, uv.y, 0.72)
+          // and p = mix(-0.15, 1.12, progress), the front enters the
+          // bottom at progress ≈ 0.23 and exits the top at ≈ 0.80. The
+          // ember band + char trail straddle the straight clip line, so
+          // its raggedness is hidden inside the glow.
+          if (aboutSticky) {
+            tl.fromTo(
+              aboutSticky,
+              { clipPath: "inset(0% 0% 0% 0%)" },
+              { clipPath: "inset(0% 0% 100% 0%)", ease: "none", duration: 0.57 },
+              0.23
+            );
+          }
+
+          // Pointer handoff — a transparent box still hit-tests, so the
+          // About wrapper (z6, overlapping Contact for the whole burn and
+          // parked over it at page bottom) would be a glass wall over
+          // Contact's links forever. The instant the fire clears the
+          // button region (~0.45) the wrapper stops intercepting; the
+          // zero-duration set reverts automatically on scroll-back.
+          tl.set(section, { pointerEvents: "none" }, 0.45);
+
           // Roll the contact headline in as the burn crosses its
           // midpoint; direction-aware so it re-arms on scroll-up.
           tl.call(
@@ -127,6 +166,9 @@ export default function StackTransitions() {
 
           return; // skip all generic slide/scale/clip choreography
         }
+
+        const cfg = BOUNDARIES[Math.min(i, BOUNDARIES.length - 1)];
+        const veil = section.querySelector<HTMLElement>(":scope > .stack-veil");
 
         /* Pin the outgoing sheet for exactly the 100vh it takes the
            incoming sheet to travel across the viewport */
@@ -244,7 +286,11 @@ export default function StackTransitions() {
 
       return () => {
         createdEls.forEach((el) => el.remove());
+        // Park the burn overlay (transparent + idle) when the desktop
+        // context reverts — e.g. resize below 768px or unmount.
         burnControls.setActive(false);
+        burnControls.setProgress(0);
+        burnControls.invalidate();
       };
     });
 

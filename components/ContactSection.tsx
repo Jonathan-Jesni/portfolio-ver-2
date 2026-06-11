@@ -22,16 +22,16 @@ interface ContactSectionProps {
 // ─────────────────────────────────────────────────────────────────────────────
 // ContactSection
 //
-// Architecture: Atmospheric Fade — Option B (yPercent: -100)
-//   A solid OLED-black mask (#050505) sits over the content.
-//   As the user scrolls down into the section, a GSAP ScrollTrigger
-//   scrubs a timeline that translates the mask upward (yPercent: 0 → -100),
-//   physically "lifting" the shroud off the content beneath it.
-//   A secondary tween on the same timeline then fades + lifts the
-//   button grid into place.
-//
-// Compositor-thread only: all GSAP animates only `transform` (yPercent, y)
-// and `opacity` — no layout properties are touched during scroll scrub.
+// Three reveal modes, selected by gsap.matchMedia:
+//   · Desktop full-motion — STATIC REVEAL. The WebGL burn (BurnTransition)
+//     is the entrance: Contact sits fully formed (opacity 1, y 0) beneath
+//     the burning About sheet and the ember front simply uncovers it.
+//     No mask, no Y-translation, no fades — only the RollingHeadline keeps
+//     its cue, armed by the burn's midpoint signal.
+//   · Mobile full-motion — Atmospheric lift. A surface-matched mask scrubs
+//     upward (yPercent 0 → -100) revealing the content, then the button
+//     grid floats in. Compositor-thread only (transform/opacity).
+//   · Reduced motion — everything appears instantly on scroll entry.
 //
 // Memory: The entire animation is scoped to a gsap.context that is
 // automatically reverted on component unmount (via useGSAP cleanup).
@@ -40,13 +40,10 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
   // Section container — the ScrollTrigger trigger root
   const sectionRef = useRef<HTMLElement>(null);
 
-  // The OLED-black atmospheric shroud mask
+  // The surface-matched atmospheric mask (mobile lift reveal only)
   const maskRef = useRef<HTMLDivElement>(null);
 
-  // The inner content area whose children will be lift-revealed
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // The button grid — sequentially revealed after the mask lifts
+  // The button grid — animated by the mobile lift; static on desktop
   const buttonsRef = useRef<HTMLDivElement>(null);
 
   // State to trigger the RollingHeadline animation ONLY when the shroud lifts
@@ -85,26 +82,18 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
         });
       });
 
-      // ── Desktop full-motion branch — BURN-DRIVEN ──────────────────────────
-      // The R3F burn overlay (BurnTransition) now owns the reveal at the
-      // About → Contact boundary. The lift-mask is retired here so Contact
-      // sits 100% painted and dead-still beneath the burning canvas; the
-      // headline + buttons are armed by the burn's midpoint signal instead.
+      // ── Desktop full-motion branch — STATIC REVEAL (burn-driven) ──────────
+      // The fire IS the entrance. Contact must sit fully formed in the dark
+      // beneath the burning About sheet, so the ember front uncovers real,
+      // finished UI: no mask, no fades, no Y-translation. clearProps strips
+      // the JSX pre-paint state (opacity 0 / translateY) that the mobile
+      // branch animates from. Only the RollingHeadline keeps an entrance,
+      // cued by the burn's midpoint signal (direction-aware on rewind).
       mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
         gsap.set(mask, { display: "none" });
-        gsap.set(buttons, { opacity: 0, y: 30 });
+        gsap.set(buttons, { clearProps: "opacity,transform,willChange" });
 
-        const unsub = burnControls.onHeadline((forward) => {
-          setHeadlineReady(forward);
-          gsap.to(buttons, {
-            opacity: forward ? 1 : 0,
-            y: forward ? 0 : 30,
-            duration: 0.5,
-            ease: "power3.out",
-            overwrite: true,
-          });
-        });
-
+        const unsub = burnControls.onHeadline((forward) => setHeadlineReady(forward));
         return () => unsub();
       });
 
@@ -184,9 +173,8 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
         overflow: "hidden",
       }}
     >
-      {/* ── Content layer (sits beneath the mask) ─────────────────────────── */}
+      {/* ── Content layer (sits beneath the mobile mask) ──────────────────── */}
       <div
-        ref={contentRef}
         className="container"
         style={{ position: "relative", zIndex: 1, width: "100%" }}
       >

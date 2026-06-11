@@ -51,12 +51,16 @@ export default function AboutSection() {
         ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
         : [];
 
-      /* ---- Main timeline: word-by-word color scrub ---- */
+      /* ---- Main timeline: word-by-word color scrub ----
+         end is an explicit +=150% (not "bottom bottom") so the reveal
+         pacing is identical on every runway height: on desktop the
+         runway extends to 350vh for the burn boundary's dead-still
+         tail, and the words must still finish in the first 150vh. */
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: runway,
           start: "top top",
-          end: "bottom bottom",
+          end: "+=150%",
           scrub: 1,
         },
       });
@@ -113,7 +117,7 @@ export default function AboutSection() {
     <section
       ref={runwayRef}
       className="about-runway"
-      style={{ height: "250vh", position: "relative" }}
+      style={{ position: "relative" }}
     >
       {/* Anchor target placed halfway down the runway so text is mostly revealed */}
       <div id="about" style={{ position: "absolute", top: "45%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
