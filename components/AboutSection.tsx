@@ -124,10 +124,9 @@ export default function AboutSection() {
           {/* ===== LEFT: Section header + bio ===== */}
           <div ref={textColRef} className="about-split-text">
             {/* Section header — editorial display heading */}
-            <header className="ed-header" style={{ marginBottom: "28px" }}>
-              <div className="ed-header-row">
+            <header className="ed-header" style={{ marginBottom: "13px" }}>
+              <div className="ed-header-row" style={{ marginBottom: "4px", paddingBottom: "8px" }}>
                 <span className="ed-eyebrow">04 / Profile</span>
-                <span className="ed-meta">Pune · Muscat</span>
               </div>
               <h2 className="ed-heading ed-heading--md">
                 <ScrollScrambleText segments={[{ text: "About " }, { text: "me", em: true }]} />
@@ -204,7 +203,7 @@ function BioWords({ node }: { node: ReactChild }): React.ReactElement {
 
   if (React.isValidElement(node)) {
     const el = node as React.ReactElement<{ children?: ReactChild }>;
-    const { children, ...rest } = el.props as { children?: ReactChild; [key: string]: unknown };
+    const { children, ...rest } = el.props as { children?: ReactChild;[key: string]: unknown };
     return React.cloneElement(el, rest as Record<string, unknown>, <BioWords node={children} />);
   }
 

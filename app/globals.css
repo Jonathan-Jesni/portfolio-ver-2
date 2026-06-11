@@ -1757,11 +1757,11 @@ img {
   width: 100%;
 }
 
-.contact-links > :nth-child(odd) {
+.contact-links> :nth-child(odd) {
   justify-self: end;
 }
 
-.contact-links > :nth-child(even) {
+.contact-links> :nth-child(even) {
   justify-self: start;
 }
 
@@ -3075,6 +3075,7 @@ canvas.glass-image-canvas {
   overflow: hidden;
   position: relative;
 }
+
 /* ============================================================
    EDITORIAL HEADER SYSTEM
    Oversized asymmetric display headings with serif-italic
@@ -3198,7 +3199,7 @@ canvas.glass-image-canvas {
 
 /* Keep real panel content above the ghost numeral
    (accent line excluded — it positions itself absolutely) */
-.glass-panel > *:not(.sd-index-ghost):not(.sd-card-accent) {
+.glass-panel>*:not(.sd-index-ghost):not(.sd-card-accent) {
   position: relative;
   z-index: 1;
 }
@@ -3467,6 +3468,52 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
+   BURN AWAY — About → Contact boundary (R3F overlay)
+   A fixed, full-viewport WebGL canvas (BurnTransition) that
+   burns the outgoing surface off to reveal a fully-painted,
+   dead-still Contact beneath. Mounted only while the boundary
+   is in view; uProgress is scrubbed by StackTransitions.
+   Critical positioning is also set inline on the <Canvas> so
+   it overrides R3F's default container style — this block
+   documents the slot and is the styling hook for later polish.
+   Same z-slot as .crt-fx: above sheets (z 1–5) + veils (z 50),
+   below the floating nav (z 100) and grain (z 9999).
+   ============================================================ */
+.burn-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* Contact burn runway (desktop only). The 200vh track gives the burn
+   100vh of sticky travel; the inner .contact-sticky holds Contact
+   dead-still at top:0 while the orange scrubs away over it. Sticky
+   rather than a ScrollTrigger pin — a pin engaging under Lenis momentum
+   at the page bottom dead-locks the main thread. On mobile the wrapper
+   is display:contents (a no-op) so the section flows natively. */
+.contact-runway {
+  position: relative;
+}
+
+.contact-sticky {
+  display: contents;
+}
+
+@media (min-width: 768px) {
+  .contact-runway {
+    height: 200vh;
+  }
+
+  .contact-sticky {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+}
+
+/* ============================================================
    SCROLL GLYPH-STAMP — About heading entry (ScrollScrambleText)
    The heading stamps through raw terminal syntax and freezes into
    its final state as the section enters, a champagne hairline tick
@@ -3496,10 +3543,12 @@ canvas.glass-image-canvas {
 }
 
 @keyframes scramble-tick-blink {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.18;
   }
@@ -3537,7 +3586,8 @@ canvas.glass-image-canvas {
 }
 
 /* No stamp on mobile / reduced-motion — heading + tick sit solid */
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+@media (max-width: 768px),
+(prefers-reduced-motion: reduce) {
   .scramble-tick {
     opacity: 1;
     animation: none;

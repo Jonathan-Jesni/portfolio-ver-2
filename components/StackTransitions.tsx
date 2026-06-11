@@ -3,6 +3,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { burnControls } from "../lib/burnControls";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -63,6 +64,69 @@ export default function StackTransitions() {
 
         const cfg = BOUNDARIES[Math.min(i, BOUNDARIES.length - 1)];
         const veil = section.querySelector<HTMLElement>(":scope > .stack-veil");
+
+        /* ═══════════════════════════════════════════════════════════════
+           Boundary 3 · About → Contact — BURN AWAY (sticky, NO pin)
+
+           Contact is held dead-still at top:0 with position:sticky, NOT a
+           ScrollTrigger pin. The Contact section lives in a 200vh runway
+           (.contact-runway) with its content sticky (.contact-sticky) —
+           the same robust pattern AboutSection uses, and the one the
+           Lenis integration is explicitly built to support.
+
+           Why no pin: a ScrollTrigger pin that *engages* while Lenis
+           momentum carries the scroll across its start point — right at
+           the bottom of the page — locks the main thread in a refresh
+           loop and hard-freezes the tab. This happened with BOTH
+           pinSpacing modes. Sticky is pure CSS: nothing toggles, nothing
+           resizes, nothing can feed back.
+
+           This trigger only READS scroll (scrub, no pin): it scrubs the
+           burn 0 → 1 across the runway's 100vh of sticky travel, fires
+           the headline at the midpoint, and toggles the overlay's alpha.
+           Contact sits dead-still the whole time; the footer follows
+           naturally after the runway.
+           ═══════════════════════════════════════════════════════════════ */
+        if (i === 3) {
+          const burnProxy = { value: 0 };
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: next,
+              start: "top top",
+              end: "bottom bottom",
+              scrub: 1,
+              onToggle: (self) => burnControls.setActive(self.isActive),
+            },
+          });
+
+          // Drive the burn amount + force a demand-render every tick.
+          tl.to(
+            burnProxy,
+            {
+              value: 1,
+              ease: "none",
+              duration: 1,
+              onUpdate: () => {
+                burnControls.setProgress(burnProxy.value);
+                burnControls.invalidate();
+              },
+            },
+            0
+          );
+
+          // Roll the contact headline in as the burn crosses its
+          // midpoint; direction-aware so it re-arms on scroll-up.
+          tl.call(
+            () => {
+              const forward = tl.scrollTrigger ? tl.scrollTrigger.direction === 1 : true;
+              burnControls.fireHeadline(forward);
+            },
+            undefined,
+            0.5
+          );
+
+          return; // skip all generic slide/scale/clip choreography
+        }
 
         /* Pin the outgoing sheet for exactly the 100vh it takes the
            incoming sheet to travel across the viewport */
@@ -180,6 +244,7 @@ export default function StackTransitions() {
 
       return () => {
         createdEls.forEach((el) => el.remove());
+        burnControls.setActive(false);
       };
     });
 

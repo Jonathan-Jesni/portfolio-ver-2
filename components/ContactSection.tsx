@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { RollingHeadline } from "./ui/RollingHeadline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "./ui/icons";
+import { burnControls } from "../lib/burnControls";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -84,8 +85,32 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
         });
       });
 
-      // ── Full-motion branch ────────────────────────────────────────────────
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
+      // ── Desktop full-motion branch — BURN-DRIVEN ──────────────────────────
+      // The R3F burn overlay (BurnTransition) now owns the reveal at the
+      // About → Contact boundary. The lift-mask is retired here so Contact
+      // sits 100% painted and dead-still beneath the burning canvas; the
+      // headline + buttons are armed by the burn's midpoint signal instead.
+      mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+        gsap.set(mask, { display: "none" });
+        gsap.set(buttons, { opacity: 0, y: 30 });
+
+        const unsub = burnControls.onHeadline((forward) => {
+          setHeadlineReady(forward);
+          gsap.to(buttons, {
+            opacity: forward ? 1 : 0,
+            y: forward ? 0 : 30,
+            duration: 0.5,
+            ease: "power3.out",
+            overwrite: true,
+          });
+        });
+
+        return () => unsub();
+      });
+
+      // ── Mobile full-motion branch — atmospheric lift (unchanged) ──────────
+      // No pinning/burn on mobile, so keep the original shroud-lift reveal.
+      mm.add("(max-width: 767px) and (prefers-reduced-motion: no-preference)", () => {
         // Initial state: mask is fully covering content, buttons are hidden
         gsap.set(mask, { yPercent: 0 });
         gsap.set(buttons, { opacity: 0, y: 30 });

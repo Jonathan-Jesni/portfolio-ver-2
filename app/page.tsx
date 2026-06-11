@@ -21,6 +21,7 @@ gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });
+const BurnTransition = dynamic(() => import("../components/BurnTransition"), { ssr: false });
 
 export default function Home() {
   const [preloaderDone, setPreloaderDone] = useState(false);
@@ -124,7 +125,7 @@ export default function Home() {
           <div className="container">
             <header className="ed-header" style={{ marginBottom: "20px" }}>
               <div className="ed-header-row sp-reveal">
-                <span className="ed-eyebrow">03 / Capabilities</span>
+                <span className="ed-eyebrow">03 / Skills</span>
                 <span className="ed-meta mono">drag to interact</span>
               </div>
               <h2 className="ed-heading ed-heading--md sp-reveal">
@@ -147,15 +148,23 @@ export default function Home() {
         <div className="stack-veil" aria-hidden="true" />
       </div>
 
-      <div className="stack-section" data-stack style={{ zIndex: 5 }}>
-        <ContactSection animate={preloaderDone} />
-
-        <footer className="footer" id="footer">
-          <p>Designed & Built by Jonathan</p>
-        </footer>
+      {/* Contact runway — a 200vh scroll track whose inner content is
+          position:sticky (desktop only), holding Contact dead-still at
+          top:0 for the 100vh the burn scrubs across. Sticky instead of a
+          ScrollTrigger pin: a pin engaging under Lenis momentum at the
+          page bottom hard-freezes the tab; sticky is pure CSS and can't. */}
+      <div className="stack-section contact-runway" data-stack style={{ zIndex: 5 }}>
+        <div className="contact-sticky">
+          <ContactSection animate={preloaderDone} />
+        </div>
         <div className="stack-veil" aria-hidden="true" />
       </div>
 
+      <footer className="footer" id="footer">
+        <p>Designed & Built by Jonathan</p>
+      </footer>
+
+      <BurnTransition />
       <StackTransitions />
       <HeadlineReveal />
       <ScrollVelocitySkew />
