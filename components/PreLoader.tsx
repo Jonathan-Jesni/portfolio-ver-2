@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
 import { shaderMaterial, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
+import { getLenis } from "../lib/lenisInstance";
 
 /* ================================================================
    PreLoader — "Liquid Obsidian" honest-manifest burn loader
@@ -222,15 +223,21 @@ function ObsidianPlane({ fx }: { fx: React.RefObject<FxState> }) {
     const mat = matRef.current;
     if (!mat) return;
 
+    /* Clamp delta: GLB parse / texture upload can stall the main
+       thread for 100ms+; an unclamped delta telescopes that stall
+       into a single huge time jump and the liquid visibly glitches.
+       Capped at ~30fps the worst case is a brief, smooth slowdown. */
+    const safeDelta = Math.min(delta, 0.033);
+
     /* LERP uSpeed toward the progress-mapped target — progress
        arrives in jumps (0 → 34 → 100); hard-assigning would make
        the churn stutter. */
     const target = fx.current.speedTarget;
-    speedRef.current += (target - speedRef.current) * Math.min(1, delta * 3);
+    speedRef.current += (target - speedRef.current) * Math.min(1, safeDelta * 3);
 
     /* integrate the clock on the CPU so a changing speed never
        causes a time-jump artifact (uTime * speed would snap) */
-    churnTimeRef.current += delta * (0.45 + speedRef.current * 2.2);
+    churnTimeRef.current += safeDelta * (0.45 + speedRef.current * 2.2);
 
     mat.uTime = churnTimeRef.current;
     mat.uSpeed = speedRef.current;
@@ -289,6 +296,34 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  /* ── Scroll lock — keyed to isComplete, NOT unmount. The component
+        never truly unmounts (page.tsx renders it unconditionally and
+        `return null` keeps the fiber alive), so unmount-tied cleanups
+        would hold the page scroll-locked forever. With [isComplete]:
+        mount locks; when isComplete flips true the cleanup releases,
+        and the re-run bails before re-locking. The lock therefore
+        survives the 40% hero handoff and releases exactly when the
+        burn finishes and the overlay leaves the DOM. Applied in the
+        reduced-motion path too (it completes in ~400ms, but the
+        static overlay shouldn't scroll either).
+
+        Two layers, on purpose:
+        - overflow:hidden hides the scrollbar and blocks native scroll
+          even if Lenis hasn't initialized yet;
+        - lenis.stop() keeps Lenis from integrating wheel velocity in
+          the background and "kicking" the page when the lock lifts.
+          (Null-guarded: if Lenis isn't up yet, overflow already has
+          scroll blocked — no retry needed.) ── */
+  useEffect(() => {
+    if (isComplete) return;
+    document.documentElement.style.overflow = "hidden";
+    getLenis()?.stop();
+    return () => {
+      document.documentElement.style.overflow = "";
+      getLenis()?.start();
+    };
+  }, [isComplete]);
+
   /* Component is mounted ssr:false, so window exists at first render */
   const prefersReduced = useMemo(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -329,7 +364,10 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         only surfaces the current item per render and drops URLs when
         many assets resolve between renders. ── */
   useEffect(() => {
-    if (prefersReduced) return;
+    /* isComplete-keyed (not unmount-keyed): the component renders null
+       after completion but never unmounts, so the wrap must be
+       restored when the loader finishes, not at fiber teardown. */
+    if (prefersReduced || isComplete) return;
     const manager = THREE.DefaultLoadingManager;
     const prevOnProgress = manager.onProgress;
 
@@ -344,7 +382,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     return () => {
       manager.onProgress = prevOnProgress;
     };
-  }, [prefersReduced]);
+  }, [prefersReduced, isComplete]);
 
   /* ── The exit. Idempotent: gate and failsafe can both call it. ── */
   const startBurn = useCallback(() => {
@@ -382,23 +420,27 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     );
   }, []);
 
-  /* ── Gate condition B (1800ms floor) + the failsafe ceiling ── */
+  /* ── Gate condition B (1800ms floor) + the failsafe ceiling.
+        isComplete-keyed so the (already-guarded) ceiling timer is
+        cleared once the loader finishes. ── */
   useEffect(() => {
-    if (prefersReduced) return;
+    if (prefersReduced || isComplete) return;
     const floor = setTimeout(() => setFloorPassed(true), FLOOR_MS);
     const ceiling = setTimeout(() => startBurn(), FAILSAFE_MS);
     return () => {
       clearTimeout(floor);
       clearTimeout(ceiling);
     };
-  }, [prefersReduced, startBurn]);
+  }, [prefersReduced, startBurn, isComplete]);
 
   /* ── Print queue drain: one line per tick keeps the terminal
         legible even when 50 assets resolve in 50ms. Once drained AND
         assets are done (condition C), inject SYSTEM READY exactly
         once. ── */
   useEffect(() => {
-    if (prefersReduced) return;
+    /* isComplete-keyed so the interval stops once the loader is done
+       (the component renders null but never unmounts) */
+    if (prefersReduced || isComplete) return;
     const id = setInterval(() => {
       const queue = manifestQueueRef.current;
       if (queue.length > 0) {
@@ -411,7 +453,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       }
     }, PRINT_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [prefersReduced]);
+  }, [prefersReduced, isComplete]);
 
   /* ── The logic gate: A is folded into C (READY only prints once
         assetsDone && queue drained), so burn ⇐ B && C. ── */
@@ -462,7 +504,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
             load (this + the main scene); unmounting this component is
             what reclaims the memory. ── */}
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={[1, 1]}
         gl={{ alpha: true, antialias: false }}
         style={{ position: "absolute", inset: 0 }}
         onCreated={({ gl }) => {

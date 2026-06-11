@@ -5,6 +5,7 @@ import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { setLenis } from "../lib/lenisInstance";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,6 +29,10 @@ export default function SmoothScroll({
       allowNestedScroll: true,
     });
 
+    /* Expose the instance so non-React-Lenis consumers (PreLoader's
+       scroll lock) can stop/start smooth scrolling */
+    setLenis(lenis);
+
     /* Feed Lenis scroll position into ScrollTrigger every frame */
     lenis.on("scroll", ScrollTrigger.update);
 
@@ -39,6 +44,7 @@ export default function SmoothScroll({
     gsap.ticker.lagSmoothing(0);
 
     return () => {
+      setLenis(null);
       lenis.off("scroll", ScrollTrigger.update);
       lenis.destroy();
       gsap.ticker.remove((time: number) => {

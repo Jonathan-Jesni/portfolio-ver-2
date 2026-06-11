@@ -12,9 +12,13 @@ import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-// Preload assets outside component render loop
-useGLTF.preload("/assets/hardware_laptop.glb");
-useTexture.preload("/assets/textures/mac.png");
+// Preload assets outside component render loop.
+// Draco decoder path offloads geometry decode to a worker so the GLB
+// parse doesn't starve the main thread during the preloader. Must match
+// the useGLTF call below exactly or the preload cache misses.
+const DRACO_DECODER_PATH = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
+useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
+useTexture.preload("/assets/textures/mac.webp");
 useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -185,8 +189,8 @@ function LaptopScene({
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb") as any;
-  const screenTex = useTexture("/assets/textures/mac.png");
+  const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
+  const screenTex = useTexture("/assets/textures/mac.webp");
   const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
 
   const globalContainerRef = useRef<THREE.Group>(null);

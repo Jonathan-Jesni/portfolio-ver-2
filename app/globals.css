@@ -38,6 +38,10 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Always reserve the scrollbar track so the PreLoader's
+     overflow:hidden scroll lock can't cause a layout shift
+     when it engages/releases. */
+  scrollbar-gutter: stable;
 }
 
 body {
