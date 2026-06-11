@@ -14,8 +14,11 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const InteractiveModel = dynamic(() => import("./InteractiveModel"), { ssr: false });
 
-const TOP = ["J", "O", "N", "A"];
-const BOTTOM = ["T", "H", "A", "N"];
+/* Each name renders as its own masked line: per-char spans keep the
+   magnetic repulsion alive while the line-level span is what the
+   opposing entrance + scroll-out parallax translate. */
+const FIRST_NAME = ["J", "o", "n", "a", "t", "h", "a", "n"];
+const LAST_NAME = ["J", "e", "s", "n", "i"];
 
 export default function HeroSection({ animate = false, portfolioSectionRef }: { animate?: boolean, portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
   const runwayRef = useRef<HTMLDivElement>(null);
@@ -132,16 +135,15 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     return () => mm.revert();
   }, { scope: runwayRef });
 
-  /* ── Initial hidden state for entrance animation ── */
+  /* ── Initial hidden state for entrance animation ──
+     The name lines hide by offset inside their overflow-hidden masks
+     (no opacity): Jonathan waits below its mask, Jesni above its own,
+     so the entrance is a pure opposing mask-reveal. */
   useGSAP(() => {
+    gsap.set(".name-part-1", { yPercent: 100 });
+    gsap.set(".name-part-2", { yPercent: -100 });
     gsap.set(
-      [
-        ".hero-eyebrow",
-        ".hero-name-split",
-        ".hero-tagline",
-        ".hero-sub",
-        ".hero-buttons",
-      ],
+      [".hero-tagline", ".hero-sub", ".hero-buttons"],
       { opacity: 0, y: -80 }
     );
   }, { scope: runwayRef });
@@ -153,28 +155,41 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     const mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.to(
-        [
-          ".hero-eyebrow",
-          ".hero-name-split",
-          ".hero-tagline",
-          ".hero-sub",
-          ".hero-buttons",
-        ],
-        {
-          y: 0,
-          opacity: 1,
-          ease: "power4.out",
-          duration: 1.1,
-          stagger: 0.08,
-        }
-      );
+      /* Opposing mask-reveal: Jonathan rises UP into view while Jesni
+         drops DOWN, simultaneously. Once the lines have landed, the
+         masks release (overflow: visible) so the magnetic char
+         repulsion and the scroll-out fly-apart are never clipped. */
+      gsap.to(".name-part-1", {
+        yPercent: 0,
+        ease: "power4.out",
+        duration: 1.35,
+      });
+      gsap.to(".name-part-2", {
+        yPercent: 0,
+        ease: "power4.out",
+        duration: 1.35,
+        onComplete: () => {
+          gsap.set(".hero-name-mask", { overflow: "visible" });
+        },
+      });
+
+      /* Supporting copy follows the name in */
+      gsap.to([".hero-tagline", ".hero-sub", ".hero-buttons"], {
+        y: 0,
+        opacity: 1,
+        ease: "power4.out",
+        duration: 1.1,
+        stagger: 0.08,
+        delay: 0.25,
+      });
     });
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
       /* Instant reveal — no transforms */
+      gsap.set([".name-part-1", ".name-part-2"], { yPercent: 0 });
+      gsap.set(".hero-name-mask", { overflow: "visible" });
       gsap.set(
-        [".hero-eyebrow", ".hero-name-split", ".hero-tagline", ".hero-sub", ".hero-buttons"],
+        [".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
     });
@@ -222,34 +237,51 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
           {/* Restore inner grid so the text is constrained to the 55fr left column */}
           <div className="hero-inner-grid">
             <div className="hero-text-col" style={{ pointerEvents: "auto" }}>
-              <div className="hero-eyebrow">
-                <span className="hero-eyebrow-dot" aria-hidden="true" />
-                Available for internships — 2026
-              </div>
-
-              <h1 className="hero-name-split" aria-label="Jonathan">
-                <span ref={topGroupRef} className="hero-char-group" aria-hidden="true">
-                  {TOP.map((ch, i) => (
-                    <span
-                      key={`t${i}`}
-                      ref={(el) => { topCharRefs.current[i] = el; }}
-                      className="hero-char"
-                    >
-                      {ch}
-                    </span>
-                  ))}
-                </span>
-                <span ref={bottomGroupRef} className="hero-char-group" aria-hidden="true">
-                  {BOTTOM.map((ch, i) => (
-                    <span
-                      key={`b${i}`}
-                      ref={(el) => { botCharRefs.current[i] = el; }}
-                      className="hero-char"
-                    >
-                      {ch}
-                    </span>
-                  ))}
-                </span>
+              {/* Stacked, masked name: each line lives in an
+                  overflow-hidden wrapper so the opposing entrance
+                  (Jonathan up / Jesni down) reveals through a clean
+                  mask. The masks release after the intro lands. */}
+              <h1
+                className="hero-name-split"
+                aria-label="Jonathan Jesni"
+                style={{ flexDirection: "column" }}
+              >
+                <div className="hero-name-mask" style={{ overflow: "hidden" }}>
+                  <span
+                    ref={topGroupRef}
+                    className="hero-char-group name-part-1"
+                    aria-hidden="true"
+                    style={{ display: "flex" }}
+                  >
+                    {FIRST_NAME.map((ch, i) => (
+                      <span
+                        key={`t${i}`}
+                        ref={(el) => { topCharRefs.current[i] = el; }}
+                        className="hero-char"
+                      >
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <div className="hero-name-mask" style={{ overflow: "hidden" }}>
+                  <span
+                    ref={bottomGroupRef}
+                    className="hero-char-group name-part-2"
+                    aria-hidden="true"
+                    style={{ display: "flex" }}
+                  >
+                    {LAST_NAME.map((ch, i) => (
+                      <span
+                        key={`b${i}`}
+                        ref={(el) => { botCharRefs.current[i] = el; }}
+                        className="hero-char"
+                      >
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
+                </div>
               </h1>
 
               <div ref={subContentRef} className="hero-sub-content">
