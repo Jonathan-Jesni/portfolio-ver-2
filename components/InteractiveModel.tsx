@@ -195,7 +195,7 @@ function LaptopScene({
 
   const globalContainerRef = useRef<THREE.Group>(null);
   const lidHingeGroupRef = useRef<THREE.Group>(null);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
 
   // Texture mapping & material calibrations
   useMemo(() => {
@@ -208,14 +208,25 @@ function LaptopScene({
       keyboardTex.colorSpace = THREE.SRGBColorSpace;
     }
 
-    // Map screen texture with self-emissive glow for dark visibility
+    // The screen face must render the page texture EXACTLY (it crossfades
+    // into the real DOM at the hero → projects boundary):
+    //  - emissive-only (base map nulled, color black) so scene lights
+    //    can't brighten or tint it,
+    //  - toneMapped false so ACES tone mapping doesn't shift the obsidian
+    //    background away from the DOM's #070B14,
+    //  - anisotropy keeps the texture crisp at grazing zoom angles.
     if (materials.Image) {
-      materials.Image.map = screenTex;
+      materials.Image.map = null;
+      materials.Image.color?.set?.("#000000");
       materials.Image.emissiveMap = screenTex;
       materials.Image.emissive = new THREE.Color("#ffffff");
       materials.Image.emissiveIntensity = 1.0;
+      materials.Image.toneMapped = false;
+      materials.Image.metalness = 0;
+      materials.Image.roughness = 1;
       materials.Image.needsUpdate = true;
     }
+    if (screenTex) screenTex.anisotropy = 8;
     if (materials.Screen) {
       materials.Screen.roughness = 0.2;
       materials.Screen.metalness = 0.1;
@@ -252,6 +263,8 @@ function LaptopScene({
         start: "top top",
         end: "bottom bottom",
         scrub: true,
+        /* re-resolve the functional camera targets (cover-fit) on resize */
+        invalidateOnRefresh: true,
       },
     });
 
@@ -292,21 +305,37 @@ function LaptopScene({
       0
     );
 
-    // Phase 2 (40% to 75% scroll): Camera Dolly Inception
+    // Phase 2 (75% to 100% scroll): Camera Dolly — "cover-fit" plunge.
     // ┌─────────────────────────────────────────────────────────────┐
-    // │ DEVELOPER UX CALIBRATION:                                   │
-    // │ To perfect the Infinite Zoom illusion, adjust `z` and `y`:  │
-    // │ - Decrease `z` (e.g., 0.25) to push the camera deeper       │
-    // │   through the physical bezels of the screen mesh.           │
-    // │ - Adjust `y` (e.g., 0.85) to perfectly align the camera     │
-    // │   height with the geometric center of the open Lid_Screen.  │
+    // │ The plunge ends with the display face EXACTLY filling the   │
+    // │ viewport (CSS background-size: cover semantics), because    │
+    // │ the boundary crossfade dissolves this face into the real    │
+    // │ Projects header DOM — scale must match at the handoff.      │
+    // │                                                             │
+    // │ FACE_* constants are the display face's world-space rect at │
+    // │ the END state of the open/untilt timeline (lid x=0,         │
+    // │ container rot [0.1577,0,0], pos x=0), measured from the GLB.│
     // └─────────────────────────────────────────────────────────────┘
+    const FACE_CY = 0.6879;     // face center Y (world)
+    const FACE_FRONT_Z = -0.8689; // face front plane Z (world)
+    const FACE_HALF_W = 1.4766;
+    const FACE_HALF_H = 0.9485;
+    const coverZ = () => {
+      const t = Math.tan(THREE.MathUtils.degToRad(45 / 2)); // fov 45 vertical
+      const aspect = size.width / Math.max(1, size.height);
+      // closest distance at which the face still covers BOTH axes;
+      // 0.95 pull-in pushes the display's ROUNDED CORNERS fully out of
+      // frame (a flush 1.0 fit leaves bezel slivers at the corners) —
+      // the ~5% scale overshoot at the crossfade is imperceptible
+      const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * 0.95;
+      return FACE_FRONT_Z + d;
+    };
     tl.to(
       camera.position,
       {
-        z: 0.35, // aggressive deep plunge through bezels
-        y: 0.85, // targeted dead center of the open display face
-        duration: 0.25, // 0.75 -> 1.00
+        z: coverZ,        // functional + invalidateOnRefresh → responsive
+        y: FACE_CY,       // dead center of the display face
+        duration: 0.25,   // 0.75 -> 1.00
         ease: "power2.inOut",
       },
       0.75
@@ -325,24 +354,51 @@ function LaptopScene({
       0.75
     );
 
-    // Phase 3b (98% scroll): Pixel-Perfect Boundary Hot-Swap
-    if (canvasWrapperDOMRef.current) {
-      tl.set(
-        canvasWrapperDOMRef.current,
-        { display: "none", pointerEvents: "none" },
-        0.98
-      );
+    // Phase 3 — Boundary Crossfade (replaces the old 98% hard hot-swap).
+    //
+    // At hero scrub end the display face is full-bleed (cover-fit above)
+    // showing the captured Projects header. Across the next viewport of
+    // scroll — until the REAL #projects header pins at the viewport top —
+    // the canvas layer is held fixed and dissolved out, so the texture
+    // page melts into the identical DOM page with no cut.
+    //
+    //   window: [#hero bottom == viewport bottom] → [#projects top == top]
+    //   onEnter:    sticky → fixed (same visual position), above sheets
+    //   scrub:      projects revealed at t0; layer opacity 1 → 0 late-
+    //               weighted (power2.in) so the rising page only shows
+    //               through near the end, where it's almost settled
+    //   onLeave:    display:none — frees compositing, restores clicks
+    //   reverse:    every step mirrors back (clearProps restores the
+    //               stylesheet's sticky/z-index and the mobile
+    //               display:none media query — never hard-code those)
+    const layerEl = canvasWrapperDOMRef.current?.closest<HTMLElement>(".hero-3d-layer");
+    const projectsEl = portfolioSectionRef?.current;
+    if (layerEl && projectsEl && canvasWrapperDOMRef.current) {
+      const fadeTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#hero",
+          start: "bottom bottom",
+          endTrigger: projectsEl,
+          end: "top top",
+          scrub: true,
+          onEnter: () => gsap.set(layerEl, { position: "fixed", top: 0, left: 0, zIndex: 30 }),
+          onLeaveBack: () => gsap.set(layerEl, { clearProps: "position,top,left,zIndex" }),
+          onLeave: () => gsap.set(layerEl, { display: "none" }),
+          onEnterBack: () => gsap.set(layerEl, { clearProps: "display" }),
+        },
+      });
+
+      fadeTl
+        /* 0.001, not 0: zero-time sets in a scrubbed timeline don't
+           revert when the scrub reverses past the start — the wrapper
+           would keep pointerEvents:none back in the hero and kill the
+           laptop's drag interaction. */
+        .set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.001)
+        .set(canvasWrapperDOMRef.current, { pointerEvents: "none" }, 0.001)
+        .to(layerEl, { opacity: 0, ease: "power2.in", duration: 1 }, 0);
     }
 
-    if (portfolioSectionRef?.current) {
-      tl.set(
-        portfolioSectionRef.current,
-        { opacity: 1, pointerEvents: "auto" },
-        0.98
-      );
-    }
-
-  }, [camera, canvasWrapperDOMRef, portfolioSectionRef]);
+  }, [camera, size, canvasWrapperDOMRef, portfolioSectionRef]);
 
   return (
     <group
