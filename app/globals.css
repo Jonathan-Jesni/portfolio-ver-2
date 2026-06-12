@@ -1222,7 +1222,7 @@ img {
 
 /* Opening paragraph reads as an editorial lede */
 .about-bio-para--lede {
-  font-size: clamp(20px, 2.3vw, 27px);
+  font-size: clamp(16px, 1.9vw, 23px);
   line-height: 1.55;
   letter-spacing: -0.025em;
 }

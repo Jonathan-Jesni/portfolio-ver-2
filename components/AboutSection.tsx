@@ -129,7 +129,7 @@ export default function AboutSection() {
           <div ref={textColRef} className="about-split-text">
             {/* Section header — editorial display heading */}
             <header className="ed-header" style={{ marginBottom: "13px" }}>
-              <div className="ed-header-row" style={{ marginBottom: "4px", paddingBottom: "8px" }}>
+              <div className="ed-header-row" style={{ marginBottom: "0px", paddingBottom: "4px" }}>
                 <span className="ed-eyebrow">04 / Profile</span>
               </div>
               <h2 className="ed-heading ed-heading--md">

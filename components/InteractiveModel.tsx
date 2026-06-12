@@ -18,7 +18,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 // the useGLTF call below exactly or the preload cache misses.
 const DRACO_DECODER_PATH = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
 useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
-useTexture.preload("/assets/textures/mac.webp");
+useTexture.preload("/assets/textures/bg.jpg");
 useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ function LaptopScene({
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
-  const screenTex = useTexture("/assets/textures/mac.webp");
+  const screenTex = useTexture("/assets/textures/bg.jpg");
   const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
 
   const globalContainerRef = useRef<THREE.Group>(null);
