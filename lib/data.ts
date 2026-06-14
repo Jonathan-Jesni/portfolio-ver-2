@@ -10,6 +10,7 @@ export const PROJECTS = [
     github: "https://github.com/Jonathan-Jesni",
     images: ["/assets/webguardian-phishing.png", "/assets/webguardian-safe.png"],
     imageAlts: ["Phishing detection warning overlay", "WebGuardian safe browsing mode"],
+    metric: "0.85 F1 · ~25% faster training",
   },
   {
     id: "synthrescue",
@@ -23,6 +24,7 @@ export const PROJECTS = [
       "https://github.com/Jonathan-Jesni/synthetic-data-object-detection",
     images: ["/assets/object-detection-main.png", "/assets/object-detection-alt.png"],
     imageAlts: ["SynthRescue object detection with bounding boxes", "Alternative view of synthetic disaster environment detection"],
+    metric: "96.7% precision · 6,115 imgs",
   },
   {
     id: "ludex",
@@ -35,6 +37,7 @@ export const PROJECTS = [
     github: "https://github.com/Jonathan-Jesni/Ludex",
     images: ["/assets/ludex-login.png", "/assets/ludex-recommendations.png"],
     imageAlts: ["Ludex login interface", "Ludex personalized game recommendations interface"],
+    metric: "+12–18% relevance · +20% coverage",
   },
   {
     id: "file-converter",
@@ -49,6 +52,7 @@ export const PROJECTS = [
     imageAlts: null,
     pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
     note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
+    metric: "deterministic · no ML / OCR",
   },
 ] as const;
 
