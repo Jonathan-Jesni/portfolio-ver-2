@@ -2437,8 +2437,10 @@ canvas.glass-image-canvas {
    over a clean obsidian field, ready for a 3D background layer to be
    slotted behind it later. */
 .sd-header {
-  position: sticky;
-  top: 0;
+  /* Relative (not sticky): the intro is a full-screen title that scrolls
+     away once, then the case-study track's sticky viewport takes over.
+     A sticky header would re-cover the projects after the scrub released. */
+  position: relative;
   z-index: 0;
   min-height: 100dvh;
   display: flex;
@@ -2489,128 +2491,303 @@ canvas.glass-image-canvas {
   }
 }
 
-/* ── Top-level split grid ──────────────────────────────────────
-   Equal columns are required: both sticky decks must release at
-   the exact same scroll position so the final pair scrolls away
-   as one stack. Asymmetry comes from the right column's 140px
-   staggered start instead. */
-.sd-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 72px;
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 0 48px;
-  /* Columns size to their own content — JS equalizes the sticky
-     release points so the last pair scrolls away in sync */
-  align-items: start;
+/* ══════════════════════════════════════════════════════════════
+   CASE-STUDY STAGE — one project on screen at a time
+
+   Desktop: a tall .cs-track provides scroll length while the inner
+   .cs-viewport is held still with position:sticky (NOT a GSAP pin —
+   .stack-section is transformed by StackTransitions, which would
+   break position:fixed; this matches the sticky pattern About /
+   Contact use). A scrub trigger reads scroll and crossfades the
+   slides (see StickyDeckSection.tsx). The rail jumps on click.
+   Mobile / reduced-motion: the track is auto-height and the viewport
+   is static, so slides simply flow as a plain vertical stack.
+   ══════════════════════════════════════════════════════════════ */
+.cs-track {
+  position: relative;
+  width: 100%;
+}
+
+.cs-viewport {
   position: relative;
   z-index: 1;
   background: var(--surface-0);
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 48px;
 }
 
-@media (max-width: 900px) {
-  .sd-split {
-    grid-template-columns: 1fr;
-    padding: 0 24px;
-    gap: 64px;
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  /* ~85vh of scroll per project transition — a deliberate beat
+     without an exhausting track. */
+  .cs-track {
+    height: calc(100vh + (var(--cs-count, 4) - 1) * 85vh);
+  }
+
+  .cs-viewport {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
   }
 }
 
-/* ── LEFT: physical scrolling text track ───────────────────────────────── */
-.sd-split-left {
-  height: auto;
-}
-
-@media (max-width: 900px) {
-  .sd-split-left {
-    min-height: auto;
-  }
-}
-
-.sd-text-track {
-  display: flex;
-  flex-direction: column;
-  gap: 60vh;
-  width: 100%;
-  height: auto;
-}
-
-.sd-text-panel {
-  position: sticky;
-  /* max() keeps the pinned card clear of the floating nav pill */
-  top: calc(max(96px, 13vh) + calc(var(--card-index, 0) * 14px));
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 0;
-  will-change: transform, opacity, filter;
-  transform-origin: center top;
-  z-index: 2;
-  aspect-ratio: 4 / 3;
-  width: 100%;
-}
-
-/* Invisible spacer that perfectly matches the aspect ratio of an image card,
-   keeping the left and right columns physically synchronized */
-.sd-text-spacer {
-  aspect-ratio: 4 / 3;
-  width: 100%;
+/* Giant ghost index numeral behind the stage */
+.cs-ghost {
+  position: absolute;
+  top: -6%;
+  right: 24px;
+  font-family: var(--font-jetbrains), monospace;
+  font-weight: 700;
+  font-size: clamp(180px, 26vw, 340px);
+  line-height: 0.8;
+  color: rgba(231, 222, 199, 0.025);
   pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
-.sd-text-header {
+.cs-topbar {
+  position: relative;
+  z-index: 2;
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  align-items: baseline;
+  justify-content: space-between;
   margin-bottom: 28px;
 }
 
-.sd-text-index {
+.cs-eyebrow {
+  font-family: var(--font-jetbrains), monospace;
   font-size: 11px;
-  letter-spacing: 0.10em;
-  flex-shrink: 0;
-  margin-top: 5px;
-  user-select: none;
-  /* Colour is set inline via the --card-hue accent */
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
-/* ── RIGHT: stacking image column ──────────────────────────── */
-.sd-split-right {
+.cs-counter {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.cs-counter-cur {
+  color: var(--ink-1);
+}
+
+/* Slide host — vertical stack by default (mobile / reduced-motion);
+   on the desktop scrub it collapses to a single block holding the
+   absolutely-stacked, crossfading slides. */
+.cs-stagebox {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 60vh;
-  height: auto;
-  /* Staggered editorial baseline — image column starts lower than text */
-  margin-top: 140px;
+  gap: 96px;
 }
 
-@media (max-width: 900px) {
-  .sd-split-right {
-    margin-top: 0;
+.cs-slide {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .cs-stagebox {
+    display: block;
+    min-height: 58vh;
+  }
+
+  .cs-slide {
+    position: absolute;
+    inset: 0;
+    will-change: opacity;
   }
 }
 
-/* Physical spacer at the bottom of each column.
-   Gives the final pinned pair a short hold, then both columns
-   release simultaneously and scroll away as one stack. */
-.sd-spacer {
-  height: 60vh;
-  flex-shrink: 0;
-  pointer-events: none;
+/* Large project visual */
+.cs-visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #0C1422;
+  border: 0.5px solid var(--border-hairline);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-/* ── Image card: the sticky visual unit ─────────────────────── */
-.sd-img-card {
-  position: sticky;
-  /* Matches the text panel anchor — both columns pin clear of the nav */
-  top: calc(max(96px, 13vh) + calc(var(--card-index, 0) * 14px));
-  will-change: transform, opacity, filter;
-  transform-origin: center top;
+.cs-metric {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 2;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #5C667A;
+}
 
-  /* Fixed aspect ratio for the image panel — feels monumental.
-     CometCard nested inside owns all visual bezel styling.     */
-  aspect-ratio: 4 / 3;
+/* Copy column */
+.cs-text {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.cs-title {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--ink-1);
+  margin: 0 0 6px;
+}
+
+.cs-subtitle {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.cs-desc {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-2);
+  max-width: 48ch;
+  margin: 0 0 16px;
+}
+
+.cs-note {
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ink-4);
+  margin: 0 0 16px;
+}
+
+.cs-source {
+  margin-top: 18px;
+}
+
+/* Progress rail + knob */
+.cs-progress {
+  position: relative;
+  height: 2px;
+  background: rgba(231, 222, 199, 0.08);
+  border-radius: 2px;
+  margin: 30px 0 16px;
+  z-index: 2;
+}
+
+.cs-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.cs-progress-knob {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-1);
+  transform: translateX(-50%);
+}
+
+/* Clickable thumbnail rail */
+.cs-rail {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 12px;
+}
+
+.cs-thumb {
+  flex: 1;
+  text-align: left;
+  background: #0A1019;
+  border: 0.5px solid var(--border-hairline);
+  border-radius: 6px;
+  padding: 12px 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+
+.cs-thumb.is-active {
+  opacity: 1;
+  border: 1.5px solid var(--accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-thumb:hover {
+    opacity: 1;
+    background: rgba(231, 222, 199, 0.03);
+  }
+}
+
+.cs-thumb-num {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  margin-bottom: 3px;
+}
+
+.cs-thumb-name {
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+/* ── Mobile / reduced-motion: plain vertical stack ── */
+@media (max-width: 767px) {
+  .cs-viewport {
+    padding: 0 24px;
+  }
+
+  .cs-stagebox {
+    display: flex;
+    flex-direction: column;
+    gap: 88px;
+  }
+
+  .cs-slide {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .cs-text {
+    transform: none !important;
+  }
+
+  .cs-ghost,
+  .cs-counter,
+  .cs-progress {
+    display: none;
+  }
+
+  .cs-rail {
+    flex-wrap: wrap;
+    margin-top: 40px;
+  }
+
+  .cs-thumb {
+    flex: 1 1 40%;
+    opacity: 1;
+  }
 }
 
 /* Per-card top-edge accent line */
@@ -2763,49 +2940,7 @@ canvas.glass-image-canvas {
   color: rgba(240, 232, 210, 0.10);
 }
 
-/* ── Shared text styles ─────────────────────────────────────── */
-.sd-card-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sd-card-title {
-  font-family: var(--font-jakarta), sans-serif;
-  font-size: clamp(24px, 3vw, 40px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  color: var(--ink-0);
-  text-wrap: balance;
-}
-
-.sd-card-subtitle {
-  font-size: 11px;
-  color: var(--ink-4);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.sd-card-description {
-  font-family: var(--font-jakarta), sans-serif;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--ink-2);
-  max-width: 52ch;
-  margin-bottom: 32px;
-  flex: 1;
-}
-
-.sd-card-footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: auto;
-}
-
+/* ── Shared text styles (reused by the case-study stage) ─────── */
 .sd-card-tags {
   display: flex;
   flex-wrap: wrap;
@@ -2848,87 +2983,6 @@ canvas.glass-image-canvas {
   }
 }
 
-/* ── Glass text card ──────────────────────────────────────────── */
-/* The left text panel now lives inside a premium glass card
-   that mirrors the image cards' double-bezel language.       */
-.sd-text-card {
-  position: relative;
-  background: rgba(240, 232, 210, 0.02);
-  border: 1px solid var(--border-hairline);
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow:
-    0 1px 2px rgba(3, 6, 14, 0.6),
-    0 8px 32px rgba(3, 6, 14, 0.4);
-  /* Accent line is positioned inside this card, same as image cards */
-  overflow: hidden;
-}
-
-/* Overline — "Featured Project" in dim mono */
-.sd-text-overline {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: var(--ink-4);
-  text-transform: uppercase;
-  margin-bottom: 16px;
-}
-
-/* Main title with inline subtitle — restores old design's hierarchy */
-.sd-text-title {
-  font-family: var(--font-jakarta), sans-serif;
-  font-size: clamp(26px, 2.8vw, 40px);
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.06;
-  color: var(--ink-0);
-  text-wrap: balance;
-  margin-bottom: 20px;
-}
-
-/* Inline subtitle: serif italic — editorial counterpoint to the bold title */
-.sd-text-subtitle {
-  font-family: var(--font-instrument), Georgia, serif;
-  font-style: italic;
-  font-size: 0.62em;
-  /* relative to h3 — scales with the title */
-  font-weight: 400;
-  color: var(--ink-2);
-  letter-spacing: 0;
-}
-
-/* Description body */
-.sd-text-description {
-  font-family: var(--font-jakarta), sans-serif;
-  font-size: 14px;
-  line-height: 1.75;
-  color: var(--ink-2);
-  max-width: 52ch;
-  margin-bottom: 12px;
-}
-
-/* Optional note — italicised, dimmer */
-.sd-text-note {
-  font-size: 12px;
-  color: var(--ink-4);
-  line-height: 1.6;
-  font-style: italic;
-  margin-bottom: 20px;
-}
-
-/* "Built with: ..." tech line */
-.sd-text-built-with {
-  font-size: 11px;
-  color: var(--ink-4);
-  letter-spacing: 0.02em;
-  margin-bottom: 16px;
-}
-
-/* Link overrides for inside the glass card */
-.sd-text-link {
-  margin-top: 20px;
-  display: inline-flex;
-}
-
 /* ── CTA ─────────────────────────────────────────────────────── */
 .sd-cta {
   position: relative;
@@ -2964,15 +3018,16 @@ canvas.glass-image-canvas {
 
 /* ── Reduced motion override ─────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .sd-img-card {
-    will-change: auto;
+  /* No pin / scrub: slides flow as a stack and chrome that only makes
+     sense while scrubbing (ghost numeral, counter, progress) is hidden. */
+  .cs-text {
     transform: none !important;
-    opacity: 1 !important;
-    filter: none !important;
   }
 
-  .sd-text-panel {
-    transition: none;
+  .cs-ghost,
+  .cs-counter,
+  .cs-progress {
+    display: none;
   }
 }
 

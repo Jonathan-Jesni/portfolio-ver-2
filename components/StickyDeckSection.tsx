@@ -8,6 +8,7 @@ import Image from "next/image";
 import { PROJECTS } from "../lib/data";
 import { ArrowUpRightIcon } from "./ui/icons";
 import { CometCard } from "@/components/ui/comet-card";
+import { getLenis } from "../lib/lenisInstance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -19,147 +20,112 @@ const CARD_HUES: Record<string, string> = {
   synthrescue:      "268, 52%, 66%",  /* dusty violet   */
 };
 
+const N = PROJECTS.length;
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/* power4.inOut — mirrors the {J} logo's scroll-to feel for click jumps */
+const power4InOut = (t: number) =>
+  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+
 export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
   const fallbackRef = useRef<HTMLElement>(null);
   const sectionRef = portfolioSectionRef || fallbackRef;
-  const rightColRef = useRef<HTMLDivElement>(null);
-
-  /* Flatten the projects array so multi-image projects render separate physical cards */
-  const flattenedCards: {
-    projectIndex: number;
-    project: typeof PROJECTS[number];
-    type: "image" | "pipeline" | "placeholder";
-    imageUrl?: string;
-    imageAlt?: string;
-    key: string;
-  }[] = [];
-
-  PROJECTS.forEach((project, pIdx) => {
-    if ('images' in project && project.images && project.images.length > 0) {
-      project.images.forEach((img, i) => {
-        flattenedCards.push({
-          projectIndex: pIdx,
-          project: project,
-          type: "image",
-          imageUrl: img,
-          imageAlt: project.imageAlts?.[i] ?? project.title,
-          key: `${project.id}-img-${i}`,
-        });
-      });
-    } else if ('pipeline' in project && project.pipeline) {
-      flattenedCards.push({
-        projectIndex: pIdx,
-        project: project,
-        type: "pipeline",
-        key: `${project.id}-pipeline`,
-      });
-    } else {
-      flattenedCards.push({
-        projectIndex: pIdx,
-        project: project,
-        type: "placeholder",
-        key: `${project.id}-placeholder`,
-      });
-    }
-  });
+  const trackRef = useRef<HTMLDivElement>(null);
+  /* the active scrub trigger — read by the rail's click-to-jump handler */
+  const stRef = useRef<ScrollTrigger | null>(null);
 
   useGSAP(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const slides = gsap.utils.toArray<HTMLElement>(".cs-slide", track);
+    const texts  = slides.map((s) => s.querySelector<HTMLElement>(".cs-text"));
+    const thumbs = gsap.utils.toArray<HTMLElement>(".cs-thumb", track);
+    const fill   = track.querySelector<HTMLElement>(".cs-progress-fill");
+    const knob   = track.querySelector<HTMLElement>(".cs-progress-knob");
+    const curEl  = track.querySelector<HTMLElement>(".cs-counter-cur");
+    const ghost  = track.querySelector<HTMLElement>(".cs-ghost");
+    if (slides.length < 1) return;
+
+    /* Single render pass — every readout derives from the SAME progress
+       value (p ∈ [0, N-1]) so the visual, text, counter, rail and ghost
+       can never drift out of sync. */
+    const render = (p: number) => {
+      slides.forEach((slide, i) => {
+        const a = Math.max(0, 1 - Math.abs(i - p)); /* nearness 0→1 */
+        slide.style.opacity = a.toFixed(3);
+        slide.style.pointerEvents = a > 0.5 ? "auto" : "none";
+        const t = texts[i];
+        if (t) {
+          /* text rise LAGS the visual crossfade: it only starts lifting
+             once the slide is already ~25% faded in, so the picture
+             leads and the copy settles in behind it. */
+          const tE = Math.max(0, Math.min(1, (a - 0.25) / 0.75));
+          t.style.transform = `translate3d(0, ${((1 - tE) * 26).toFixed(1)}px, 0)`;
+        }
+      });
+
+      const idx = Math.round(p);
+      if (curEl) curEl.textContent = pad(idx + 1);
+      if (ghost) ghost.textContent = pad(idx + 1);
+      const pct = (p / Math.max(1, N - 1)) * 100;
+      if (fill) fill.style.width = `${pct}%`;
+      if (knob) knob.style.left = `${pct}%`;
+      thumbs.forEach((th, i) => th.classList.toggle("is-active", i === idx));
+    };
+
     const mm = gsap.matchMedia();
 
-      const imageCards = gsap.utils.toArray<HTMLElement>(".sd-img-card");
-      if (imageCards.length < 1) return;
-
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      /* Depth stacking: each card scales + blurs out as the next one
-         arrives. The LAST card is deliberately skipped — the final
-         text/image pair stays crisp and pinned, then both columns
-         release simultaneously and scroll away as one stack. */
-      imageCards.forEach((card, i) => {
-        if (i === imageCards.length - 1) return;
-
-        gsap.to(card, {
-          scale:   0.95,
-          opacity: 0.5,
-          filter:  "blur(2px)",
-          ease:    "none",
-          scrollTrigger: {
-            trigger: imageCards[i + 1],
-            start:   "top 13vh",
-            end:     "top 7%",
-            scrub:   0.8,
-          },
-        });
+    /* ── Desktop full-motion: scrub the projects via a CSS-sticky viewport ──
+       NO ScrollTrigger pin. The stage is held in place by position:sticky
+       (see .cs-viewport in globals.css) and this trigger only READS scroll
+       to scrub the crossfade. A GSAP pin would use position:fixed, which is
+       broken by .stack-section's transform (StackTransitions scales it) and
+       can freeze the tab under Lenis — the exact reasons this codebase pins
+       nothing and uses sticky everywhere (see StackTransitions / Contact). */
+    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+      const st = ScrollTrigger.create({
+        trigger: track,
+        start: "top top",
+        end: "bottom bottom",
+        invalidateOnRefresh: true,
+        /* Snap each project to its own scroll beat — no parked half-states */
+        snap: {
+          snapTo: 1 / (N - 1),
+          duration: { min: 0.15, max: 0.35 },
+          ease: "power2.inOut",
+        },
+        onUpdate: (self) => render(self.progress * (N - 1)),
+        onRefresh: (self) => render(self.progress * (N - 1)),
       });
+      stRef.current = st;
 
-      /* ── Dual-Deck: Stack text panels natively ── */
-      const textCards = gsap.utils.toArray<HTMLElement>(".sd-text-panel");
-      textCards.forEach((textCard, i) => {
-        if (i === textCards.length - 1) return;
+      render(0); /* first project fully formed at entry — no dead lead-in */
 
-        gsap.to(textCard, {
-          scale:   0.95,
-          filter:  "blur(2px)",
-          ease:    "none",
-          scrollTrigger: {
-            trigger: textCards[i + 1],
-            start:   "top 13vh",
-            end:     "top 7%",
-            scrub:   0.8,
-          },
-        });
-      });
-
-      /* Cleanup is handled by mm.revert() — never kill triggers
-         globally here: it nukes other components' ScrollTriggers
-         (including the StackTransitions section pins). */
+      return () => {
+        stRef.current = null;
+        gsap.set(slides, { clearProps: "opacity,pointerEvents" });
+        texts.forEach((t) => t && (t.style.transform = ""));
+      };
     });
 
-    /* ── Release sync ──────────────────────────────────────────────
-       The text panels are content-tall while the image cards keep a
-       4/3 aspect, so the two columns would un-stick at different
-       scroll positions. Measure both decks and size the left
-       column's trailing spacer so the final text/image pair releases
-       at the exact same scroll — they leave as one stack. */
-    const root = sectionRef.current;
-    const leftSpacer = root?.querySelector<HTMLElement>(".sd-split-left .sd-spacer");
-    const leftTrack = root?.querySelector<HTMLElement>(".sd-text-track");
-    const rightCol = root?.querySelector<HTMLElement>(".sd-split-right");
-
-    const syncRelease = () => {
-      if (!leftSpacer || !leftTrack || !rightCol) return;
-
-      /* Mobile: single column, no parallel decks to synchronize */
-      if (!window.matchMedia("(min-width: 901px)").matches) {
-        leftSpacer.style.height = "";
-        return;
-      }
-
-      const txts = leftTrack.querySelectorAll<HTMLElement>(".sd-text-panel");
-      const imgs = rightCol.querySelectorAll<HTMLElement>(".sd-img-card");
-      const lastTxt = txts[txts.length - 1];
-      const lastImg = imgs[imgs.length - 1];
-      if (!lastTxt || !lastImg) return;
-
-      /* Measure with the spacer collapsed, then size it to the gap
-         between the two columns' natural release points */
-      leftSpacer.style.height = "0px";
-      const stickyTop = (el: HTMLElement) => parseFloat(getComputedStyle(el).top) || 0;
-      const releaseTxt =
-        leftTrack.getBoundingClientRect().bottom - stickyTop(lastTxt) - lastTxt.offsetHeight;
-      const releaseImg =
-        rightCol.getBoundingClientRect().bottom - stickyTop(lastImg) - lastImg.offsetHeight;
-      leftSpacer.style.height = `${Math.max(0, Math.round(releaseImg - releaseTxt))}px`;
-    };
-
-    syncRelease();
-    ScrollTrigger.addEventListener("refreshInit", syncRelease);
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
-
-    return () => {
-      ScrollTrigger.removeEventListener("refreshInit", syncRelease);
-      mm.revert();
-    };
   }, { scope: sectionRef });
+
+  /* Jump to a project by scrolling to its position within the sticky track.
+     Routed through the shared Lenis instance so it inherits the site's eased
+     momentum (matching the {J} logo's power4.inOut feel). */
+  const jumpTo = (i: number) => {
+    const st = stRef.current;
+    if (!st) return; /* mobile / reduced-motion: slides are already stacked */
+    const target = st.start + (i / (N - 1)) * (st.end - st.start);
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.scrollTo(target, { duration: 1.3, easing: power4InOut });
+    } else {
+      window.scrollTo({ top: target, behavior: "smooth" });
+    }
+  };
 
   return (
     <section
@@ -169,7 +135,9 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       style={{ opacity: 0, pointerEvents: "none" }}
     >
       {/* ── Section header — standalone full-viewport page.
-             The 3D laptop background will layer behind this later. ── */}
+             PIXEL-CAPTURED into the laptop's WebGL screen texture
+             (app/assets-render/projects-header) and crossfaded into this
+             DOM at the hero→projects handoff. Do not alter markup/copy. ── */}
       <div className="container sd-header">
         <header className="ed-header">
           <div className="ed-header-row">
@@ -182,173 +150,145 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
         <span className="sd-header-cue" aria-hidden="true">scroll ↓</span>
       </div>
 
-      {/* ── Asymmetric split ─────────────────────────────────────────── */}
-      <div className="sd-split">
+      {/* ── Case-study stage ─────────────────────────────────────────────
+             One project on screen at a time. On desktop it pins and scroll
+             scrubs the active project; the thumbnail rail jumps on click.
+             On mobile / reduced-motion it falls back to a plain vertical
+             stack (CSS), with no pin and no scrub. ── */}
+      <div
+        ref={trackRef}
+        className="cs-track"
+        style={{ "--cs-count": N } as React.CSSProperties}
+      >
+        <div className="cs-viewport">
+        <span className="cs-ghost" aria-hidden="true">01</span>
 
-        {/* ── LEFT: sticky glass text panel ───────────────────────── */}
-        <div className="sd-split-left">
-          <div className="sd-text-track">
-            {flattenedCards.map((card, idx) => {
-              const isFirstOfProject = idx === 0 || flattenedCards[idx - 1].projectIndex !== card.projectIndex;
-              
-              if (!isFirstOfProject) {
-                return <div key={`spacer-${card.key}`} className="sd-text-spacer" aria-hidden="true" />;
-              }
-
-              const project = card.project;
-              const hue  = CARD_HUES[project.id] ?? "210, 80%, 56%";
-              const tags = project.tags as readonly string[];
-              const note = (project as { note?: string }).note;
-
-              return (
-                <div
-                  key={`text-${card.key}`}
-                  className="sd-text-panel"
-                  data-project-id={project.id}
-                  style={{ "--card-index": card.projectIndex } as React.CSSProperties}
-                >
-                  <CometCard rotateDepth={8} translateDepth={6}>
-                    {/* Glass card shell */}
-                    <div
-                      className="glass-panel"
-                      style={{
-                        "--card-hue": hue,
-                        borderLeft: `2px solid hsl(${hue})`,
-                      } as React.CSSProperties}
-                    >
-                      {/* Top-edge accent line matches the image card */}
-                      <div className="sd-card-accent" aria-hidden="true" />
-
-                      {/* Ghost folio numeral — editorial magazine index */}
-                      <span className="sd-index-ghost mono" aria-hidden="true">
-                        {String(card.projectIndex + 1).padStart(2, "0")}
-                      </span>
-
-                      {/* Title with inline subtitle */}
-                      <h3 className="sd-text-title">
-                        {project.title}
-                        <span className="sd-text-subtitle"> — {project.subtitle}</span>
-                      </h3>
-
-                      {/* Description */}
-                      <p className="sd-text-description">{project.description}</p>
-
-                      {/* Optional note (e.g. File Converter evolution note) */}
-                      {note && (
-                        <p className="sd-text-note mono">{note}</p>
-                      )}
-
-                      {/* Built with line */}
-                      <p className="sd-text-built-with mono">
-                        Built with: {project.tech}
-                      </p>
-
-                      {/* Tags */}
-                      <ul className="sd-card-tags" aria-label="Technologies">
-                        {tags.map((tag) => (
-                          <li key={tag} className="sd-tag mono">{tag}</li>
-                        ))}
-                      </ul>
-
-                      {/* GitHub link */}
-                      <a
-                        href={project.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="sd-card-link sd-text-link"
-                        id={`${project.id}-source-link`}
-                        aria-label={`View ${project.title} source code on GitHub`}
-                      >
-                        <span>View Source</span>
-                        <ArrowUpRightIcon />
-                      </a>
-                    </div>
-                  </CometCard>
-                </div>
-              );
-            })}
-            <div className="sd-spacer" aria-hidden="true" />
-          </div>
+        <div className="cs-topbar">
+          <span className="cs-eyebrow">Selected Work</span>
+          <span className="cs-counter">
+            <span className="cs-counter-cur">01</span> / {pad(N)}
+          </span>
         </div>
 
-        {/* ── RIGHT: stacking image cards ─────────────────────────── */}
-        <div ref={rightColRef} className="sd-split-right">
-          {flattenedCards.map((card, idx) => {
-            const project = card.project;
-            const hue     = CARD_HUES[project.id] ?? "210, 80%, 56%";
+        <div className="cs-stagebox">
+          {PROJECTS.map((project, i) => {
+            const hue  = CARD_HUES[project.id] ?? "210, 80%, 56%";
+            const tags = project.tags as readonly string[];
+            const metric = (project as { metric?: string }).metric ?? tags[0];
+            const note = (project as { note?: string }).note;
+            const hasImage = "images" in project && project.images && project.images.length > 0;
+            const pipeline = (project as { pipeline?: readonly string[] }).pipeline;
 
             return (
-              <div
-                key={card.key}
-                className="sd-img-card"
-                style={{
-                  "--card-index": idx,
-                  "--card-hue":   hue,
-                } as React.CSSProperties}
-                id={`project-card-${card.key}`}
-                data-project-index={card.projectIndex}
+              <article
+                key={project.id}
+                className="cs-slide"
                 data-project-id={project.id}
-                aria-label={`Project visual: ${project.title}`}
+                aria-label={`Project: ${project.title}`}
               >
-                <CometCard rotateDepth={12} translateDepth={8}>
-                  <div className="sd-card-accent" aria-hidden="true" />
+                {/* LEFT — large visual */}
+                <CometCard rotateDepth={10} translateDepth={6}>
+                  <div
+                    className="cs-visual"
+                    style={{ "--card-hue": hue } as React.CSSProperties}
+                  >
+                    <div className="sd-card-accent" aria-hidden="true" />
 
-                  {card.type === "image" ? (
-                    <div className="sd-img-frame">
-                      <Image
-                        src={card.imageUrl!}
-                        alt={card.imageAlt!}
-                        fill
-                        sizes="(max-width: 900px) 100vw, 50vw"
-                        className="sd-img"
-                        priority={true}
-                      />
-                      <div className="sd-img-vignette" aria-hidden="true" />
-                    </div>
-                  ) : card.type === "pipeline" ? (
-                    <div
-                      className="sd-pipeline"
-                      style={{ background: `hsl(${hue.split(",")[0]}, 15%, 8%)` }}
-                      aria-label="Processing pipeline"
-                    >
-                      {('pipeline' in project ? (project as { pipeline: readonly string[] }).pipeline : []).map((step: string, si: number, arr: readonly string[]) => (
-                        <React.Fragment key={step}>
-                          <div 
-                            className="sd-pipeline-node"
-                            style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
-                          >
-                            {step}
-                          </div>
-                          {si < arr.length - 1 && (
-                            <div className="sd-pipeline-wire">
-                              <div 
-                                className="sd-pipeline-pulse"
-                                style={{ animationDelay: `${si * 0.4}s` } as React.CSSProperties}
-                              />
+                    {hasImage ? (
+                      <div className="sd-img-frame">
+                        <Image
+                          src={project.images![0]}
+                          alt={project.imageAlts?.[0] ?? project.title}
+                          fill
+                          sizes="(max-width: 900px) 100vw, 55vw"
+                          className="sd-img"
+                          priority={i === 0}
+                        />
+                        <div className="sd-img-vignette" aria-hidden="true" />
+                      </div>
+                    ) : pipeline ? (
+                      <div
+                        className="sd-pipeline"
+                        style={{ background: `hsl(${hue.split(",")[0]}, 15%, 8%)` }}
+                        aria-label="Processing pipeline"
+                      >
+                        {pipeline.map((step, si, arr) => (
+                          <React.Fragment key={step}>
+                            <div className="sd-pipeline-node" style={{ animationDelay: `${si * 0.4}s` }}>
+                              {step}
                             </div>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="sd-placeholder"
-                      style={{ background: `hsl(${hue.split(",")[0]}, 12%, 8%)` }}
-                      aria-hidden="true"
-                    >
-                      <span className="sd-placeholder-label mono">
-                        {project.title.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                            {si < arr.length - 1 && (
+                              <div className="sd-pipeline-wire">
+                                <div className="sd-pipeline-pulse" style={{ animationDelay: `${si * 0.4}s` }} />
+                              </div>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="sd-placeholder"
+                        style={{ background: `hsl(${hue.split(",")[0]}, 12%, 8%)` }}
+                        aria-hidden="true"
+                      >
+                        <span className="sd-placeholder-label mono">{project.title.toUpperCase()}</span>
+                      </div>
+                    )}
+
+                    <span className="cs-metric mono">{metric}</span>
+                  </div>
                 </CometCard>
-              </div>
+
+                {/* RIGHT — copy */}
+                <div className="cs-text">
+                  <h3 className="cs-title">{project.title}</h3>
+                  <span className="cs-subtitle" style={{ color: `hsl(${hue})` }}>
+                    — {project.subtitle}
+                  </span>
+                  <p className="cs-desc">{project.description}</p>
+                  {note && <p className="cs-note mono">{note}</p>}
+                  <ul className="sd-card-tags" aria-label="Technologies">
+                    {tags.map((tag) => (
+                      <li key={tag} className="sd-tag mono">{tag}</li>
+                    ))}
+                  </ul>
+                  <a
+                    href={project.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sd-card-link cs-source"
+                    id={`${project.id}-source-link`}
+                    aria-label={`View ${project.title} source code on GitHub`}
+                  >
+                    <span>View Source</span>
+                    <ArrowUpRightIcon />
+                  </a>
+                </div>
+              </article>
             );
           })}
+        </div>
 
-          {/* Spacer: gives the last card real scroll track to stick on.
-              padding-bottom doesn't work — a physical child div does.   */}
-          <div className="sd-spacer" aria-hidden="true" />
+        {/* Progress rail + clickable thumbnails */}
+        <div className="cs-progress" aria-hidden="true">
+          <div className="cs-progress-fill" />
+          <div className="cs-progress-knob" />
+        </div>
+
+        <nav className="cs-rail" aria-label="Jump to project">
+          {PROJECTS.map((project, i) => (
+            <button
+              key={project.id}
+              type="button"
+              className={`cs-thumb${i === 0 ? " is-active" : ""}`}
+              onClick={() => jumpTo(i)}
+              aria-label={`Go to ${project.title}`}
+            >
+              <span className="cs-thumb-num mono">{pad(i + 1)}</span>
+              <span className="cs-thumb-name">{project.title}</span>
+            </button>
+          ))}
+        </nav>
         </div>
       </div>
 
