@@ -2609,6 +2609,13 @@ canvas.glass-image-canvas {
   }
 }
 
+/* Visual column = the image/pipeline card + a caption beneath it */
+.cs-visual-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 /* Large project visual */
 .cs-visual {
   position: relative;
@@ -2620,11 +2627,109 @@ canvas.glass-image-canvas {
   overflow: hidden;
 }
 
-.cs-metric {
+/* ── Image carousel ─────────────────────────────────────────── */
+.cs-imgwrap {
   position: absolute;
-  left: 14px;
+  inset: 0;
+  cursor: zoom-in;
+}
+
+.cs-img-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.cs-img-slide.is-cur {
+  opacity: 1;
+}
+
+/* Edge arrows — hidden until hover/focus, never overlap the lightbox click */
+.cs-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-1);
+  background: rgba(7, 11, 20, 0.55);
+  border: 0.5px solid var(--border-hairline);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.cs-arrow-prev { left: 12px; }
+.cs-arrow-next { right: 12px; }
+
+.cs-visual:hover .cs-arrow,
+.cs-arrow:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-arrow:hover {
+    background: hsl(var(--card-hue) / 0.25);
+    border-color: hsl(var(--card-hue));
+  }
+}
+
+/* Touch / no-hover: keep arrows visible since there's no hover affordance */
+@media (hover: none) {
+  .cs-arrow { opacity: 0.85; }
+}
+
+/* Position dots */
+.cs-dots {
+  position: absolute;
   bottom: 12px;
-  z-index: 2;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 7px;
+}
+
+.cs-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(231, 222, 199, 0.3);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.cs-dot.is-active {
+  background: hsl(var(--card-hue));
+  transform: scale(1.25);
+}
+
+/* ── Caption under the image ────────────────────────────────── */
+.cs-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 30px;
+}
+
+.cs-caption-alt {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+
+.cs-caption-metric {
   font-size: 10px;
   letter-spacing: 0.06em;
   color: #5C667A;
@@ -2819,12 +2924,13 @@ canvas.glass-image-canvas {
   object-fit: cover;
 }
 
-/* Vignette overlay */
+/* Vignette overlay — faint now that the caption moved out from over the
+   image; just enough to seat the image in the frame. */
 .sd-img-vignette {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom, transparent 60%, rgba(3, 6, 14, 0.55) 100%);
+    linear-gradient(to bottom, transparent 75%, rgba(3, 6, 14, 0.28) 100%);
   pointer-events: none;
   z-index: 1;
 }
@@ -2957,6 +3063,21 @@ canvas.glass-image-canvas {
   border: 1px solid var(--border-hairline);
   border-radius: 4px;
   padding: 3px 8px;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hover/focus lights the tag in its own project's accent hue
+   (--card-hue cascades from the .cs-slide). Subtle, never neon. */
+@media (hover: hover) and (pointer: fine) {
+  .sd-tag:hover {
+    color: var(--ink-1);
+    border-color: hsl(var(--card-hue, 210, 80%, 56%));
+    box-shadow: 0 0 12px hsl(var(--card-hue, 210, 80%, 56%) / 0.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-tag { transition: none; }
 }
 
 .sd-card-link {
@@ -2980,6 +3101,25 @@ canvas.glass-image-canvas {
 @media (hover: hover) and (pointer: fine) {
   .sd-card-link:hover {
     color: var(--accent);
+  }
+}
+
+/* ── Outro — centers the CTA as a closing beat and supplies the
+   trailing scroll length that delays the CRT collapse until after it.
+   .stack-section's "bottom bottom" (the CRT trigger) only arrives once
+   this block has fully scrolled past, so the fold happens after the CTA. */
+.sd-outro {
+  position: relative;
+  z-index: 1;
+  background: var(--surface-0);
+}
+
+@media (min-width: 768px) {
+  .sd-outro {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 }
 
@@ -3014,6 +3154,125 @@ canvas.glass-image-canvas {
     padding-left: 24px;
     padding-right: 24px;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHTBOX — portalled to <body>, so a real viewport-fixed overlay
+   (the .stack-section transform can't reach it here).
+   ══════════════════════════════════════════════════════════════ */
+.cs-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 4vw;
+  background: rgba(3, 6, 14, 0.86);
+  backdrop-filter: blur(6px);
+  animation: csLbIn 0.25s ease;
+}
+
+@keyframes csLbIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cs-lightbox-stage {
+  position: relative;
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-lightbox-img {
+  max-width: 92vw;
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 0.5px solid var(--border-hairline);
+  box-shadow: 0 30px 80px rgba(3, 6, 14, 0.6);
+}
+
+.cs-lightbox-close {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--ink-2);
+  background: rgba(7, 11, 20, 0.6);
+  border: 0.5px solid var(--border-hairline);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.cs-lightbox-close:hover {
+  color: var(--ink-1);
+  border-color: hsl(var(--card-hue, 210, 80%, 56%));
+}
+
+.cs-lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink-1);
+  background: rgba(7, 11, 20, 0.55);
+  border: 0.5px solid var(--border-hairline);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.cs-lightbox-arrow:hover {
+  background: hsl(var(--card-hue) / 0.25);
+  border-color: hsl(var(--card-hue));
+}
+
+.cs-lightbox-prev { left: -64px; }
+.cs-lightbox-next { right: -64px; }
+
+@media (max-width: 767px) {
+  .cs-lightbox-prev { left: 8px; }
+  .cs-lightbox-next { right: 8px; }
+}
+
+.cs-lightbox-caption {
+  position: absolute;
+  bottom: -30px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.cs-lightbox-dots {
+  position: absolute;
+  bottom: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
 }
 
 /* ── Reduced motion override ─────────────────────────────────── */
