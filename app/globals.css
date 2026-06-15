@@ -1241,6 +1241,11 @@ img {
   }
 }
 
+.about-terminal-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
 .about-split-text {
   display: flex;
   flex-direction: column;
@@ -2070,8 +2075,8 @@ img {
   font-family: var(--font-jetbrains), monospace;
   font-size: 13px;
   overflow-x: auto;
+  overflow-y: hidden;
   max-height: 60px;
-  overflow: hidden;
   transition: max-height 700ms var(--ease-out-expo);
 }
 
