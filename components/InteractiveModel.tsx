@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/immutability */
 "use client";
 
-import { useRef, useMemo, Suspense } from "react";
+import { useRef, useMemo, useEffect, Suspense } from "react";
 import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
 import { shaderMaterial, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
@@ -18,11 +18,127 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 // the useGLTF call below exactly or the preload cache misses.
 const DRACO_DECODER_PATH = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
 useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
+// Keep bg.jpg in this preload list — PreLoader.tsx reads useProgress() off the
+// THREE.DefaultLoadingManager global, so removing this call would empty the
+// manifest and force the 9s failsafe.
 useTexture.preload("/assets/textures/bg.jpg");
 useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
+/* ── Boot-screen canvas dimensions.
+   Aspect ratio matches the screen face world-space rect:
+   FACE_HALF_W (1.4766) / FACE_HALF_H (0.9485) ≈ 1.557  ── */
+const BOOT_W = 1024;
+const BOOT_H = 658;
+
+/* ── Phase thresholds (hero scroll progress, 0→1) ── */
+const BOOT_P1 = 0.40; // black  →  spinning-dots  start
+const BOOT_P2 = 0.75; // dots   →  header bitmap   start
+
 /* ─────────────────────────────────────────────────────────────────────
-   DOT GRID — Background Physics Grid (Unchanged)
+   BOOT-SCREEN DRAWING — pure function, called from useFrame.
+
+   Draws into an offscreen 2D canvas that is assigned as the screen
+   face's emissiveMap (THREE.CanvasTexture). Three scroll-gated phases:
+
+     0.00–0.40   Black (#070B14) — lid is closed or just opening
+     0.40–0.75   Spinning-dot loader on black (skipped for reduced-motion)
+     0.75–1.00   bg.jpg fades in cover-fit → final frame == captured header,
+                 so the crossfade dissolve into the real #projects DOM is exact.
+
+   progress  — raw 0-1 from the hero ScrollTrigger's onUpdate
+   clockTime — state.clock.elapsedTime (rAF-driven, used only in dot phase)
+   bgImage   — HTMLImageElement|ImageBitmap from screenTex.image (same-origin,
+               safe to canvas.drawImage without CORS issues)
+   ───────────────────────────────────────────────────────────────────── */
+function drawBootScreen(
+  ctx: CanvasRenderingContext2D,
+  progress: number,
+  clockTime: number,
+  bgImage: HTMLImageElement | ImageBitmap | null,
+  prefersReduced: boolean,
+): void {
+  const W = BOOT_W;
+  const H = BOOT_H;
+
+  ctx.clearRect(0, 0, W, H);
+  // #070B14 = body background = --surface-0. toneMapped:false on the material
+  // means this exact hex reaches the compositor without ACES shifting it.
+  ctx.fillStyle = "#070B14";
+  ctx.fillRect(0, 0, W, H);
+
+  if (progress <= 0) return; // pure black — lid closed
+
+  // ── Phase 1: spinning-dots (40–75 %) ──────────────────────────────
+  if (!prefersReduced && progress >= BOOT_P1 && progress < BOOT_P2) {
+    const dp = (progress - BOOT_P1) / (BOOT_P2 - BOOT_P1); // 0→1 within phase
+
+    // Fade in over first 15 % of this phase, fade out over last 15 %.
+    const fadeIn  = Math.min(1, dp / 0.15);
+    const fadeOut = 1 - Math.min(1, Math.max(0, (dp - 0.85) / 0.15));
+    const alpha   = fadeIn * fadeOut;
+
+    if (alpha > 0) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      const cx   = W / 2;
+      const cy   = H / 2;
+      const ring = Math.min(W, H) * 0.065; // circle radius
+      const dr   = Math.min(W, H) * 0.012; // dot radius
+      const N    = 8;
+      const angle = clockTime * 2.5; // rotations per second (wall-clock spin)
+
+      for (let i = 0; i < N; i++) {
+        // Trail: dots further behind the leading dot are progressively dimmer.
+        const t  = i / N;
+        const da = 0.15 + 0.85 * Math.pow(t, 1.5);
+        const a  = t * Math.PI * 2 + angle;
+
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * ring, cy + Math.sin(a) * ring, dr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${da})`;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+    return; // dots phase — don't bleed into bitmap
+  }
+
+  // ── Phase 2: header bitmap fade-in (75–100 %) ─────────────────────
+  // Final frame (progress=1) must equal captured-header pixel-for-pixel
+  // so the dissolve into real #projects DOM is seamless.
+  if (progress >= BOOT_P2 && bgImage) {
+    const raw = (progress - BOOT_P2) / (1 - BOOT_P2);
+    const t   = Math.max(0, Math.min(1, raw));
+    // Smoothstep — soft ease-in for the bitmap reveal
+    const alpha = t * t * (3 - 2 * t);
+
+    if (alpha <= 0) return;
+
+    // Cover-fit: same semantics as CSS background-size:cover
+    const imgW = "naturalWidth" in bgImage
+      ? (bgImage as HTMLImageElement).naturalWidth
+      : (bgImage as ImageBitmap).width;
+    const imgH = "naturalHeight" in bgImage
+      ? (bgImage as HTMLImageElement).naturalHeight
+      : (bgImage as ImageBitmap).height;
+
+    if (imgW > 0 && imgH > 0) {
+      const scale = Math.max(W / imgW, H / imgH);
+      const dx    = (W - imgW * scale) / 2;
+      const dy    = (H - imgH * scale) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(bgImage as CanvasImageSource, dx, dy, imgW * scale, imgH * scale);
+      ctx.restore();
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DOT GRID — Background Physics Grid
    ───────────────────────────────────────────────────────────────── */
 const dotGridVertexShader = /* glsl */ `
   uniform float uTime;
@@ -35,7 +151,7 @@ const dotGridVertexShader = /* glsl */ `
     vOpacity = mix(0.04, 0.18, twinkle) + flash * 0.22;
 
     gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = 1.8;
+    gl_PointSize = 2.0;
   }
 `;
 
@@ -190,55 +306,94 @@ function LaptopScene({
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
-  const screenTex = useTexture("/assets/textures/bg.jpg");
+  // screenTex is still loaded via useTexture so THREE.DefaultLoadingManager
+  // captures it in the preloader manifest — removing this call would empty the
+  // manifest and let the preloader fall back to the 9 s failsafe.
+  const screenTex  = useTexture("/assets/textures/bg.jpg");
   const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
 
-  const globalContainerRef = useRef<THREE.Group>(null);
-  const lidHingeGroupRef = useRef<THREE.Group>(null);
-  const { camera, size } = useThree();
+  const globalContainerRef  = useRef<THREE.Group>(null);
+  const lidHingeGroupRef    = useRef<THREE.Group>(null);
+  const { camera, size }    = useThree();
 
-  // Texture mapping & material calibrations
+  // Raw hero scroll progress (0→1) written by ScrollTrigger.onUpdate.
+  // Read each frame to drive the boot-screen drawing.
+  const bootProgressRef     = useRef(0);
+  // Tracks the last drawn progress to avoid redundant canvas uploads.
+  const lastBootProgressRef = useRef(-1);
+
+  const prefersReduced = useMemo(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
+
+  /* ── Boot-screen canvas + CanvasTexture ─────────────────────────────
+     Created once; the canvas is the "screen" being drawn each frame.
+     useMemo([]) is stable — React won't recompute it unless the
+     component unmounts and remounts.  ── */
+  const boot = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width  = BOOT_W;
+    canvas.height = BOOT_H;
+    const ctx = canvas.getContext("2d")!;
+    // Pre-fill with "off" colour so there is no white flash before the
+    // first useFrame tick uploads the texture.
+    ctx.fillStyle = "#070B14";
+    ctx.fillRect(0, 0, BOOT_W, BOOT_H);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    // Match the exact emissiveMap settings tuned for the screen face:
+    tex.flipY       = false;           // UV space is already WebGL-oriented in the GLB
+    tex.colorSpace  = THREE.SRGBColorSpace;
+    tex.anisotropy  = 8;              // clamp on upload if GPU max < 8
+    return { canvas, ctx, tex };
+  }, []);
+
+  // Dispose the CanvasTexture when this component unmounts.
+  useEffect(() => {
+    return () => { boot.tex.dispose(); };
+  }, [boot]);
+
+  /* ── Texture mapping & material calibrations ── */
   useMemo(() => {
     if (screenTex) {
-      screenTex.flipY = false;
+      screenTex.flipY      = false;
       screenTex.colorSpace = THREE.SRGBColorSpace;
+      // anisotropy not needed — screenTex is no longer on any material;
+      // keeping colorSpace/flipY so the texture is valid if reassigned.
     }
     if (keyboardTex) {
-      keyboardTex.flipY = false;
+      keyboardTex.flipY      = false;
       keyboardTex.colorSpace = THREE.SRGBColorSpace;
     }
 
-    // The screen face must render the page texture EXACTLY (it crossfades
-    // into the real DOM at the hero → projects boundary):
-    //  - emissive-only (base map nulled, color black) so scene lights
-    //    can't brighten or tint it,
-    //  - toneMapped false so ACES tone mapping doesn't shift the obsidian
-    //    background away from the DOM's #070B14,
-    //  - anisotropy keeps the texture crisp at grazing zoom angles.
+    // The screen face must render EXACTLY like the real #projects DOM header
+    // (it dissolves into that DOM at the hero→projects boundary):
+    //  - emissive-only (base map null, color black) — scene lights can't tint it
+    //  - toneMapped:false — ACES doesn't shift #070B14 away from the DOM colour
+    //  - boot.tex (CanvasTexture) replaces the static bg.jpg so the screen
+    //    "boots" as the user scrolls; the final frame IS bg.jpg for the dissolve
     if (materials.Image) {
-      materials.Image.map = null;
+      materials.Image.map              = null;
       materials.Image.color?.set?.("#000000");
-      materials.Image.emissiveMap = screenTex;
-      materials.Image.emissive = new THREE.Color("#ffffff");
+      materials.Image.emissiveMap      = boot.tex;
+      materials.Image.emissive         = new THREE.Color("#ffffff");
       materials.Image.emissiveIntensity = 1.0;
-      materials.Image.toneMapped = false;
-      materials.Image.metalness = 0;
-      materials.Image.roughness = 1;
-      materials.Image.needsUpdate = true;
+      materials.Image.toneMapped       = false;
+      materials.Image.metalness        = 0;
+      materials.Image.roughness        = 1;
+      materials.Image.needsUpdate      = true;
     }
-    if (screenTex) screenTex.anisotropy = 8;
     if (materials.Screen) {
       materials.Screen.roughness = 0.2;
       materials.Screen.metalness = 0.1;
     }
-    // Map keyboard keys texture
     if (materials.Keys) {
-      materials.Keys.map = keyboardTex;
+      materials.Keys.map       = keyboardTex;
       materials.Keys.roughness = 0.5;
       materials.Keys.metalness = 0.1;
       materials.Keys.needsUpdate = true;
     }
-    // High-end matte silver look for the chassis body
     if (materials.Laptop) {
       materials.Laptop.roughness = 0.4;
       materials.Laptop.metalness = 0.1;
@@ -248,13 +403,12 @@ function LaptopScene({
       materials.Keyboard.roughness = 0.5;
       materials.Keyboard.metalness = 0.1;
     }
-  }, [screenTex, keyboardTex, materials]);
+  }, [screenTex, keyboardTex, materials, boot.tex]);
 
   useGSAP(() => {
     if (!globalContainerRef.current || !lidHingeGroupRef.current) return;
 
-    // Phase 0: Initialize hardware positions before scrolling starts
-    // Force the laptop lid to its physically closed rotation state
+    // Phase 0: Force lid to physically-closed rotation before any scroll
     lidHingeGroupRef.current.rotation.x = 1.7285;
 
     const tl = gsap.timeline({
@@ -262,117 +416,80 @@ function LaptopScene({
         trigger: "#hero",
         start: "top top",
         end: "bottom bottom",
-        scrub: true,
-        /* re-resolve the functional camera targets (cover-fit) on resize */
+        /* scrub: 0.6 — the camera eases toward the target scroll position
+           instead of snapping. Prevents the 1-frame jump / canvas pop on
+           fast programmatic nav jumps (lenis.scrollTo). The crossfade
+           timeline keeps scrub:true (tight) so both stay in sync — if the
+           plunge lags by 0.6 s but the crossfade leads by 0 s, they would
+           diverge; keeping different scrub values on independent triggers is
+           fine here because they cover different scroll zones. */
+        scrub: 0.6,
         invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          // Raw scroll progress drives the boot screen — not the scrub-lagged
+          // camera position. The boot phases are wide (40% bands) so the
+          // visual mismatch between raw progress and lagged camera is negligible.
+          bootProgressRef.current = self.progress;
+        },
       },
     });
 
-    // Phase 1 (0% to 40% scroll): Calibration & Center Dolly
-    // Smoothly open the laptop lid (1.7285 rad -> 0 rad)
+    // Phase 1 (0 % → 40 %): Open lid + centre + un-tilt
     tl.to(
       lidHingeGroupRef.current.rotation,
-      {
-        x: 0,
-        duration: 0.4,
-        ease: "power2.inOut",
-      },
+      { x: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
-
-    // Translate global container X from 1.7 to 0
     tl.to(
       globalContainerRef.current.position,
-      {
-        x: 0,
-        duration: 0.4,
-        ease: "power2.inOut",
-      },
+      { x: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
-
-    // Un-tilt global container to [0.1577, 0, 0]
-    // (0.1577 rad tilts the base forward perfectly so the 99-degree open screen becomes parallel to the viewport)
     tl.to(
       globalContainerRef.current.rotation,
-      {
-        x: 0.1577,
-        y: 0,
-        z: 0,
-        duration: 0.4,
-        ease: "power2.inOut",
-      },
+      { x: 0.1577, y: 0, z: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
 
-    // Phase 2 (75% to 100% scroll): Camera Dolly — "cover-fit" plunge.
-    // ┌─────────────────────────────────────────────────────────────┐
-    // │ The plunge ends with the display face EXACTLY filling the   │
-    // │ viewport (CSS background-size: cover semantics), because    │
-    // │ the boundary crossfade dissolves this face into the real    │
-    // │ Projects header DOM — scale must match at the handoff.      │
-    // │                                                             │
-    // │ FACE_* constants are the display face's world-space rect at │
-    // │ the END state of the open/untilt timeline (lid x=0,         │
-    // │ container rot [0.1577,0,0], pos x=0), measured from the GLB.│
-    // └─────────────────────────────────────────────────────────────┘
-    const FACE_CY = 0.6879;     // face center Y (world)
-    const FACE_FRONT_Z = -0.8689; // face front plane Z (world)
-    const FACE_HALF_W = 1.4766;
-    const FACE_HALF_H = 0.9485;
+    // Phase 2 (75 % → 100 %): Camera "cover-fit" plunge toward screen face.
+    // ┌──────────────────────────────────────────────────────────────────┐
+    // │ The final camera position frames the display face exactly        │
+    // │ full-bleed (CSS background-size:cover semantics) so the boundary │
+    // │ crossfade into the real #projects DOM is pixel-for-pixel exact.  │
+    // └──────────────────────────────────────────────────────────────────┘
+    const FACE_CY      = 0.6879;
+    const FACE_FRONT_Z = -0.8689;
+    const FACE_HALF_W  = 1.4766;
+    const FACE_HALF_H  = 0.9485;
     const coverZ = () => {
-      const t = Math.tan(THREE.MathUtils.degToRad(45 / 2)); // fov 45 vertical
+      const t      = Math.tan(THREE.MathUtils.degToRad(45 / 2)); // fov 45 vertical
       const aspect = size.width / Math.max(1, size.height);
-      // closest distance at which the face still covers BOTH axes;
-      // 0.95 pull-in pushes the display's ROUNDED CORNERS fully out of
-      // frame (a flush 1.0 fit leaves bezel slivers at the corners) —
-      // the ~5% scale overshoot at the crossfade is imperceptible
+      // 0.95 pull-in pushes the display's rounded corners out of frame
       const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * 0.95;
       return FACE_FRONT_Z + d;
     };
     tl.to(
       camera.position,
-      {
-        z: coverZ,        // functional + invalidateOnRefresh → responsive
-        y: FACE_CY,       // dead center of the display face
-        duration: 0.25,   // 0.75 -> 1.00
-        ease: "power2.inOut",
-      },
+      { z: coverZ, y: FACE_CY, duration: 0.25, ease: "power2.inOut" },
       0.75
     );
-
-    // Force perfect planar alignment so the lens is completely flush/parallel
     tl.to(
       camera.rotation,
-      {
-        x: 0,
-        y: 0,
-        z: 0,
-        duration: 0.25,
-        ease: "power2.inOut",
-      },
+      { x: 0, y: 0, z: 0, duration: 0.25, ease: "power2.inOut" },
       0.75
     );
 
-    // Phase 3 — Boundary Crossfade (replaces the old 98% hard hot-swap).
+    // ── Phase 3: Boundary Crossfade ────────────────────────────────────
+    // hero 3D layer is position:fixed in CSS (no sticky↔fixed swap needed).
+    // Only zIndex and visibility change at the boundary — no reflow, no
+    // position-recalculation, no frame-late paint.
     //
-    // At hero scrub end the display face is full-bleed (cover-fit above)
-    // showing the captured Projects header. Across the next viewport of
-    // scroll — until the REAL #projects header pins at the viewport top —
-    // the canvas layer is held fixed and dissolved out, so the texture
-    // page melts into the identical DOM page with no cut.
-    //
-    //   window: [#hero bottom == viewport bottom] → [#projects top == top]
-    //   onEnter:    sticky → fixed (same visual position), above sheets
-    //   scrub:      projects revealed at t0; layer opacity 1 → 0 late-
-    //               weighted (power2.in) so the rising page only shows
-    //               through near the end, where it's almost settled
-    //   onLeave:    display:none — frees compositing, restores clicks
-    //   reverse:    every step mirrors back (clearProps restores the
-    //               stylesheet's sticky/z-index and the mobile
-    //               display:none media query — never hard-code those)
-    const layerEl = canvasWrapperDOMRef.current?.closest<HTMLElement>(".hero-3d-layer");
-    const projectsEl = portfolioSectionRef?.current;
+    // scrub:true (tight) — the opacity fade must be exact relative to the
+    // scroll position so the crossfade matches the projects DOM reveal.
+    // Keeping it tight here while the main hero tl uses 0.6 is intentional:
+    // these triggers cover different scroll zones and don't interact.
+    const layerEl     = canvasWrapperDOMRef.current?.closest<HTMLElement>(".hero-3d-layer");
+    const projectsEl  = portfolioSectionRef?.current;
     if (layerEl && projectsEl && canvasWrapperDOMRef.current) {
       const fadeTl = gsap.timeline({
         scrollTrigger: {
@@ -381,18 +498,33 @@ function LaptopScene({
           endTrigger: projectsEl,
           end: "top top",
           scrub: true,
-          onEnter: () => gsap.set(layerEl, { position: "fixed", top: 0, left: 0, zIndex: 30 }),
-          onLeaveBack: () => gsap.set(layerEl, { clearProps: "position,top,left,zIndex" }),
-          onLeave: () => gsap.set(layerEl, { display: "none" }),
-          onEnterBack: () => gsap.set(layerEl, { clearProps: "display" }),
+          // No position toggle — layer is always position:fixed in CSS.
+          // Only zIndex changes to lift it above the stack sheets (z:1-6)
+          // for the crossfade window, then drop back below hero text (z:0).
+          onEnter: () => {
+            gsap.set(layerEl, { zIndex: 30 });
+          },
+          onLeaveBack: () => {
+            // Safety-reset: with scrub:true the scrub is already at progress=0
+            // (opacity=1) when this fires, but an explicit set prevents any
+            // sub-frame artefact from the zIndex re-ordering.
+            gsap.set(layerEl, { zIndex: 0, opacity: 1 });
+          },
+          // visibility:hidden instead of display:none — avoids layout thrash
+          // on show/hide while still removing the layer from compositing cost.
+          onLeave: () => {
+            gsap.set(layerEl, { visibility: "hidden" });
+          },
+          onEnterBack: () => {
+            gsap.set(layerEl, { visibility: "visible", zIndex: 30 });
+          },
         },
       });
 
       fadeTl
-        /* 0.001, not 0: zero-time sets in a scrubbed timeline don't
-           revert when the scrub reverses past the start — the wrapper
-           would keep pointerEvents:none back in the hero and kill the
-           laptop's drag interaction. */
+        /* 0.001, not 0: zero-time sets in a scrubbed timeline don't revert
+           when the scrub reverses past the start — the wrapper would keep
+           pointerEvents:none back in the hero and kill the laptop's drag. */
         .set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.001)
         .set(canvasWrapperDOMRef.current, { pointerEvents: "none" }, 0.001)
         .to(layerEl, { opacity: 0, ease: "power2.in", duration: 1 }, 0);
@@ -400,19 +532,35 @@ function LaptopScene({
 
   }, [camera, size, canvasWrapperDOMRef, portfolioSectionRef]);
 
+  /* ── Boot-screen rendering ──────────────────────────────────────────
+     Redraws the offscreen canvas only when progress changed OR when the
+     dots are actively spinning (every rAF frame in that phase) — avoids
+     a GPU texture upload every frame during the static black/bitmap phases. ── */
+  useFrame((state) => {
+    const progress  = bootProgressRef.current;
+    const inDots    = !prefersReduced && progress >= BOOT_P1 && progress < BOOT_P2;
+
+    if (progress === lastBootProgressRef.current && !inDots) return;
+    lastBootProgressRef.current = progress;
+
+    drawBootScreen(
+      boot.ctx,
+      progress,
+      state.clock.elapsedTime,
+      screenTex?.image as HTMLImageElement | ImageBitmap | null,
+      prefersReduced,
+    );
+    boot.tex.needsUpdate = true;
+  });
+
   return (
     <group
       ref={globalContainerRef}
       position={[1.7, 0, 0]}
       rotation={[0.18, -0.35, 0.05]}
     >
-      {/* Nested scale group defines global size and base positioning */}
       <group scale={[10, 10, 10]} position={[0, -0.65, 0]}>
-        {/* Render base chassis in local flat space */}
         <primitive object={nodes.Base_Chassis} />
-
-        {/* The Perfect Pivot Anchor Wrapper Tree */}
-        {/* ZERO-OFFSET HINGE TRACKING MATRICES: DO NOT MODIFY */}
         <group ref={lidHingeGroupRef} position={[0, 0.008614, -0.10311]}>
           <primitive object={nodes.Lid_Screen} position={[0, -0.008614, 0.10311]} />
         </group>
@@ -444,8 +592,8 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
     >
       <Canvas
         camera={{ position: [0, 0, 6.5], fov: 45 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{
           width: "100%",
           height: "100%",
