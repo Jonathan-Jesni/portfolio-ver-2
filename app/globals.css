@@ -346,6 +346,14 @@ img {
   background: rgba(240, 232, 210, 0.06);
 }
 
+.nav-links a.is-active {
+  color: var(--accent);
+}
+
+.mobile-menu a.is-active {
+  color: var(--accent);
+}
+
 /* Resume CTA â€” "Button-in-Button" pill architecture */
 .nav-resume {
   display: none;
@@ -1812,17 +1820,121 @@ img {
 /* ============================================================
    FOOTER
    ============================================================ */
-.footer {
-  padding: 48px 0 40px;
-  text-align: center;
+/* ── Footer — quiet baseline sign-off on a floor surface ── */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  /* a touch darker than --surface-0 so it reads as the page's floor */
+  background: #04070E;
   border-top: 1px solid var(--border-hairline);
+  padding: 26px 48px 22px;
 }
 
-.footer p {
+.footer-row {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  display: grid;
+  /* 1fr / auto / 1fr keeps the status line dead-centered regardless of the
+     side widths — the fix for the old space-between unevenness. */
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
   font-family: var(--font-jetbrains), monospace;
   font-size: 12px;
-  color: var(--ink-3);
   letter-spacing: 0.04em;
+}
+
+/* {J} logo = back-to-top control */
+.footer-logo {
+  justify-self: start;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-0);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.footer-logo .bracket {
+  color: var(--ink-3);
+  transition: color var(--t-fast);
+}
+
+.footer-logo:hover .bracket {
+  color: var(--accent);
+}
+
+.footer-status {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--accent);
+}
+
+.footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7CCF9A;
+  /* signal-green pulse — stilled automatically under reduced motion */
+  animation: footerPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes footerPulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+
+.footer-stack {
+  justify-self: end;
+  color: var(--ink-4);
+}
+
+.footer-sub {
+  max-width: var(--container-max);
+  /* aligned to the same edges as the main row's outer cells */
+  margin: 0 auto;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #4A4F60;
+}
+
+@media (max-width: 767px) {
+  .site-footer {
+    padding: 24px 24px 20px;
+  }
+
+  /* Collapse to a centered vertical stack */
+  .footer-row {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .footer-logo,
+  .footer-status,
+  .footer-stack {
+    justify-self: center;
+  }
+
+  .footer-sub {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 /* ============================================================
@@ -2433,6 +2545,17 @@ canvas.glass-image-canvas {
   padding-bottom: 128px;
 }
 
+/* Below 900px the WebGL laptop is display:none, so don't let this section's
+   reveal hinge on the laptop's scroll-driven crossfade (which flips the
+   initial inline opacity:0 → 1). Force it visible here — !important beats the
+   inline style; bulletproof, no scroll/GSAP timing dependency. */
+@media (max-width: 899px) {
+  .sticky-deck-section {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
 /* Section header — a full standalone page. Centered display heading
    over a clean obsidian field, ready for a 3D background layer to be
    slotted behind it later. */
@@ -2688,6 +2811,14 @@ canvas.glass-image-canvas {
   .cs-arrow { opacity: 0.85; }
 }
 
+/* Touch tap target ≥ 44px for the carousel arrows */
+@media (max-width: 767px) {
+  .cs-arrow {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* Position dots */
 .cs-dots {
   position: absolute;
@@ -2713,6 +2844,24 @@ canvas.glass-image-canvas {
 .cs-dot.is-active {
   background: hsl(var(--card-hue));
   transform: scale(1.25);
+}
+
+/* Touch: pad the dot's clickable box out to ~42px while keeping the
+   visual dot small (placed AFTER the base .cs-dot so it isn't overridden —
+   media queries add no specificity). */
+@media (max-width: 767px) {
+  .cs-dots {
+    gap: 12px;
+    bottom: 10px;
+  }
+
+  .cs-dot {
+    box-sizing: content-box;
+    width: 10px;
+    height: 10px;
+    padding: 16px;
+    background-clip: content-box;
+  }
 }
 
 /* ── Caption under the image ────────────────────────────────── */

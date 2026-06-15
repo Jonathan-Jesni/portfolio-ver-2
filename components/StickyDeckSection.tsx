@@ -9,6 +9,7 @@ import Image from "next/image";
 import { PROJECTS } from "../lib/data";
 import { ArrowUpRightIcon } from "./ui/icons";
 import { CometCard } from "@/components/ui/comet-card";
+import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -520,7 +521,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
             className="btn btn-outline"
             id="projects-cta-btn"
           >
-            View all repositories
+            <HoverScrambleText text="View all repositories" />
           </a>
         </div>
       </div>
