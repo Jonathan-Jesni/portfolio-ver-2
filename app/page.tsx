@@ -140,7 +140,12 @@ export default function Home() {
         <div className="nav-inner">
           <a href="#hero" className="nav-logo" id="nav-logo" onClick={(e) => {
             e.preventDefault();
-            gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: 'power4.inOut' });
+            // Route through Lenis so Lenis emits scroll events → ScrollTrigger
+            // stays in sync and crossfade callbacks (onLeaveBack etc.) fire
+            // correctly on the way back to the top.
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(0, { duration: 1.3, easing: power4InOut, force: true, lock: true });
+            else gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: 'power4.inOut' });
           }}>
             <span className="bracket">&#123;</span>J<span className="bracket">&#125;</span>
           </a>

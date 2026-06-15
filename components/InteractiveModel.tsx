@@ -452,18 +452,27 @@ function LaptopScene({
     });
 
     // Phase 1 (0 % → 40 %): Open lid + centre + un-tilt
-    tl.to(
+    //
+    // fromTo() instead of to() — locks the "from" values explicitly so that
+    // invalidateOnRefresh cannot re-read them from the Three.js object's
+    // current (already-animated) state on a ScrollTrigger.refresh() call.
+    // With to(), a refresh mid-scroll would re-record a partially-animated
+    // position as the new start, causing the laptop to snap to the centre.
+    tl.fromTo(
       lidHingeGroupRef.current.rotation,
+      { x: 1.7285 },
       { x: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
-    tl.to(
+    tl.fromTo(
       globalContainerRef.current.position,
+      { x: 1.7 },
       { x: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
-    tl.to(
+    tl.fromTo(
       globalContainerRef.current.rotation,
+      { x: 0.18, y: -0.35, z: 0.05 },
       { x: 0.1577, y: 0, z: 0, duration: 0.4, ease: "power2.inOut" },
       0
     );
@@ -487,13 +496,19 @@ function LaptopScene({
       const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * COVER_OVERSHOOT;
       return FACE_FRONT_Z + d;
     };
-    tl.to(
+    // fromTo() — same reason as Phase 1: locks the camera's starting
+    // state (z:6.5, y:0 from the Canvas camera prop) so that
+    // invalidateOnRefresh cannot re-read a mid-plunge camera position as
+    // the new "from", which would cause the sudden zoom snap.
+    tl.fromTo(
       camera.position,
+      { z: 6.5, y: 0 },
       { z: coverZ, y: FACE_CY, duration: 0.25, ease: "power2.inOut" },
       0.75
     );
-    tl.to(
+    tl.fromTo(
       camera.rotation,
+      { x: 0, y: 0, z: 0 },
       { x: 0, y: 0, z: 0, duration: 0.25, ease: "power2.inOut" },
       0.75
     );
@@ -520,22 +535,28 @@ function LaptopScene({
           // No position toggle — layer is always position:fixed in CSS.
           // Only zIndex changes to lift it above the stack sheets (z:1-6)
           // for the crossfade window, then drop back below hero text (z:0).
+          // NOTE: We deliberately do NOT use visibility:hidden on onLeave.
+          // opacity:0 from the scrub already hides it visually, and
+          // visibility:hidden applied via a callback is unreliable during
+          // fast programmatic nav jumps (the callback may not fire), leaving
+          // the layer permanently invisible when scrolling back to the hero.
           onEnter: () => {
             gsap.set(layerEl, { zIndex: 30 });
           },
           onLeaveBack: () => {
-            // Safety-reset: with scrub:true the scrub is already at progress=0
-            // (opacity=1) when this fires, but an explicit set prevents any
-            // sub-frame artefact from the zIndex re-ordering.
+            // Drop back below hero text once we leave the crossfade zone
+            // going upward. Scrub already drives opacity back to 1.
             gsap.set(layerEl, { zIndex: 0, opacity: 1 });
           },
-          // visibility:hidden instead of display:none — avoids layout thrash
-          // on show/hide while still removing the layer from compositing cost.
           onLeave: () => {
-            gsap.set(layerEl, { visibility: "hidden" });
+            // Drop z-index only — do NOT hide visibility. The sections'
+            // opaque backgrounds naturally cover the fixed layer, and
+            // keeping it "visible" ensures it reappears correctly on
+            // any backward nav without depending on callback ordering.
+            gsap.set(layerEl, { zIndex: 0 });
           },
           onEnterBack: () => {
-            gsap.set(layerEl, { visibility: "visible", zIndex: 30 });
+            gsap.set(layerEl, { zIndex: 30 });
           },
         },
       });
