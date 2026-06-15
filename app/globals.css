@@ -2896,24 +2896,25 @@ canvas.glass-image-canvas {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(231, 222, 199, 0.3);
+  background-color: rgba(231, 222, 199, 0.3);
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .cs-dot.is-active {
-  background: hsl(var(--card-hue));
+  background-color: hsl(var(--card-hue));
   transform: scale(1.25);
 }
+
 
 /* Touch: pad the dot's clickable box out to ~42px while keeping the
    visual dot small (placed AFTER the base .cs-dot so it isn't overridden —
    media queries add no specificity). */
 @media (max-width: 767px) {
   .cs-dots {
-    gap: 12px;
+    gap: 4px;
     bottom: 10px;
   }
 
@@ -2923,6 +2924,10 @@ canvas.glass-image-canvas {
     height: 10px;
     padding: 16px;
     background-clip: content-box;
+  }
+
+  .cs-dot.is-active {
+    transform: scale(1);
   }
 }
 
