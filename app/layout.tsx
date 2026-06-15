@@ -63,14 +63,14 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: "Jonathan Jesni",
-    // og:image is injected automatically by app/opengraph-image.tsx
+    // og:image is injected automatically by app/opengraph-image.jpeg
   },
   twitter: {
     card: "summary_large_image",
     title: "Jonathan Jesni — AI & Systems Developer",
     description:
       "AI-powered tools, cybersecurity systems, and real-world software engineering projects by Jonathan Jesni.",
-    // twitter:image is injected automatically by app/twitter-image.tsx
+    // twitter:image is injected automatically by app/twitter-image.jpeg
   },
 };
 
