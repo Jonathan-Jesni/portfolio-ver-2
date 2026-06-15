@@ -25,11 +25,8 @@ function pillWidth(text: string) {
   return Math.max(text.length * CHAR_W + H_PAD, 72);
 }
 
-/* ================================================================
-   STATIC GRID LAYOUT
-   Lay pills in left-to-right, top-to-bottom rows.
-   Returns { x, y } of the top-left corner for each pill.
-   ================================================================ */
+// Lays pills in left-to-right, top-to-bottom rows; returns each
+// pill's top-left corner.
 function buildStaticGrid(containerW: number): { x: number; y: number }[] {
   const GUTTER     = 8;   // px gap between pills
   const PAD_X      = 20;  // container horizontal padding
@@ -56,19 +53,12 @@ function buildStaticGrid(containerW: number): { x: number; y: number }[] {
   return positions;
 }
 
-/* ================================================================
-   COMPONENT
-   ================================================================ */
 export default function GravityPit() {
   const containerRef  = useRef<HTMLDivElement>(null);
   const pillRefs      = useRef<(HTMLDivElement | null)[]>([]);
 
-  /*
-    physicsActive — false on mount (static, silent grid).
-    Flips to true on first user pointer-down inside the pit.
-    Once active it never reverts — the physics engine stays alive
-    for the remainder of the session.
-  */
+  // Flips true on first pointer-down inside the pit and never reverts;
+  // the physics engine then stays alive for the session.
   const [physicsActive, setPhysicsActive] = useState(false);
   const engineRef     = useRef<Matter.Engine | null>(null);
   const runnerRef     = useRef<Matter.Runner | null>(null);
@@ -140,12 +130,8 @@ export default function GravityPit() {
       ];
       Composite.add(world, walls);
 
-      /*
-        Pill bodies — positioned at the CURRENT static grid positions
-        (not dropped from above). This means the pills are already
-        in their exact visual positions when physics starts.
-        The user's first drag "shatters" the silent grid.
-      */
+      // Bodies spawn at the current grid positions (not dropped from
+      // above), so the first drag "shatters" the silent grid in place.
       const positions = staticPos.current;
       const bodies = PILLS.map((label, i) => {
         const pw  = pillWidth(label);

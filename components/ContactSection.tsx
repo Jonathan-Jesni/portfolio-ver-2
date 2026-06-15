@@ -11,31 +11,15 @@ import { burnControls } from "../lib/burnControls";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Props
-// ─────────────────────────────────────────────────────────────────────────────
 interface ContactSectionProps {
   /** Pass preloaderDone so RollingHeadline waits for entry animation */
   animate?: boolean;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ContactSection
-//
 // Three reveal modes, selected by gsap.matchMedia:
-//   · Desktop full-motion — STATIC REVEAL. The WebGL burn (BurnTransition)
-//     is the entrance: Contact sits fully formed (opacity 1, y 0) beneath
-//     the burning About sheet and the ember front simply uncovers it.
-//     No mask, no Y-translation, no fades — only the RollingHeadline keeps
-//     its cue, armed by the burn's midpoint signal.
-//   · Mobile full-motion — Atmospheric lift. A surface-matched mask scrubs
-//     upward (yPercent 0 → -100) revealing the content, then the button
-//     grid floats in. Compositor-thread only (transform/opacity).
+//   · Desktop full-motion — burn-driven static reveal (see branch below).
+//   · Mobile full-motion — surface-matched mask lift, then button grid floats in.
 //   · Reduced motion — everything appears instantly on scroll entry.
-//
-// Memory: The entire animation is scoped to a gsap.context that is
-// automatically reverted on component unmount (via useGSAP cleanup).
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ContactSection({ animate = true }: ContactSectionProps) {
   // Section container — the ScrollTrigger trigger root
   const sectionRef = useRef<HTMLElement>(null);
@@ -57,10 +41,9 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
 
       if (!section || !mask || !buttons) return;
 
-      // ── Reduced-motion branch ─────────────────────────────────────────────
-      // Honour prefers-reduced-motion: instantly reveal everything on scroll
-      // entry, no transforms, no scrub.
       const mm = gsap.matchMedia();
+
+      // Reduced motion: reveal everything instantly on scroll entry.
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
         gsap.set(mask, { display: "none" });
@@ -82,13 +65,10 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
         });
       });
 
-      // ── Desktop full-motion branch — STATIC REVEAL (burn-driven) ──────────
-      // The fire IS the entrance. Contact must sit fully formed in the dark
-      // beneath the burning About sheet, so the ember front uncovers real,
-      // finished UI: no mask, no fades, no Y-translation. clearProps strips
-      // the JSX pre-paint state (opacity 0 / translateY) that the mobile
-      // branch animates from. Only the RollingHeadline keeps an entrance,
-      // cued by the burn's midpoint signal (direction-aware on rewind).
+      // Desktop: the burn IS the entrance. Contact sits fully formed beneath
+      // the burning About sheet, so clearProps strips the JSX pre-paint state
+      // (opacity 0 / translateY) and the ember front uncovers finished UI.
+      // Only RollingHeadline keeps a cue, fired by the burn's midpoint signal.
       mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
         gsap.set(mask, { display: "none" });
         gsap.set(buttons, { clearProps: "opacity,transform,willChange" });

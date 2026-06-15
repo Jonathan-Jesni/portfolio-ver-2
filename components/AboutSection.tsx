@@ -9,10 +9,8 @@ import ScrollScrambleText from "./ScrollScrambleText";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-/* -------------------------------------------------------
-   Bio paragraphs — each entry is an array of segments so we can bold
-   specific words while still splitting at the word level.
-------------------------------------------------------- */
+// Bio paragraphs — JSX fragments so specific words can be bolded
+// while BioWords still splits the rest at the word level.
 const BIO_PARAGRAPHS = [
   <>
     I&apos;m a 3rd-year Computer Science student at IIIT Pune who builds real tools — not just
@@ -31,9 +29,6 @@ const BIO_PARAGRAPHS = [
   </>,
 ];
 
-/* -------------------------------------------------------
-   Component
-------------------------------------------------------- */
 export default function AboutSection() {
   const runwayRef = useRef<HTMLElement>(null);
   const textColRef = useRef<HTMLDivElement>(null);
@@ -46,16 +41,13 @@ export default function AboutSection() {
     const mm = gsap.matchMedia();
 
     mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-      /* ---- Gather every .reveal-word span inside the text column ---- */
       const words = textColRef.current
         ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
         : [];
 
-      /* ---- Main timeline: word-by-word color scrub ----
-         end is an explicit +=150% (not "bottom bottom") so the reveal
-         pacing is identical on every runway height: on desktop the
-         runway extends to 350vh for the burn boundary's dead-still
-         tail, and the words must still finish in the first 150vh. */
+      // Word-by-word color scrub. end is an explicit +=150% (not
+      // "bottom bottom") so words finish in the first 150vh regardless
+      // of the runway's 350vh height (which exists for the burn tail).
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: runway,
@@ -162,11 +154,8 @@ export default function AboutSection() {
   );
 }
 
-/* -------------------------------------------------------
-   BioWords — walks a React node tree and wraps every
-   text-word inside a .reveal-word <span> while leaving
-   <strong> nodes and entities intact.
-------------------------------------------------------- */
+// BioWords — wraps every text-word in a .reveal-word <span>,
+// leaving <strong> nodes and entities intact.
 type ReactChild = React.ReactNode;
 
 function BioWords({ node }: { node: ReactChild }): React.ReactElement {

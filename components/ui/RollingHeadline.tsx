@@ -20,36 +20,26 @@ export function RollingHeadline({ text, className = "", animate = true, manualTr
   useGSAP(() => {
     if (!animate || !containerRef.current) return;
 
-    if (manualTrigger) {
-      // Play immediately without a ScrollTrigger (triggered programmatically)
-      gsap.fromTo(".char-track", 
-        { yPercent: 0 },
-        {
-          yPercent: -500, // Translate up by 500% to roll through 5 ghost characters
-          ease: "power4.out", // High-acceleration curve gives a snappy start and smooth settle
-          duration: 1.0, // Slower, longer duration for more rolls
-          stagger: 0.02, // Slightly more relaxed stagger
-        }
-      );
-    } else {
-      const runway = containerRef.current.closest('.sp-runway');
+    // yPercent -500 rolls each char up through its 5 ghost layers.
+    const toVars: gsap.TweenVars = {
+      yPercent: -500,
+      ease: "power4.out",
+      duration: 1.0,
+      stagger: 0.02,
+    };
 
-      // Use GSAP native scoped selector string with fromTo to guarantee the start coordinates are mapped
-      gsap.fromTo(".char-track", 
-        { yPercent: 0 },
-        {
-          yPercent: -500, // Translate up by 500% to roll through 5 ghost characters
-          ease: "power4.out", // High-acceleration curve gives a snappy start and smooth settle
-          duration: 1.0, // Slower, longer duration for more rolls
-          stagger: 0.02, // Slightly more relaxed stagger
-          scrollTrigger: {
-            trigger: runway || containerRef.current,
-            start: runway ? "top -40%" : "top 95%", // Delay if inside a SpatialSection runway
-            toggleActions: "restart none none reset", // Roll on enter, snap back on leave reverse
-          },
-        }
-      );
+    // manualTrigger plays now; otherwise bind to scroll. A .sp-runway
+    // ancestor delays the start so it fires deeper into the runway.
+    if (!manualTrigger) {
+      const runway = containerRef.current.closest(".sp-runway");
+      toVars.scrollTrigger = {
+        trigger: runway || containerRef.current,
+        start: runway ? "top -40%" : "top 95%",
+        toggleActions: "restart none none reset", // roll in, snap back on leave-reverse
+      };
     }
+
+    gsap.fromTo(".char-track", { yPercent: 0 }, toVars);
   }, { scope: containerRef, dependencies: [animate, manualTrigger] });
 
   return (
