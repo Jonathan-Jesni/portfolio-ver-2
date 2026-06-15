@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/purity */
 /* eslint-disable react-hooks/immutability */
 "use client";
 
@@ -160,8 +159,6 @@ function drawBootScreen(
     }
   }
 }
-
-
 
 /* ─────────────────────────────────────────────────────────────────────
    LAPTOP SCENE — Native Hinge Origin and Phased GSAP Timeline

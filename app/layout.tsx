@@ -1,7 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif, Hanken_Grotesk } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
 import "./globals.css";
+
+// Absolute-URL base for canonical links, OG/Twitter images, and the sitemap.
+// Env var wins on Vercel previews; falls back to the production domain.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://jonathanjesni.com";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -35,6 +39,8 @@ const hankenGrotesk = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
   title: "Jonathan Jesni — AI & Systems Developer",
   description:
     "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
@@ -55,13 +61,22 @@ export const metadata: Metadata = {
     description:
       "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
     type: "website",
+    url: "/",
+    siteName: "Jonathan Jesni",
+    // og:image is injected automatically by app/opengraph-image.tsx
   },
   twitter: {
     card: "summary_large_image",
     title: "Jonathan Jesni — AI & Systems Developer",
     description:
       "AI-powered tools, cybersecurity systems, and real-world software engineering projects by Jonathan Jesni.",
+    // twitter:image is injected automatically by app/twitter-image.tsx
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#070B14",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

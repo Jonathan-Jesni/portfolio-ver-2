@@ -67,6 +67,29 @@ img {
   display: block;
 }
 
+/* ---------- Keyboard focus ring ----------
+   Champagne accent ring, shown only to keyboard / assistive-tech users
+   (:focus-visible) so mouse clicks never paint an outline. Targets
+   interactive elements so decorative focusable nodes stay clean. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+/* Belt-and-braces: kill the legacy outline for pointer users whose click
+   still triggers :focus on browsers without :focus-visible support. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* ---------- Film-Grain Noise Overlay ----------
    Fixed, pointer-events-none â€” adds physical paper texture
    to kill the "digital flatness" of a flat OLED black. */
