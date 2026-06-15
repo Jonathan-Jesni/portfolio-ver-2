@@ -25,17 +25,19 @@ export default function Footer() {
   useEffect(() => {
     const compute = () => {
       try {
+        const now = new Date();
         const time = new Intl.DateTimeFormat([], {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
-        }).format(new Date());
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (tz) {
-          const city = (tz.split("/").pop() ?? "").replace(/_/g, " ");
-          return city ? `${city} — ${time}` : `local — ${time}`;
-        }
-        return `local — ${time}`;
+        }).format(now);
+        // getTimezoneOffset() is sign-flipped (UTC+5:30 → -330); flip it back.
+        const offsetMin = -now.getTimezoneOffset();
+        const sign = offsetMin >= 0 ? "+" : "-";
+        const abs = Math.abs(offsetMin);
+        const h = Math.floor(abs / 60);
+        const m = abs % 60;
+        return `UTC${sign}${h}:${String(m).padStart(2, "0")} — ${time}`;
       } catch {
         return "Bengaluru — IST";
       }

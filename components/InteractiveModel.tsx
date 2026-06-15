@@ -26,13 +26,25 @@ useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
 /* ── Boot-screen canvas dimensions.
    Aspect ratio matches the screen face world-space rect:
-   FACE_HALF_W (1.4766) / FACE_HALF_H (0.9485) ≈ 1.557  ── */
-const BOOT_W = 1024;
-const BOOT_H = 658;
+   FACE_HALF_W (1.4766) / FACE_HALF_H (0.9485) ≈ 1.557.
+   2048-wide so the header stays crisp when the camera plunges to cover-fit
+   (a ~1440px viewport @ dpr 2 ≈ 2880 device px across the face); 1024 was the
+   source of the zoom-in blur. The heavy per-frame upload only happens during
+   the brief dots phase. ── */
+const BOOT_W = 2048;
+const BOOT_H = 1316;
 
 /* ── Phase thresholds (hero scroll progress, 0→1) ── */
 const BOOT_P1 = 0.40; // black  →  spinning-dots  start
 const BOOT_P2 = 0.75; // dots   →  header bitmap   start
+
+/* Camera cover-fit pull-in. Shared by coverZ() (how close the camera plunges)
+   AND the boot bitmap draw (how much the header is pre-scaled) so the two stay
+   locked: the camera can overshoot aggressively to push the laptop bezel fully
+   off-screen, while the header drawn at the SAME factor still lands on the
+   #projects DOM header pixel-for-pixel at the dissolve. Lower = more bezel
+   clearance; the crossfade stays seamless at any value. TUNE IN A REAL BROWSER. */
+const COVER_OVERSHOOT = 0.90;
 
 /* ─────────────────────────────────────────────────────────────────────
    BOOT-SCREEN DRAWING — pure function, called from useFrame.
@@ -125,7 +137,12 @@ function drawBootScreen(
       : (bgImage as ImageBitmap).height;
 
     if (imgW > 0 && imgH > 0) {
-      const scale = Math.max(W / imgW, H / imgH);
+      // Cover-fit, pre-scaled by COVER_OVERSHOOT: the camera plunges to show
+      // only the center COVER_OVERSHOOT fraction of the face, so drawing the
+      // header at that same fraction (with #070B14 already filling the margin)
+      // makes the visible header fill the viewport at the DOM header's exact
+      // scale — the dissolve matches and the off-screen margin hides the bezel.
+      const scale = Math.max(W / imgW, H / imgH) * COVER_OVERSHOOT;
       const dx    = (W - imgW * scale) / 2;
       const dy    = (H - imgH * scale) / 2;
 
@@ -464,8 +481,10 @@ function LaptopScene({
     const coverZ = () => {
       const t      = Math.tan(THREE.MathUtils.degToRad(45 / 2)); // fov 45 vertical
       const aspect = size.width / Math.max(1, size.height);
-      // 0.95 pull-in pushes the display's rounded corners out of frame
-      const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * 0.95;
+      // COVER_OVERSHOOT pull-in pushes the bezel/casing fully off-screen; the
+      // boot bitmap is pre-scaled by the SAME factor so the dissolve still
+      // matches the DOM header exactly.
+      const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * COVER_OVERSHOOT;
       return FACE_FRONT_Z + d;
     };
     tl.to(
