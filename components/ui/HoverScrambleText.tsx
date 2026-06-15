@@ -72,7 +72,7 @@ export function HoverScrambleText({ text, className = "", duration = 300 }: Hove
   }, [isHovering, text, duration]);
 
   return (
-    <span 
+    <span
       ref={spanRef}
       className={`relative inline-block ${className}`}
       style={{ position: "relative", display: "inline-block" }}

@@ -234,7 +234,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
       <div className="hero-sticky" style={{ pointerEvents: "none" }}>
         <div className="container">
-          {/* Restore inner grid so the text is constrained to the 55fr left column */}
+          {/* Constrains the text to the 55fr left column */}
           <div className="hero-inner-grid">
             <div className="hero-text-col" style={{ pointerEvents: "auto" }}>
               {/* Stacked, masked name: each line lives in an

@@ -2,9 +2,16 @@
 /* eslint-disable react-hooks/immutability */
 "use client";
 
-import { useRef, useMemo, useEffect, Suspense } from "react";
-import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
-import { shaderMaterial, useGLTF, useTexture } from "@react-three/drei";
+import { useRef, useMemo, useEffect, useState, Suspense, Component } from "react";
+import type { ReactNode } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  useGLTF,
+  useTexture,
+  Environment,
+  Lightformer,
+  PerformanceMonitor,
+} from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -154,162 +161,7 @@ function drawBootScreen(
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   DOT GRID — Background Physics Grid
-   ───────────────────────────────────────────────────────────────── */
-const dotGridVertexShader = /* glsl */ `
-  uniform float uTime;
-  attribute float aSeed;
-  varying float vOpacity;
 
-  void main() {
-    float twinkle = 0.5 + 0.5 * sin(uTime * (1.2 + aSeed * 2.8) + aSeed * 6.2831);
-    float flash = step(0.97, fract(aSeed * 17.31 + uTime * (0.08 + aSeed * 0.12)));
-    vOpacity = mix(0.04, 0.18, twinkle) + flash * 0.22;
-
-    gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = 2.0;
-  }
-`;
-
-const dotGridFragmentShader = /* glsl */ `
-  varying float vOpacity;
-  void main() {
-    vec2  uv   = gl_PointCoord - 0.5;
-    float disc = 1.0 - smoothstep(0.35, 0.5, length(uv));
-    gl_FragColor = vec4(1.0, 1.0, 1.0, vOpacity * disc);
-  }
-`;
-
-const DotGridMaterial = shaderMaterial(
-  { uTime: 0 },
-  dotGridVertexShader,
-  dotGridFragmentShader
-);
-extend({ DotGridMaterial });
-
-declare module "@react-three/fiber" {
-  interface ThreeElements {
-    dotGridMaterial: React.PropsWithChildren<{
-      ref?: React.Ref<THREE.ShaderMaterial & { uTime: number }>;
-      uTime?: number;
-      transparent?: boolean;
-      depthWrite?: boolean;
-    }>;
-  }
-}
-
-function DotGrid() {
-  const matRef = useRef<THREE.ShaderMaterial & { uTime: number }>(null);
-  const geoRef = useRef<THREE.BufferGeometry>(null);
-  const { size } = useThree();
-
-  const repelRadius = 1.4;
-  const repelForce = 0.04;
-  const returnSpeed = 0.08;
-  const friction = 0.82;
-
-  const { cols, rows, basePos, currentPos, velocities, seeds } = useMemo(() => {
-    const cols = 80;
-    const rows = 45;
-    const N = cols * rows;
-    const spacingX = 0.175;
-    const spacingY = 0.175;
-    const totalW = (cols - 1) * spacingX;
-    const totalH = (rows - 1) * spacingY;
-
-    const basePos = new Float32Array(N * 3);
-    const currentPos = new Float32Array(N * 3);
-    const velocities = new Float32Array(N * 3);
-    const seeds = new Float32Array(N);
-
-    let idx = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const x = c * spacingX - totalW / 2;
-        const y = r * spacingY - totalH / 2;
-
-        basePos[idx * 3 + 0] = x;
-        basePos[idx * 3 + 1] = y;
-        basePos[idx * 3 + 2] = 0;
-
-        currentPos[idx * 3 + 0] = x;
-        currentPos[idx * 3 + 1] = y;
-        currentPos[idx * 3 + 2] = 0;
-
-        seeds[idx] = Math.random();
-        idx++;
-      }
-    }
-    return { cols, rows, basePos, currentPos, velocities, seeds };
-  }, []);
-
-  useFrame((state, delta) => {
-    if (matRef.current) matRef.current.uTime += delta;
-    if (!geoRef.current) return;
-
-    const aspect = size.width / size.height;
-    const halfH = 2.693;
-    const halfW = halfH * aspect;
-    const mx = state.pointer.x * halfW;
-    const my = state.pointer.y * halfH;
-
-    const N = cols * rows;
-    for (let i = 0; i < N; i++) {
-      const i3 = i * 3;
-      const bx = basePos[i3 + 0];
-      const by = basePos[i3 + 1];
-      let cx = currentPos[i3 + 0];
-      let cy = currentPos[i3 + 1];
-      let vx = velocities[i3 + 0];
-      let vy = velocities[i3 + 1];
-
-      const dx = cx - mx;
-      const dy = cy - my;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < repelRadius && dist > 0.001) {
-        const force = Math.pow(1.0 - dist / repelRadius, 2.0) * repelForce;
-        vx += (dx / dist) * force;
-        vy += (dy / dist) * force;
-      }
-
-      vx += (bx - cx) * returnSpeed;
-      vy += (by - cy) * returnSpeed;
-      vx *= friction;
-      vy *= friction;
-      cx += vx;
-      cy += vy;
-
-      currentPos[i3 + 0] = cx;
-      currentPos[i3 + 1] = cy;
-      velocities[i3 + 0] = vx;
-      velocities[i3 + 1] = vy;
-    }
-
-    const posAttr = geoRef.current.attributes.position as THREE.BufferAttribute;
-    posAttr.copyArray(currentPos);
-    posAttr.needsUpdate = true;
-  });
-
-  return (
-    <points>
-      <bufferGeometry ref={geoRef}>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[currentPos, 3]}
-          count={currentPos.length / 3}
-        />
-        <bufferAttribute
-          attach="attributes-aSeed"
-          args={[seeds, 1]}
-          count={seeds.length}
-        />
-      </bufferGeometry>
-      <dotGridMaterial ref={matRef} transparent depthWrite={false} />
-    </points>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────
    LAPTOP SCENE — Native Hinge Origin and Phased GSAP Timeline
@@ -331,6 +183,9 @@ function LaptopScene({
 
   const globalContainerRef  = useRef<THREE.Group>(null);
   const lidHingeGroupRef    = useRef<THREE.Group>(null);
+  // Parent of the scroll-driven group: holds pointer-parallax only, so it
+  // never fights the GSAP timeline that owns globalContainerRef's transform.
+  const parallaxGroupRef    = useRef<THREE.Group>(null);
   const { camera, size }    = useThree();
 
   // Raw hero scroll progress (0→1) written by ScrollTrigger.onUpdate.
@@ -376,8 +231,9 @@ function LaptopScene({
     if (screenTex) {
       screenTex.flipY      = false;
       screenTex.colorSpace = THREE.SRGBColorSpace;
-      // anisotropy not needed — screenTex is no longer on any material;
-      // keeping colorSpace/flipY so the texture is valid if reassigned.
+      // No anisotropy: screenTex isn't bound to a material (only its
+      // .image is read for the canvas, see below), but flipY/colorSpace
+      // keep it valid should it ever be reassigned to one.
     }
     if (keyboardTex) {
       keyboardTex.flipY      = false;
@@ -593,20 +449,57 @@ function LaptopScene({
     boot.tex.needsUpdate = true;
   });
 
+  /* ── Pointer parallax ──────────────────────────────────────────────
+     A featherweight tilt toward the cursor so the laptop feels alive
+     even before the first scroll. Eased (lerp) so it never snaps, and
+     faded to zero as the boot progress approaches the camera plunge so
+     it can't perturb the pixel-exact cover-fit dissolve. Disabled for
+     reduced motion. ── */
+  useFrame((state) => {
+    const g = parallaxGroupRef.current;
+    if (!g || prefersReduced) return;
+    // 1 before the plunge zone, ramping to 0 across 0.55→0.75 progress.
+    const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.55) / 0.2));
+    const targetX = state.pointer.y * 0.10 * fade;
+    const targetY = state.pointer.x * 0.16 * fade;
+    g.rotation.x += (targetX - g.rotation.x) * 0.06;
+    g.rotation.y += (targetY - g.rotation.y) * 0.06;
+  });
+
   return (
-    <group
-      ref={globalContainerRef}
-      position={[1.7, 0, 0]}
-      rotation={[0.18, -0.35, 0.05]}
-    >
-      <group scale={[10, 10, 10]} position={[0, -0.65, 0]}>
-        <primitive object={nodes.Base_Chassis} />
-        <group ref={lidHingeGroupRef} position={[0, 0.008614, -0.10311]}>
-          <primitive object={nodes.Lid_Screen} position={[0, -0.008614, 0.10311]} />
+    <group ref={parallaxGroupRef}>
+      <group
+        ref={globalContainerRef}
+        position={[1.7, 0, 0]}
+        rotation={[0.18, -0.35, 0.05]}
+      >
+        <group scale={[10, 10, 10]} position={[0, -0.65, 0]}>
+          <primitive object={nodes.Base_Chassis} />
+          <group ref={lidHingeGroupRef} position={[0, 0.008614, -0.10311]}>
+            <primitive object={nodes.Lid_Screen} position={[0, -0.008614, 0.10311]} />
+          </group>
         </group>
       </group>
     </group>
   );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   WEBGL FALLBACK — an unsupported/lost context throws during Canvas
+   render; without a boundary that would blank the whole React tree.
+   Here it degrades silently to no 3D (the hero text/site still works).
+   ───────────────────────────────────────────────────────────────── */
+class WebGLBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -618,6 +511,10 @@ export interface InteractiveModelProps {
 
 export default function InteractiveModel({ portfolioSectionRef }: InteractiveModelProps) {
   const canvasWrapperDOMRef = useRef<HTMLDivElement>(null);
+  // Adaptive resolution: start at a balanced 1.5×, let PerformanceMonitor
+  // pull it down to 1× on sustained frame drops and back up to 2× when the
+  // GPU has headroom. Cheaper than a fixed dpr={[1,2]} on weak hardware.
+  const [dpr, setDpr] = useState(1.5);
 
   return (
     <div
@@ -630,9 +527,10 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         zIndex: 0,
       }}
     >
+      <WebGLBoundary>
       <Canvas
         camera={{ position: [0, 0, 6.5], fov: 45 }}
-        dpr={[1, 2]}
+        dpr={dpr}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{
           width: "100%",
@@ -640,12 +538,27 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           display: "block",
         }}
       >
+        <PerformanceMonitor
+          onIncline={() => setDpr(2)}
+          onDecline={() => setDpr(1)}
+        />
+
         <ambientLight intensity={1.5} />
         <directionalLight position={[8, 12, 6]} intensity={2.2} />
         <directionalLight position={[-8, 6, -6]} intensity={0.6} />
         <pointLight position={[0, 4, 3]} intensity={1.0} />
 
-        <DotGrid />
+        {/* Procedural image-based lighting: soft reflections on the metal
+            chassis/keys without fetching an external HDRI (which would add a
+            network dependency to the carefully-gated preloader manifest). The
+            emissive, toneMapped:false screen face is unaffected. */}
+        <Environment resolution={128} background={false}>
+          <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#fff5e1" />
+          <Lightformer intensity={0.4} position={[-4, 2, -3]} scale={[5, 5, 1]} color="#9fb4d8" />
+          <Lightformer form="ring" intensity={0.3} position={[0, 5, 2]} scale={[3, 3, 1]} color="#ffffff" />
+        </Environment>
+
+
         <Suspense fallback={null}>
           <LaptopScene
             canvasWrapperDOMRef={canvasWrapperDOMRef}
@@ -653,6 +566,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           />
         </Suspense>
       </Canvas>
+      </WebGLBoundary>
 
       {/* Drag hint */}
       <div
