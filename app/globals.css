@@ -276,7 +276,11 @@ img {
   position: fixed;
   top: 24px;
   left: 50%;
-  transform: translateX(-50%);
+  /* translateZ(0) keeps the pill on a permanent, stable compositing layer so
+     its backdrop-filter doesn't re-promote/re-raster (jittering the WebGL
+     canvas beneath) when nav state changes during scroll. */
+  transform: translateX(-50%) translateZ(0);
+  will-change: transform;
   z-index: var(--z-nav);
   /* The pill itself */
   background: rgba(7, 11, 20, 0.72);
@@ -3468,7 +3472,12 @@ canvas.glass-image-canvas {
   height: 100vh;
   z-index: 0;
   pointer-events: none;
-  will-change: opacity;
+  /* Own, stable GPU layer + compositing isolation so the nav's
+     backdrop-filter re-sampling this moving canvas can't force a
+     synchronised re-composite (the laptop jitter). */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  isolation: isolate;
   /* margin-bottom not needed — position:fixed is out of document flow */
 }
 

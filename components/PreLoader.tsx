@@ -349,6 +349,9 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         immediate handoff and unmount (parity with the old loader) ── */
   useEffect(() => {
     if (!prefersReduced) return;
+    // Static opaque overlay is already painted this commit — safe to drop the
+    // server-rendered mask immediately (no WebGL first-frame to wait on).
+    document.getElementById("preloader-mask")?.remove();
     const t = setTimeout(() => {
       onCompleteRef.current();
       setIsComplete(true);
@@ -388,6 +391,10 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const startBurn = useCallback(() => {
     if (burnStartedRef.current) return;
     burnStartedRef.current = true;
+
+    // Backstop: guarantee the hero mask is gone before the burn dissolves to
+    // reveal the page (idempotent — no-op if already removed by onCreated).
+    document.getElementById("preloader-mask")?.remove();
 
     /* failsafe path may arrive before READY printed — snap it in */
     if (!readyInjectedRef.current) {
@@ -510,6 +517,10 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         onCreated={({ gl }) => {
           gl.setClearAlpha(0);
           setLines((ls) => [...ls, "> WEBGL CONTEXT ACQUIRED [OK]"]);
+          // Drop the server-rendered hero mask once the obsidian has actually
+          // painted (next rAF, after this first frame composites) — removing it
+          // earlier would expose the transparent canvas for a frame.
+          requestAnimationFrame(() => document.getElementById("preloader-mask")?.remove());
         }}
       >
         <ObsidianPlane fx={fxRef} />
