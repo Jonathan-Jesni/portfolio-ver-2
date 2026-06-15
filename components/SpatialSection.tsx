@@ -28,7 +28,7 @@ export default function SpatialSection({
 
       const mm = gsap.matchMedia();
 
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
+      mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
         // Query .sp-reveal children inside the content block
         const reveals = Array.from(
           content.querySelectorAll<HTMLElement>(".sp-reveal")
@@ -80,7 +80,7 @@ export default function SpatialSection({
         // content stays visible while the next section slides over it.
       });
 
-      mm.add("(prefers-reduced-motion: reduce)", () => {
+      mm.add("(max-width: 767px), (prefers-reduced-motion: reduce)", () => {
         /* Fade in on scroll entry only — no clip-path, no transforms */
         gsap.set(content, { opacity: 0 });
 

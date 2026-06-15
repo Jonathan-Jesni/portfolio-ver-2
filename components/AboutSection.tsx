@@ -45,7 +45,7 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
+    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
       /* ---- Gather every .reveal-word span inside the text column ---- */
       const words = textColRef.current
         ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
@@ -91,7 +91,7 @@ export default function AboutSection() {
       }
     });
 
-    mm.add("(prefers-reduced-motion: reduce)", () => {
+    mm.add("(max-width: 767px), (prefers-reduced-motion: reduce)", () => {
       /* Words are immediately visible; terminal fades in once */
       if (textColRef.current) {
         const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
