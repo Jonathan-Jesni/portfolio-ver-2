@@ -3461,14 +3461,15 @@ canvas.glass-image-canvas {
    ============================================================ */
 .hero-3d-layer {
   display: none;
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh;
   z-index: 0;
   pointer-events: none;
-  margin-bottom: -100vh;
+  will-change: opacity;
+  /* margin-bottom not needed — position:fixed is out of document flow */
 }
 
 @media (min-width: 900px) {
