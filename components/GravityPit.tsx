@@ -10,11 +10,12 @@ const {
 
 /* ---- Skill pills ---- */
 const PILLS = [
-  "Python", "Java", "C/C++", "Dart", "Flask", "Flutter",
+  "Python", "Java", "C/C++", "SQL", "Dart", "Flask", "Flutter",
   "Deep Learning", "Computer Vision", "Recommender Systems",
-  "YOLO", "Semantic Segmentation", "PyTorch", "TensorFlow",
-  "Keras", "OpenCV", "NumPy", "Pandas", "Blender",
-  "GPU Computing", "React.js", "JavaScript", "HTML5", "CSS3", "Tailwind CSS",
+  "LLMs / GenAI", "YOLO", "Semantic Segmentation", "PyTorch", "TensorFlow",
+  "Keras", "OpenCV", "NumPy", "Pandas", "Blender", "FastAPI",
+  "Docker", "Google Cloud", "GPU Computing", "React.js", "JavaScript",
+  "HTML5", "CSS3", "Tailwind CSS",
 ];
 
 const PILL_H   = 34;   // px — pill height

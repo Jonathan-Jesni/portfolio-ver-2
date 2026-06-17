@@ -291,7 +291,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                 </h2>
 
                 <p className="hero-sub">
-                  CS student focused on AI, <CircuitUnderline delay={2.0} color="#C9A876" animate={animate}>cybersecurity</CircuitUnderline>, and <TerminalHighlight delay={1.4} color="#8FA9C9" animate={animate}>scalable systems</TerminalHighlight>.
+                  AI/ML Engineer focused on <CircuitUnderline delay={2.0} color="#C9A876" animate={animate}>computer vision</CircuitUnderline>, deep learning, and <TerminalHighlight delay={1.4} color="#8FA9C9" animate={animate}>scalable systems</TerminalHighlight>.
                 </p>
 
                 <div className="hero-buttons">

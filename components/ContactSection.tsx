@@ -186,7 +186,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             }}
           >
             <a
-              href="mailto:jonathanjesni@gmail.com"
+              href="mailto:jonathan.jesni.m@gmail.com"
               className="contact-link"
               id="contact-email-btn"
             >

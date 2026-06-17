@@ -43,14 +43,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   title: "Jonathan Jesni — AI & Systems Developer",
   description:
-    "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
+    "Jonathan Jesni's developer portfolio — AI/ML tools, computer vision, and real-world software engineering.",
   keywords: [
     "Jonathan Jesni",
     "AI developer",
     "systems developer",
     "frontend engineer",
     "machine learning portfolio",
-    "cybersecurity projects",
+    "deep learning",
     "recommendation systems",
     "computer vision",
     "document processing",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Jonathan Jesni — AI & Systems Developer",
     description:
-      "Jonathan Jesni's developer portfolio — AI-powered tools, cybersecurity systems, and real-world software engineering.",
+      "Jonathan Jesni's developer portfolio — AI/ML tools, computer vision, and real-world software engineering.",
     type: "website",
     url: "/",
     siteName: "Jonathan Jesni",
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Jonathan Jesni — AI & Systems Developer",
     description:
-      "AI-powered tools, cybersecurity systems, and real-world software engineering projects by Jonathan Jesni.",
+      "AI/ML tools, computer vision, and real-world software engineering projects by Jonathan Jesni.",
     // twitter:image is injected automatically by app/twitter-image.jpeg
   },
 };

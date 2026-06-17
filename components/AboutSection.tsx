@@ -13,8 +13,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 // while BioWords still splits the rest at the word level.
 const BIO_PARAGRAPHS = [
   <>
-    I&apos;m a 3rd-year Computer Science student at IIIT Pune who builds real tools — not just
-    coursework. My focus areas are <strong>AI</strong>, <strong>cybersecurity</strong>, and{" "}
+    I&apos;m a final-year Computer Science student at IIIT Pune who builds real tools — not just
+    coursework. My focus areas are <strong>AI/ML</strong>, <strong>computer vision</strong>, and{" "}
     <strong>systems design</strong>, and I gravitate toward projects that solve practical, tangible
     problems.
   </>,
