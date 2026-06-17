@@ -237,6 +237,25 @@ function ProjectSlide({ project, index, hue, onOpen }: {
   const hasImage = "images" in project && project.images && project.images.length > 0;
   const pipeline = (project as { pipeline?: readonly string[] }).pipeline;
 
+  /* Touch-only: tap a tag to toggle its glow on/off (desktop keeps :hover,
+     and stays untouched — no extra tab stops). */
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: none)");
+    const update = () => setIsTouch(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const [glow, setGlow] = useState<Set<number>>(new Set());
+  const toggleGlow = (i: number) =>
+    setGlow((s) => {
+      const n = new Set(s);
+      if (n.has(i)) n.delete(i);
+      else n.add(i);
+      return n;
+    });
+
   return (
     <article
       className="cs-slide"
@@ -297,8 +316,27 @@ function ProjectSlide({ project, index, hue, onOpen }: {
         <p className="cs-desc">{project.description}</p>
         {note && <p className="cs-note mono">{note}</p>}
         <ul className="sd-card-tags" aria-label="Technologies">
-          {tags.map((tag) => (
-            <li key={tag} className="sd-tag mono">{tag}</li>
+          {tags.map((tag, ti) => (
+            <li
+              key={tag}
+              className={`sd-tag mono${glow.has(ti) ? " is-glow" : ""}`}
+              {...(isTouch
+                ? {
+                    role: "button" as const,
+                    tabIndex: 0,
+                    "aria-pressed": glow.has(ti),
+                    onClick: () => toggleGlow(ti),
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleGlow(ti);
+                      }
+                    },
+                  }
+                : {})}
+            >
+              {tag}
+            </li>
           ))}
         </ul>
         <div className="cs-links">
