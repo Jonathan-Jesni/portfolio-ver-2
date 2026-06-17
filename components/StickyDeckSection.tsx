@@ -301,17 +301,22 @@ function ProjectSlide({ project, index, hue, onOpen }: {
             <li key={tag} className="sd-tag mono">{tag}</li>
           ))}
         </ul>
-        <a
-          href={project.github}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sd-card-link cs-source"
-          id={`${project.id}-source-link`}
-          aria-label={`View ${project.title} source code on GitHub`}
-        >
-          <span>View Source</span>
-          <ArrowUpRightIcon />
-        </a>
+        <div className="cs-links">
+          {((project as { links?: readonly { label: string; href: string; demo?: boolean }[] }).links
+            ?? [{ label: "View Source", href: project.github }]).map((l, li) => (
+            <a
+              key={li}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`sd-card-link${l.demo ? " cs-demo" : ""}`}
+              aria-label={`${l.label} — ${project.title}`}
+            >
+              <span>{l.label}</span>
+              <ArrowUpRightIcon />
+            </a>
+          ))}
+        </div>
       </div>
     </article>
   );
