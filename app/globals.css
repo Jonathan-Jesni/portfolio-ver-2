@@ -3015,10 +3015,6 @@ canvas.glass-image-canvas {
   margin: 0 0 16px;
 }
 
-.cs-source {
-  margin-top: 18px;
-}
-
 /* Source / demo link row under each project's copy */
 .cs-links {
   display: flex;
@@ -3174,7 +3170,9 @@ canvas.glass-image-canvas {
 }
 
 .sd-img {
-  object-fit: cover;
+  /* contain (not cover) so the whole screenshot is visible; the
+     #0C1422 .cs-visual frame provides clean letterboxing. */
+  object-fit: contain;
 }
 
 /* Vignette overlay — faint now that the caption moved out from over the
@@ -3204,6 +3202,16 @@ canvas.glass-image-canvas {
 .sd-pipeline-step {
   display: flex;
   align-items: center;
+}
+
+/* Mobile: let the pipeline wrap nodes to the next line when space is
+   tight instead of cramping the row. */
+@media (max-width: 767px) {
+  .sd-pipeline {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding: 20px;
+  }
 }
 
 /* The Node (Pill) */
@@ -3325,8 +3333,20 @@ canvas.glass-image-canvas {
   .sd-tag:hover {
     color: var(--ink-1);
     border-color: hsl(var(--card-hue, 210, 80%, 56%));
-    box-shadow: 0 0 12px hsl(var(--card-hue, 210, 80%, 56%) / 0.15);
+    box-shadow: 0 0 12px hsla(var(--card-hue, 210, 80%, 56%), 0.18);
   }
+}
+
+/* Tap-toggled glow (mobile/touch — applied via JS only when hover is
+   unavailable; mirrors the desktop :hover look). */
+.sd-tag.is-glow {
+  color: var(--ink-1);
+  border-color: hsl(var(--card-hue, 210, 80%, 56%));
+  box-shadow: 0 0 12px hsla(var(--card-hue, 210, 80%, 56%), 0.18);
+}
+
+@media (hover: none) {
+  .sd-tag { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
