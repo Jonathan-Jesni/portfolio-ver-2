@@ -130,8 +130,8 @@ export const BUILDING = [
     status: "Exploring",
     title: "New Projects",
     description:
-      "Researching next areas — interested in LLM tooling, automated security auditing, and distributed systems.",
-    tags: ["LLMs", "Security", "Research"],
+      "Researching next areas — interested in LLM tooling, agentic systems, and distributed systems.",
+    tags: ["LLMs", "Agentic AI", "Research"],
     steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
 ] as const;

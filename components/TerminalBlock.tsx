@@ -22,17 +22,17 @@ function JsonOutput() {
         '\n'}
       {'  '}<span className="term-key">&quot;current&quot;</span><G>{': '}</G><span className="term-str">&quot;B.Tech CSE, IIIT Pune&quot;</span><G>{','}</G>{
         '\n'}
-      {'  '}<span className="term-key">&quot;year&quot;</span><G>{': '}</G><span className="term-str">&quot;3rd Year&quot;</span><G>{','}</G>{
+      {'  '}<span className="term-key">&quot;year&quot;</span><G>{': '}</G><span className="term-str">&quot;Final Year&quot;</span><G>{','}</G>{
         '\n'}
       {'  '}<span className="term-key">&quot;location&quot;</span><G>{': '}</G><span className="term-str">&quot;Pune, India / Muscat, Oman&quot;</span><G>{','}</G>{
         '\n'}
       {'  '}<span className="term-key">&quot;focus&quot;</span><G>{': ['}</G>{
         '\n'}
-      {'    '}<span className="term-str">&quot;AI&quot;</span><G>{','}</G>{
+      {'    '}<span className="term-str">&quot;AI/ML&quot;</span><G>{','}</G>{
         '\n'}
-      {'    '}<span className="term-str">&quot;Systems&quot;</span><G>{','}</G>{
+      {'    '}<span className="term-str">&quot;Computer Vision&quot;</span><G>{','}</G>{
         '\n'}
-      {'    '}<span className="term-str">&quot;Security&quot;</span>{
+      {'    '}<span className="term-str">&quot;Systems&quot;</span>{
         '\n'}
       {'  '}<G>{'],'}</G>{
         '\n'}
