@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif, Hanken_Grotesk } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Absolute-URL base for canonical links, OG/Twitter images, and the sitemap.
@@ -74,35 +75,4 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#070B14",
-  colorScheme: "dark",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html
-      lang="en"
-      className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${hankenGrotesk.variable}`}
-    >
-      <body>
-        {/* Server-rendered preloader mask — present in the raw HTML from the
-            first byte so it covers the hero BEFORE any JS runs (PreLoader is
-            dynamic/ssr:false and mounts only after hydration). PreLoader removes
-            it once its own overlay has painted, so there's never a hero flash. */}
-        <div
-          id="preloader-mask"
-          aria-hidden="true"
-          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0a0a0a" }}
-        />
-        {/* Film-grain noise overlay — fixed, pointer-events-none, adds physical texture */}
-        <div className="grain-overlay" aria-hidden="true" />
-        <SmoothScroll>{children}</SmoothScroll>
-      </body>
-    </html>
-  );
-}
+export const viewport: View
