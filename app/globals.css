@@ -3019,6 +3019,20 @@ canvas.glass-image-canvas {
   margin-top: 18px;
 }
 
+/* Source / demo link row under each project's copy */
+.cs-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+/* Live Demo stands out from the muted source chips */
+.cs-demo {
+  color: var(--accent);
+}
+
 /* Progress rail + knob */
 .cs-progress {
   position: relative;
