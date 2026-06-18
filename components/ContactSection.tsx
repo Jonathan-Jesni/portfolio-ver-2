@@ -195,7 +195,9 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             </a>
 
             <a
-              href="#projects"
+              href="https://github.com/Jonathan-Jesni?tab=repositories"
+              target="_blank"
+              rel="noopener noreferrer"
               className="contact-link"
               id="contact-projects-btn"
             >
@@ -204,7 +206,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             </a>
 
             <a
-              href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
+              href="https://www.linkedin.com/in/jonathan-jesni/"
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
@@ -215,7 +217,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             </a>
 
             <a
-              href="/assets/Jonathan_Resume.pdf"
+              href="https://drive.google.com/file/d/1KbqAgue5IRqOF3_TccUSje8fAvaCFDBK/view?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
