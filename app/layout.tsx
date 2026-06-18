@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif, Hanken_Grotesk } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 // Absolute-URL base for canonical links, OG/Twitter images, and the sitemap.
@@ -104,6 +105,7 @@ export default function RootLayout({
         <div className="grain-overlay" aria-hidden="true" />
         <SmoothScroll>{children}</SmoothScroll>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
