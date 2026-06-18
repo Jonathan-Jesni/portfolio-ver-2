@@ -163,7 +163,7 @@ export default function Home() {
             ))}
           </ul>
           <a
-            href="/assets/Jonathan_Resume.pdf"
+            href="https://drive.google.com/file/d/1KbqAgue5IRqOF3_TccUSje8fAvaCFDBK/view?usp=sharing"
             target="_blank"
             rel="noopener noreferrer"
             className="nav-resume"
@@ -198,7 +198,7 @@ export default function Home() {
             {item.label}
           </a>
         ))}
-        <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
+        <a href="https://drive.google.com/file/d/1KbqAgue5IRqOF3_TccUSje8fAvaCFDBK/view?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
       </div>
 
       <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />

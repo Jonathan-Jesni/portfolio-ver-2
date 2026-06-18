@@ -71,7 +71,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 app/            App Router pages, layout, metadata, robots/sitemap, icons & OG images
 components/     UI + 3D components (InteractiveModel, StickyDeckSection, BurnTransition, …)
 lib/            Content & shared singletons (data.ts, lenisInstance.ts, burnControls.ts)
-public/assets/  GLB model, textures, project images, resume PDF
+public/assets/  GLB model, textures, project images
 ```
 
 ## Deploy on Vercel

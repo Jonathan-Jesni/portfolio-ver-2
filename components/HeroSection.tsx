@@ -306,7 +306,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     <HoverScrambleText text="View My Work" />
                   </a>
                   <a
-                    href="https://www.linkedin.com/in/jonathan-jesni-b0184a210/"
+                    href="https://www.linkedin.com/in/jonathan-jesni/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-outline"
@@ -316,7 +316,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     <HoverScrambleText text="Connect" />
                   </a>
                   <a
-                    href="/assets/Jonathan_Resume.pdf"
+                    href="https://drive.google.com/file/d/1KbqAgue5IRqOF3_TccUSje8fAvaCFDBK/view?usp=sharing"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-outline"
