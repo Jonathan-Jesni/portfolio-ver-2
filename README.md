@@ -63,6 +63,8 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 - **Project images:** `public/assets/<Project>/…` (referenced from `lib/data.ts`).
 - **Favicon & social cards:** `app/icon.png`, `app/apple-icon.png`, `app/opengraph-image.jpeg`,
   `app/twitter-image.jpeg` (with `*.alt.txt` for image alt text).
+- **Resume link:** a Google Drive URL hardcoded on the "Resume" buttons in `app/page.tsx`
+  (desktop nav + mobile menu), `components/HeroSection.tsx`, and `components/ContactSection.tsx`.
 - **Site metadata:** `app/layout.tsx`. SEO routes: `app/robots.ts`, `app/sitemap.ts`.
 
 ## Project Structure
