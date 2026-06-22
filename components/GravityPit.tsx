@@ -243,7 +243,7 @@ export default function GravityPit() {
       id="gravity-pit"
       data-lenis-prevent
       role="region"
-      aria-label="Interactive skills playground — click to activate physics"
+      aria-label="Interactive skills playground, click to activate physics"
     >
       {/* Corner label — only shows until physics activates, hidden under reduced motion */}
       {!physicsActive && !reducedMotion && (
@@ -257,7 +257,7 @@ export default function GravityPit() {
             fontFamily:    "var(--font-jetbrains), monospace",
             fontSize:      "10px",
             fontWeight:    500,
-            color:         "rgba(18,22,19,0.30)",
+            color:         "rgba(221,229,232,0.32)",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             pointerEvents: "none",

@@ -13,7 +13,7 @@ interface CircuitUnderlineProps {
 
 export function CircuitUnderline({
   children,
-  color = "#C9A876", // champagne gold default
+  color = "#C9A852", // antique gold default
   delay = 0,
   animate = true,
 }: CircuitUnderlineProps) {

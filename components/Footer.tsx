@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
@@ -12,47 +12,54 @@ gsap.registerPlugin(ScrollToPlugin);
 
    Three balanced zones on a 1fr/auto/1fr grid (the {J} logo doubles as
    back-to-top, the status line is dead-centered, the stack credit sits
-   right), over a sub-row aligned to the same edges (© + a timezone-
-   derived visitor clock). Surface is a touch darker than --surface-0 so
-   it reads as the floor of the page.
+   right), over a quiet copyright sub-row. Surface is a touch darker than
+   --surface-0 so it reads as the floor of the page.
    ───────────────────────────────────────────────────────────────────── */
-export default function Footer() {
-  // Visitor's city + local time, derived from their timezone (no geolocation
-  // prompt, no network). Rendered only after mount to dodge a hydration
-  // mismatch (server and client clocks differ).
-  const [clock, setClock] = useState<string | null>(null);
+
+/** Formats the viewer's local time as  HH:MM:SS GMT±H:MM */
+function formatLocalTime(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+
+  const offsetMins = -d.getTimezoneOffset(); // getTimezoneOffset returns inverse
+  const sign = offsetMins >= 0 ? "+" : "-";
+  const absH = Math.floor(Math.abs(offsetMins) / 60);
+  const absM = Math.abs(offsetMins) % 60;
+  const gmtOffset =
+    absM === 0
+      ? `GMT${sign}${absH}`
+      : `GMT${sign}${absH}:${String(absM).padStart(2, "0")}`;
+
+  return `${hh}:${mm}:${ss} ${gmtOffset}`;
+}
+
+function LocalClock() {
+  const [time, setTime] = useState<string | null>(null);
 
   useEffect(() => {
-    const compute = () => {
-      try {
-        const now = new Date();
-        const time = new Intl.DateTimeFormat([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }).format(now);
-        // getTimezoneOffset() is sign-flipped (UTC+5:30 → -330); flip it back.
-        const offsetMin = -now.getTimezoneOffset();
-        const sign = offsetMin >= 0 ? "+" : "-";
-        const abs = Math.abs(offsetMin);
-        const h = Math.floor(abs / 60);
-        const m = abs % 60;
-        return `UTC${sign}${h}:${String(m).padStart(2, "0")} — ${time}`;
-      } catch {
-        return "Bengaluru — IST";
-      }
-    };
-
-    // Defer the first tick (avoids a synchronous setState in the effect body)
-    const raf = requestAnimationFrame(() => setClock(compute()));
-    const id = setInterval(() => setClock(compute()), 30_000);
+    // Defer the first tick out of the effect body (avoids a synchronous
+    // setState cascade), then tick every second.
+    const tick = () => setTime(formatLocalTime(new Date()));
+    const raf = requestAnimationFrame(tick);
+    const id = setInterval(tick, 1000);
     return () => {
       cancelAnimationFrame(raf);
       clearInterval(id);
     };
   }, []);
 
-  // Reuse the {J} nav logo's scroll-to-top feel.
+  // Avoid hydration mismatch — render nothing on first server pass
+  if (time === null) return null;
+
+  return (
+    <span className="footer-clock" aria-label="Your local time" aria-live="off">
+      {time}
+    </span>
+  );
+}
+
+export default function Footer() {
   const backToTop = () => {
     gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: "power4.inOut" });
   };
@@ -76,7 +83,7 @@ export default function Footer() {
 
       <div className="footer-sub">
         <span>© 2026 Jonathan Jesni</span>
-        <span>{clock ?? "··:··"}</span>
+        <LocalClock />
       </div>
     </footer>
   );

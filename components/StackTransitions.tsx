@@ -259,14 +259,14 @@ export default function StackTransitions() {
             tl.to(blade, { opacity: 0, ease: "none", duration: 0.05 }, 0.9);
           }
         } else if (veil) {
-          /* Color-temperature drift: as a sheet is buried it doesn't just
-             darken — it cools off the blue ground (#070B14) toward the
-             warmer neutral obsidian ink (#121613), reading as physical
-             depth/distance. Data-only; rides the same scrub. */
+          /* Depth drift: as a sheet is buried it darkens through the warm
+             obsidian ramp (surface-1 #161310 toward the deeper surface-0
+             #0D0B09), reading as physical depth/distance. Data-only; rides
+             the same scrub. */
           tl.fromTo(
             veil,
-            { backgroundColor: "#070B14", opacity: 0 },
-            { backgroundColor: "#121613", opacity: cfg.veil, ease: "none" },
+            { backgroundColor: "#161310", opacity: 0 },
+            { backgroundColor: "#0D0B09", opacity: cfg.veil, ease: "none" },
             0
           );
         }

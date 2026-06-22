@@ -43,9 +43,9 @@ const hankenGrotesk = Hanken_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: "/" },
-  title: "Jonathan Jesni — AI & Systems Developer",
+  title: "Jonathan Jesni: AI & Systems Developer",
   description:
-    "Jonathan Jesni's developer portfolio — AI/ML tools, computer vision, and real-world software engineering.",
+    "Jonathan Jesni's developer portfolio: AI/ML tools, computer vision, and real-world software engineering.",
   keywords: [
     "Jonathan Jesni",
     "AI developer",
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     "Next.js portfolio",
   ],
   openGraph: {
-    title: "Jonathan Jesni — AI & Systems Developer",
+    title: "Jonathan Jesni: AI & Systems Developer",
     description:
-      "Jonathan Jesni's developer portfolio — AI/ML tools, computer vision, and real-world software engineering.",
+      "Jonathan Jesni's developer portfolio: AI/ML tools, computer vision, and real-world software engineering.",
     type: "website",
     url: "/",
     siteName: "Jonathan Jesni",
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Jonathan Jesni — AI & Systems Developer",
+    title: "Jonathan Jesni: AI & Systems Developer",
     description:
       "AI/ML tools, computer vision, and real-world software engineering projects by Jonathan Jesni.",
     // twitter:image is injected automatically by app/twitter-image.jpeg
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#070B14",
+  themeColor: "#0D0B09",
   colorScheme: "dark",
 };
 
@@ -99,7 +99,7 @@ export default function RootLayout({
         <div
           id="preloader-mask"
           aria-hidden="true"
-          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0a0a0a" }}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0D0B09" }}
         />
         {/* Film-grain noise overlay — fixed, pointer-events-none, adds physical texture */}
         <div className="grain-overlay" aria-hidden="true" />

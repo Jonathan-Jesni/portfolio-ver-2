@@ -58,7 +58,7 @@ const COVER_OVERSHOOT = 0.90;
    Draws into an offscreen 2D canvas that is assigned as the screen
    face's emissiveMap (THREE.CanvasTexture). Three scroll-gated phases:
 
-     0.00–0.40   Black (#070B14) — lid is closed or just opening
+     0.00–0.40   Black (#0D0B09) — lid is closed or just opening
      0.40–0.75   Spinning-dot loader on black (skipped for reduced-motion)
      0.75–1.00   bg.jpg fades in cover-fit → final frame == captured header,
                  so the crossfade dissolve into the real #projects DOM is exact.
@@ -79,9 +79,9 @@ function drawBootScreen(
   const H = BOOT_H;
 
   ctx.clearRect(0, 0, W, H);
-  // #070B14 = body background = --surface-0. toneMapped:false on the material
+  // #0D0B09 = body background = --surface-0. toneMapped:false on the material
   // means this exact hex reaches the compositor without ACES shifting it.
-  ctx.fillStyle = "#070B14";
+  ctx.fillStyle = "#0D0B09";
   ctx.fillRect(0, 0, W, H);
 
   if (progress <= 0) return; // pure black — lid closed
@@ -145,7 +145,7 @@ function drawBootScreen(
     if (imgW > 0 && imgH > 0) {
       // Cover-fit, pre-scaled by COVER_OVERSHOOT: the camera plunges to show
       // only the center COVER_OVERSHOOT fraction of the face, so drawing the
-      // header at that same fraction (with #070B14 already filling the margin)
+      // header at that same fraction (with #0D0B09 already filling the margin)
       // makes the visible header fill the viewport at the DOM header's exact
       // scale — the dissolve matches and the off-screen margin hides the bezel.
       const scale = Math.max(W / imgW, H / imgH) * COVER_OVERSHOOT;
@@ -207,7 +207,7 @@ function LaptopScene({
     const ctx = canvas.getContext("2d")!;
     // Pre-fill with "off" colour so there is no white flash before the
     // first useFrame tick uploads the texture.
-    ctx.fillStyle = "#070B14";
+    ctx.fillStyle = "#0D0B09";
     ctx.fillRect(0, 0, BOOT_W, BOOT_H);
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -240,7 +240,7 @@ function LaptopScene({
     // The screen face must render EXACTLY like the real #projects DOM header
     // (it dissolves into that DOM at the hero→projects boundary):
     //  - emissive-only (base map null, color black) — scene lights can't tint it
-    //  - toneMapped:false — ACES doesn't shift #070B14 away from the DOM colour
+    //  - toneMapped:false — ACES doesn't shift #0D0B09 away from the DOM colour
     //  - boot.tex (CanvasTexture) replaces the static bg.jpg so the screen
     //    "boots" as the user scrolls; the final frame IS bg.jpg for the dissolve
     if (materials.Image) {
@@ -550,7 +550,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
             network dependency to the carefully-gated preloader manifest). The
             emissive, toneMapped:false screen face is unaffected. */}
         <Environment resolution={128} background={false}>
-          <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#fff5e1" />
+          <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#eef2f4" />
           <Lightformer intensity={0.4} position={[-4, 2, -3]} scale={[5, 5, 1]} color="#9fb4d8" />
           <Lightformer form="ring" intensity={0.3} position={[0, 5, 2]} scale={[3, 3, 1]} color="#ffffff" />
         </Environment>
@@ -564,29 +564,6 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         </Suspense>
       </Canvas>
       </WebGLBoundary>
-
-      {/* Drag hint */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "24px",
-          right: "10%",
-          pointerEvents: "none",
-          userSelect: "none",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "10px",
-            fontFamily: "var(--font-jetbrains, monospace)",
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            color: "rgba(216, 188, 135, 0.35)",
-          }}
-        >
-          Scroll to open & zoom
-        </span>
-      </div>
     </div>
   );
 }

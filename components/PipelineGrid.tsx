@@ -33,9 +33,9 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
           bridgePosition={0.38}
           bridgeCurveRadius={10}
           duration={12}
-          dotColor="rgba(201, 168, 118, 0.95)"
+          dotColor="rgba(143, 168, 196, 0.95)"
           dotSize={5}
-          trackColor="rgba(201, 168, 118, 0.14)"
+          trackColor="rgba(143, 168, 196, 0.14)"
           trackWidth={1}
         />
 

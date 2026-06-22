@@ -171,7 +171,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
           <p className="contact-text">
             I&apos;m actively looking for internships and opportunities to build
             impactful systems. Whether you have a question, a project idea, or
-            just want to connect — my inbox is open.
+            just want to connect, my inbox is open.
           </p>
 
           {/* Button grid — sequentially revealed by the secondary GSAP tween */}
@@ -249,7 +249,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
           top: "-2px",
           bottom: "-2px",
           borderBottom: "1px solid var(--border-subtle)",
-          boxShadow: "0 20px 50px rgba(3, 6, 14, 0.5)",
+          boxShadow: "0 20px 50px rgba(13, 11, 9, 0.5)",
         }}
       />
     </section>

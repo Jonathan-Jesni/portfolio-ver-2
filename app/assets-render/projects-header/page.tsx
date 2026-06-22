@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
    This route inherits the root layout (font CSS variables, grain
    overlay, SmoothScroll), so the header sits inside a fixed,
-   full-viewport obsidian (#070B14 = --surface-0) panel at
+   full-viewport obsidian (#0D0B09 = --surface-0) panel at
    z-index 9999 that covers any inherited chrome. The font
    variables (Instrument Serif / JetBrains Mono / Jakarta) still
    cascade in — that's required for the type to match.
@@ -34,7 +34,7 @@ export default function ProjectsHeaderRender() {
         position: "fixed",
         inset: 0,
         zIndex: 9999,
-        background: "#070B14",
+        background: "#0D0B09",
         overflow: "hidden",
       }}
     >
@@ -45,19 +45,12 @@ export default function ProjectsHeaderRender() {
       <div className="container sd-header">
         <header className="ed-header">
           <div className="ed-header-row">
-            <span className="ed-eyebrow">01 / Projects</span>
+            <span className="ed-eyebrow">Projects</span>
           </div>
           <h2 className="ed-heading ed-heading--indent">
             Selected <em>Work</em>
           </h2>
         </header>
-        <span
-          className="sd-header-cue"
-          aria-hidden="true"
-          style={{ animation: "none" }}
-        >
-          scroll ↓
-        </span>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 
-const CHARS = "!<>-_\\\\/[]{}—=+*^?#_";
+const CHARS = "!<>-_\\\\/[]{}~=+*^?#_";
 
 interface HoverScrambleTextProps {
   text: string;

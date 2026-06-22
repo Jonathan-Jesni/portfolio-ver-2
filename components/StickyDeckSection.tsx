@@ -16,15 +16,15 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
-  ludex:            "214, 84%, 64%",  /* sapphire       */
-  "file-converter": "158, 48%, 52%",  /* muted jade     */
-  "double-unet":    "  6, 64%, 60%",  /* burnt coral    */
-  synthrescue:      "268, 52%, 66%",  /* dusty violet   */
+  ludex:            "44, 60%, 56%",   /* gold           */
+  "file-converter": "209, 33%, 66%",  /* dusty blue     */
+  "double-unet":    "32, 55%, 50%",   /* bronze         */
+  synthrescue:      "215, 28%, 60%",  /* slate blue     */
 };
 
 const N = PROJECTS.length;
 const pad = (n: number) => String(n).padStart(2, "0");
-const hueOf = (id: string) => CARD_HUES[id] ?? "210, 80%, 56%";
+const hueOf = (id: string) => CARD_HUES[id] ?? "188, 45%, 52%";
 
 /* power4.inOut — mirrors the {J} logo's scroll-to feel for click jumps */
 const power4InOut = (t: number) =>
@@ -311,7 +311,7 @@ function ProjectSlide({ project, index, hue, onOpen }: {
       <div className="cs-text">
         <h3 className="cs-title">{project.title}</h3>
         <span className="cs-subtitle" style={{ color: `hsl(${hue})` }}>
-          — {project.subtitle}
+          {project.subtitle}
         </span>
         <p className="cs-desc">{project.description}</p>
         {note && <p className="cs-note mono">{note}</p>}
@@ -348,7 +348,7 @@ function ProjectSlide({ project, index, hue, onOpen }: {
               target="_blank"
               rel="noopener noreferrer"
               className={`sd-card-link${l.demo ? " cs-demo" : ""}`}
-              aria-label={`${l.label} — ${project.title}`}
+              aria-label={`${l.label}, ${project.title}`}
             >
               <span>{l.label}</span>
               <ArrowUpRightIcon />
@@ -475,13 +475,12 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       <div className="container sd-header">
         <header className="ed-header">
           <div className="ed-header-row">
-            <span className="ed-eyebrow">01 / Projects</span>
+            <span className="ed-eyebrow">Projects</span>
           </div>
           <h2 className="ed-heading ed-heading--indent">
             Selected <em>Work</em>
           </h2>
         </header>
-        <span className="sd-header-cue" aria-hidden="true">scroll ↓</span>
       </div>
 
       {/* ── Case-study stage ─────────────────────────────────────────────

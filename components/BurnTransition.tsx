@@ -53,10 +53,10 @@ const FRAGMENT = /* glsl */ `
   uniform vec2  uResolution;
 
   /* ── colour ramp ── */
-  const vec3 WHITE_HOT = vec3(1.000, 0.961, 0.882); // #FFF5E1 core line
-  const vec3 ORANGE    = vec3(1.000, 0.353, 0.071); // #FF5A12 superheated
-  const vec3 CHAMPAGNE = vec3(0.788, 0.659, 0.463); // #C9A876 outer trailing edge
-  const vec3 CHAR      = vec3(0.043, 0.035, 0.027); // charred paper trail
+  const vec3 WHITE_HOT = vec3(1.000, 0.965, 0.880); // hot core, warm white
+  const vec3 ORANGE    = vec3(1.000, 0.553, 0.102); // #FF8C1A superheated amber
+  const vec3 CHAMPAGNE = vec3(0.788, 0.659, 0.322); // #C9A852 antique gold linear
+  const vec3 CHAR      = vec3(0.035, 0.027, 0.020); // charred warm-black trail
 
   /* ── 2D value-noise → fbm ── */
   float hash(vec2 p) {

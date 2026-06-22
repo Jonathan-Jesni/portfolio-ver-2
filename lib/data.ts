@@ -17,7 +17,7 @@ export const PROJECTS = [
       "/assets/Modifed double u net/BUSI Training and Validation Curves.png",
     ],
     imageAlts: [
-      "High-precision medical image segmentation — Hybrid Xception-VGG DoubleUNet",
+      "High-precision medical image segmentation, Hybrid Xception-VGG DoubleUNet",
       "Benign lesion segmentation result (Jaccard 0.967)",
       "Malignant lesion segmentation result (Jaccard 0.950)",
       "Modified Double U-Net model architecture diagram",
@@ -53,11 +53,11 @@ export const PROJECTS = [
     ],
     imageAlts: [
       "Live tactical command dashboard",
-      "Tactical command dashboard — detail view",
+      "Tactical command dashboard, detail view",
       "YOLOv8 detection predictions on a validation batch",
       "YOLOv8 detection predictions on a second validation batch",
       "Training results and metrics summary",
-      "Precision–recall curve",
+      "Precision-recall curve",
       "Normalized confusion matrix",
       "SynthRescue system architecture diagram",
     ],
@@ -68,7 +68,7 @@ export const PROJECTS = [
     title: "Ludex",
     subtitle: "Hybrid Game Recommendation System",
     description:
-      "A hybrid recommendation engine combining content-based filtering and collaborative filtering to improve relevance by ~12–18% over standalone baselines. Integrates diversity-aware re-ranking to increase catalog coverage by ~20% (reducing popularity bias) and handles cold-start user scenarios using metadata-driven fallback logic, evaluated on large-scale Steam interaction data.",
+      "A hybrid recommendation engine combining content-based filtering and collaborative filtering to improve relevance by ~12-18% over standalone baselines. Integrates diversity-aware re-ranking to increase catalog coverage by ~20% (reducing popularity bias) and handles cold-start user scenarios using metadata-driven fallback logic, evaluated on large-scale Steam interaction data.",
     tech: "Python, Scikit-learn, Implicit ALS, Steam API",
     tags: ["Machine Learning", "Recommendation Systems", "Python"],
     github: "https://github.com/Jonathan-Jesni/LudexSite",
@@ -95,14 +95,14 @@ export const PROJECTS = [
       "Steam played vs unplayed analysis",
       "Ludex system architecture diagram",
     ],
-    metric: "+12–18% relevance · +20% coverage",
+    metric: "+12-18% relevance · +20% coverage",
   },
   {
     id: "file-converter",
     title: "File Converter",
     subtitle: "Document Processing Engine",
     description:
-      "A deterministic two-pass document conversion engine — structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic.",
+      "A deterministic two-pass document conversion engine, with structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic.",
     tech: "Python, Two-Pass Architecture",
     tags: ["Python", "Document Processing", "Systems Design"],
     github: "https://github.com/Jonathan-Jesni/pdf_converter",
@@ -130,7 +130,7 @@ export const BUILDING = [
     status: "Exploring",
     title: "New Projects",
     description:
-      "Researching next areas — interested in LLM tooling, agentic systems, and distributed systems.",
+      "Researching next areas: LLM tooling, agentic systems, and distributed systems.",
     tags: ["LLMs", "Agentic AI", "Research"],
     steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
