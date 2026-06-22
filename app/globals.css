@@ -3659,6 +3659,7 @@ canvas.glass-image-canvas {
   --nf-lead: clamp(18px, 2vw, 22px);
 }
 
+/* ============================================================
    STACK TRANSITIONS Ã¢â‚¬â€ "String-Tune" scroll choreography
    Each post-hero section is a sheet. The outgoing section pins,
    scales back under a darkening veil, while the incoming sheet
