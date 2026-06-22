@@ -1,5 +1,5 @@
 /* ============================================================
-   LENIS Ã¢â‚¬â€ prevent native scroll from clashing
+   LENIS - prevent native scroll from clashing
    ============================================================ */
 html.lenis,
 html.lenis body {
@@ -19,7 +19,7 @@ html.lenis body {
 }
 
 /* ============================================================
-   GLOBALS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Premium OLED Dark Portfolio
+   GLOBALS - Premium OLED Dark Portfolio
    Background: #0D0B09 | Body: Plus Jakarta Sans
    Code/Labels: JetBrains Mono | Accent: Antique Gold #C9A852
    ============================================================ */
@@ -91,7 +91,7 @@ select:focus-visible,
 }
 
 /* ---------- Film-Grain Noise Overlay ----------
-   Fixed, pointer-events-none ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â adds physical paper texture
+   Fixed, pointer-events-none - adds physical paper texture
    to kill the "digital flatness" of a flat OLED black. */
 .grain-overlay {
   position: fixed;
@@ -112,7 +112,7 @@ select:focus-visible,
 
 /* ---------- CSS Custom Properties ---------- */
 :root {
-  /* Surface palette â€” Warm Obsidian hierarchy */
+  /* Surface palette - Warm Obsidian hierarchy */
   --surface-0: #0D0B09;
   /* deepest warm obsidian base */
   --surface-1: #161310;
@@ -124,19 +124,19 @@ select:focus-visible,
   --surface-4: #383028;
   /* active state / focused element edges */
 
-  /* Ink palette â€” warm cream on warm obsidian */
+  /* Ink palette - warm cream on warm obsidian */
   --ink-0: #FAF5EE;
-  /* warm cream white â€” display headings only */
+  /* warm cream white - display headings only */
   --ink-1: #EDE5D8;
   /* primary body text */
   --ink-2: #C4B8A8;
   /* secondary text */
   --ink-3: #8A7D6E;
-  /* muted â€” warm grey, WCAG AA on --surface-1 */
+  /* muted - warm grey, WCAG AA on --surface-1 */
   --ink-4: #4E4440;
-  /* hairline structures â€” recedes into the warm ground */
+  /* hairline structures - recedes into the warm ground */
 
-  /* Borders â€” gold-tinted glass-plate system */
+  /* Borders - gold-tinted glass-plate system */
   --border-hairline: rgba(232, 201, 122, 0.04);
   --border-subtle:   rgba(232, 201, 122, 0.08);
   --border-default:  var(--surface-3);
@@ -146,7 +146,7 @@ select:focus-visible,
   --edge-top:  rgba(201, 168, 82, 0.15);
   --edge-glow: rgba(201, 168, 82, 0.05);
 
-  /* Accent â€” Antique Gold. Used ONLY for hover micro-states, arrows & serif italics */
+  /* Accent - Antique Gold. Used ONLY for hover micro-states, arrows & serif italics */
   --accent:        #C9A852;
   --accent-rgb:    201, 168, 82;
   --accent-bright: #E8C97A;
@@ -154,10 +154,10 @@ select:focus-visible,
   --accent-muted:  #7A5E22;
   --accent-glow:   rgba(201, 168, 82, 0.20);
   --accent-dim:    rgba(201, 168, 82, 0.09);
-  /* Secondary cool accent â€” dusty steel blue for terminal chrome */
+  /* Secondary cool accent - dusty steel blue for terminal chrome */
   --accent-cool: #8FA8C4;
 
-  /* Physical shadows â€” tinted to the warm obsidian ground */
+  /* Physical shadows - tinted to the warm obsidian ground */
   --shadow-card:  0 1px 2px rgba(13, 11, 9, 0.8), 0 8px 32px rgba(13, 11, 9, 0.6), 0 24px 64px rgba(13, 11, 9, 0.4);
   --shadow-hover: 0 1px 2px rgba(13, 11, 9, 0.9), 0 12px 40px rgba(13, 11, 9, 0.7), 0 32px 80px rgba(13, 11, 9, 0.5);
 
@@ -172,7 +172,7 @@ select:focus-visible,
   --section-padding: 160px 0;
   --section-padding-mobile: 96px 0;
 
-  /* Custom easing curves Ã¢â‚¬â€ Emil Kowalski / high-end physics */
+  /* Custom easing curves - Emil Kowalski / high-end physics */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-expo: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
@@ -183,7 +183,7 @@ select:focus-visible,
   --t-mid: 280ms var(--ease-out-expo);
   --t-slow: 500ms var(--ease-out-expo);
 
-  /* Semantic z-index scale Ã¢â‚¬â€ never use arbitrary values elsewhere */
+  /* Semantic z-index scale - never use arbitrary values elsewhere */
   --z-grain: 9999;
   /* film-grain overlay: always on top */
   --z-preloader: 9998;
@@ -198,7 +198,7 @@ select:focus-visible,
   /* default stacking context */
 }
 
-/* ---- Mono utility ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â strict use for code, numbers, labels only ---- */
+/* ---- Mono utility - strict use for code, numbers, labels only ---- */
 .mono {
   font-family: var(--font-jetbrains), 'JetBrains Mono', monospace;
 }
@@ -218,7 +218,7 @@ select:focus-visible,
 
 /* ============================================================
    DOUBLE-BEZEL ARCHITECTURE
-   Premium card pattern: machined outer shell ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ inner core
+   Premium card pattern: machined outer shell -> inner core
    Usage: Wrap content in .bezel-shell > .bezel-core
    ============================================================ */
 .bezel-shell {
@@ -226,7 +226,7 @@ select:focus-visible,
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
   padding: 3px;
-  /* Outer shell shadow ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â wide ambient glow */
+  /* Outer shell shadow - wide ambient glow */
   box-shadow: var(--shadow-card);
   transition: box-shadow var(--t-mid), border-color var(--t-mid);
 }
@@ -240,7 +240,7 @@ select:focus-visible,
   background: var(--surface-1);
   border-radius: calc(20px - 3px);
   /* concentric curve math */
-  /* Inner edge highlight ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â simulates edge refraction of machined glass */
+  /* Inner edge highlight - simulates edge refraction of machined glass */
   box-shadow: inset 0 1px 0 var(--edge-top), inset 0 0 0 1px rgba(201, 168, 82, 0.02);
   overflow: hidden;
   position: relative;
@@ -264,7 +264,7 @@ select:focus-visible,
 
 /* ============================================================
    SECTION LABEL SYSTEM
-   Stripped of numbered eyebrows ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â use only when 1 per 3 sections
+   Stripped of numbered eyebrows - use only when 1 per 3 sections
    ============================================================ */
 .section-label {
   display: flex;
@@ -298,7 +298,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   NAV ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Floating glass-pill island, detached from top
+   NAV - Floating glass-pill island, detached from top
    ============================================================ */
 .nav {
   position: fixed;
@@ -386,7 +386,7 @@ select:focus-visible,
   color: var(--accent);
 }
 
-/* Resume CTA ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â "Button-in-Button" pill architecture */
+/* Resume CTA - "Button-in-Button" pill architecture */
 .nav-resume {
   display: none;
   align-items: center;
@@ -440,7 +440,7 @@ select:focus-visible,
   }
 }
 
-/* Mobile toggle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â hamburger ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ X morphing lines */
+/* Mobile toggle - hamburger -> X morphing lines */
 .mobile-toggle {
   display: flex;
   flex-direction: column;
@@ -479,7 +479,7 @@ select:focus-visible,
   }
 }
 
-/* Mobile menu ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â screen-filling glass overlay */
+/* Mobile menu - screen-filling glass overlay */
 .mobile-menu {
   position: fixed;
   inset: 0;
@@ -585,7 +585,7 @@ select:focus-visible,
   }
 }
 
-/* ---------- Buttons ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â "Button-in-Button" pill architecture ---------- */
+/* ---------- Buttons - "Button-in-Button" pill architecture ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -606,7 +606,7 @@ select:focus-visible,
   transform: scale(0.97);
 }
 
-/* Primary button ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â white fill */
+/* Primary button - white fill */
 .btn-primary {
   background: var(--ink-0);
   color: var(--surface-0);
@@ -658,7 +658,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   HERO SECTION ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â cinematic runway + sticky tunnel
+   HERO SECTION - cinematic runway + sticky tunnel
    ============================================================ */
 
 /* 300 vh scroll runway */
@@ -689,7 +689,7 @@ select:focus-visible,
   font-size: clamp(60px, 10.5vw, 112px);
   font-weight: 800;
   letter-spacing: -0.04em;
-  /* floor per design rules: ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¥ -0.04em */
+  /* floor per design rules: >= -0.04em */
   line-height: 0.9;
   color: var(--ink-0);
   margin-bottom: 36px;
@@ -719,7 +719,7 @@ select:focus-visible,
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Hero eyebrow Ã¢â‚¬â€ availability badge above the name Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Hero eyebrow - availability badge above the name -- */
 .hero-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -760,9 +760,9 @@ select:focus-visible,
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Hero atmosphere lives on .hero-3d-layer::before (behind the laptop
+/* -- Hero atmosphere lives on .hero-3d-layer::before (behind the laptop
       canvas) so the glow never tints the machine and fades out with the
-      layer at the projects handoff. See the .hero-3d-layer rule below. Ã¢â€â‚¬Ã¢â€â‚¬ */
+      layer at the projects handoff. See the .hero-3d-layer rule below. -- */
 
 @keyframes heroAtmoDrift {
   0% {
@@ -779,7 +779,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   SPATIAL CARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â cinematic Z-axis fly-through
+   SPATIAL CARD - cinematic Z-axis fly-through
    ============================================================ */
 .sc-runway {
   position: relative;
@@ -797,7 +797,7 @@ select:focus-visible,
   pointer-events: none;
 }
 
-/* The card ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â now uses the Double-Bezel architecture inline */
+/* The card - now uses the Double-Bezel architecture inline */
 .sc-card {
   pointer-events: all;
   will-change: transform, filter, opacity;
@@ -843,7 +843,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   SPATIAL SECTION ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â clip-from-bottom section reveal
+   SPATIAL SECTION - clip-from-bottom section reveal
    ============================================================ */
 .sp-runway {
   position: relative;
@@ -885,7 +885,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   GRAVITY PIT Ã¢â‚¬â€ Matter.js DOM-based physics playground
+   GRAVITY PIT - Matter.js DOM-based physics playground
    Default: static, silent, premium grid layout
    Physics only activates on user interaction
    ============================================================ */
@@ -912,7 +912,7 @@ select:focus-visible,
   -webkit-user-select: none;
 }
 
-/* Static by default ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â cursor only changes once physics is active */
+/* Static by default - cursor only changes once physics is active */
 .gravity-pit.physics-active {
   cursor: grab;
 }
@@ -921,7 +921,7 @@ select:focus-visible,
   cursor: grabbing;
 }
 
-/* Each skill pill ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â machined hardware aesthetic */
+/* Each skill pill - machined hardware aesthetic */
 .gravity-pill {
   position: absolute;
   top: 0;
@@ -930,7 +930,7 @@ select:focus-visible,
   align-items: center;
   justify-content: center;
   /* dimensions set dynamically in useEffect */
-  /* Default static position ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â transform is set by JS grid layout */
+  /* Default static position - transform is set by JS grid layout */
   border: 1px solid var(--border-subtle);
   background: var(--surface-2);
   border-radius: 100px;
@@ -954,12 +954,12 @@ select:focus-visible,
     color var(--t-mid);
 }
 
-/* Physics-active state ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â pills become grab-able */
+/* Physics-active state - pills become grab-able */
 .gravity-pit.physics-active .gravity-pill {
   pointer-events: auto;
 }
 
-/* Hover state ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â electric blue micro-accent */
+/* Hover state - electric blue micro-accent */
 @media (hover: hover) and (pointer: fine) {
   .gravity-pit.physics-active .gravity-pill:hover {
     background: rgba(var(--accent-rgb), 0.08);
@@ -993,7 +993,7 @@ select:focus-visible,
   }
 }
 
-/* Project card ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Double-Bezel outer shell */
+/* Project card - Double-Bezel outer shell */
 .project-card {
   background: rgba(201, 168, 82, 0.02);
   border: 1px solid var(--border-hairline);
@@ -1090,7 +1090,7 @@ select:focus-visible,
   margin-top: 4px;
 }
 
-/* Tags ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â tight radius, no pill */
+/* Tags - tight radius, no pill */
 .project-tag {
   font-family: var(--font-jetbrains), monospace;
   font-size: 10px;
@@ -1209,7 +1209,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   ABOUT ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Scroll-Scrub Text Reveal Layout
+   ABOUT - Scroll-Scrub Text Reveal Layout
    ============================================================ */
 .about-runway {
   position: relative;
@@ -1259,7 +1259,7 @@ select:focus-visible,
 
 @media (min-width: 900px) {
   .about-split-container {
-    /* Asymmetric editorial split Ã¢â‚¬â€ prose leads, terminal recedes */
+    /* Asymmetric editorial split - prose leads, terminal recedes */
     grid-template-columns: 1.12fr 0.88fr;
     gap: 96px;
   }
@@ -1294,7 +1294,7 @@ select:focus-visible,
 }
 
 .about-bio-para strong {
-  /* Editorial emphasis Ã¢â‚¬â€ serif italic at a slightly larger optical size */
+  /* Editorial emphasis - serif italic at a slightly larger optical size */
   font-family: var(--font-instrument), Georgia, serif;
   font-style: italic;
   font-weight: 400;
@@ -1317,7 +1317,7 @@ select:focus-visible,
   will-change: color;
 }
 
-/* Right column ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â terminal container */
+/* Right column - terminal container */
 .about-terminal-wrap {
   display: flex;
   align-items: center;
@@ -1326,7 +1326,7 @@ select:focus-visible,
   will-change: transform, opacity;
 }
 
-/* Terminal ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Double-Bezel applied */
+/* Terminal - Double-Bezel applied */
 .about-snippet {
   width: 100%;
   /* Outer shell */
@@ -1393,7 +1393,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   CURRENTLY BUILDING ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Agentic Automation Pipeline
+   CURRENTLY BUILDING - Agentic Automation Pipeline
    ============================================================ */
 .pipeline-wrapper {
   position: relative;
@@ -1662,7 +1662,7 @@ select:focus-visible,
   transform: translateZ(40px);
 }
 
-/* Draggable scrub playhead ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Electric Blue accent */
+/* Draggable scrub playhead - Electric Blue accent */
 .pipeline-playhead {
   position: absolute;
   top: 4px;
@@ -1868,7 +1868,7 @@ select:focus-visible,
   }
 }
 
-/* Contact link ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â same bezel-shell pattern at small scale */
+/* Contact link - same bezel-shell pattern at small scale */
 .contact-link {
   display: inline-flex;
   align-items: center;
@@ -1911,7 +1911,7 @@ select:focus-visible,
 /* ============================================================
    FOOTER
    ============================================================ */
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Footer Ã¢â‚¬â€ quiet baseline sign-off on a floor surface Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Footer - quiet baseline sign-off on a floor surface -- */
 .site-footer {
   position: relative;
   z-index: 1;
@@ -1926,7 +1926,7 @@ select:focus-visible,
   margin: 0 auto;
   display: grid;
   /* 1fr / auto / 1fr keeps the status line dead-centered regardless of the
-     side widths Ã¢â‚¬â€ the fix for the old space-between unevenness. */
+     side widths - the fix for the old space-between unevenness. */
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
@@ -1972,7 +1972,7 @@ select:focus-visible,
   height: 7px;
   border-radius: 50%;
   background: #7CCF9A;
-  /* signal-green pulse Ã¢â‚¬â€ stilled automatically under reduced motion */
+  /* signal-green pulse - stilled automatically under reduced motion */
   animation: footerPulse 2.4s ease-in-out infinite;
 }
 
@@ -2047,7 +2047,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   TERMINAL BLOCK ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â animated typewriter terminal
+   TERMINAL BLOCK - animated typewriter terminal
    ============================================================ */
 .term-shell {
   width: 100%;
@@ -2242,7 +2242,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   SCROLLBAR ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â minimal chrome
+   SCROLLBAR - minimal chrome
    ============================================================ */
 ::-webkit-scrollbar {
   width: 5px;
@@ -2270,7 +2270,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   HERO ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Two-column inner grid for text + canvas sequence
+   HERO - Two-column inner grid for text + canvas sequence
    ============================================================ */
 .hero-inner-grid {
   display: grid;
@@ -2288,13 +2288,13 @@ select:focus-visible,
 }
 
 .hero-text-col {
-  /* The text column ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no constraints, lets the heading breathe */
+  /* The text column - no constraints, lets the heading breathe */
   position: relative;
   z-index: 1;
 }
 
 /* ============================================================
-   CANVAS SEQUENCE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â hero 3D object frame scrubber
+   CANVAS SEQUENCE - hero 3D object frame scrubber
    ============================================================ */
 .hero-canvas-wrap {
   position: relative;
@@ -2318,14 +2318,14 @@ select:focus-visible,
   width: 100%;
   height: 100%;
   border-radius: 20px;
-  /* Subtle inner glow ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â makes the canvas feel like it's emitting light */
+  /* Subtle inner glow - makes the canvas feel like it's emitting light */
   box-shadow:
     0 0 0 1px var(--border-hairline),
     0 0 60px rgba(var(--accent-rgb), 0.06),
     inset 0 1px 0 rgba(201, 168, 82, 0.04);
 }
 
-/* Vignette overlay ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â blends the canvas edges into the dark background.
+/* Vignette overlay - blends the canvas edges into the dark background.
    Uses the exact body/card background hex to prevent muddy edges. */
 .hero-canvas-vignette {
   position: absolute;
@@ -2338,7 +2338,7 @@ select:focus-visible,
 }
 
 /* ============================================================
-   GLASS IMAGE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â WebGL R3F canvas wrapper
+   GLASS IMAGE - WebGL R3F canvas wrapper
    ============================================================ */
 .glass-image-wrap {
   position: relative;
@@ -2359,7 +2359,7 @@ select:focus-visible,
   height: 100% !important;
 }
 
-/* Fallback for SSR ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â matches static image sizing */
+/* Fallback for SSR - matches static image sizing */
 .glass-image-fallback {
   width: 100%;
   height: 200px;
@@ -2368,7 +2368,7 @@ select:focus-visible,
   opacity: 0.80;
 }
 
-/* Placeholder ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â styled to match the project palette */
+/* Placeholder - styled to match the project palette */
 .glass-image-placeholder {
   width: 100%;
   height: 200px;
@@ -2389,14 +2389,14 @@ canvas.glass-image-canvas {
   height: 100% !important;
 }
 
-/* Project glass image ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â matches existing project-image dimensions */
+/* Project glass image - matches existing project-image dimensions */
 .project-glass-image {
   width: 100%;
   height: 200px;
 }
 
 /* ============================================================
-   SC-CARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 3D perspective + Z-layer system
+   SC-CARD - 3D perspective + Z-layer system
    ============================================================ */
 
 /* Enable 3D transform space on the card itself */
@@ -2414,11 +2414,11 @@ canvas.glass-image-canvas {
   /* allow z-layer children to visually pop */
 }
 
-/* Z-layer utility Ã¢â‚¬â€ inner elements that float at different depths */
+/* Z-layer utility - inner elements that float at different depths */
 .sc-z-layer {
   position: relative;
   will-change: transform;
-  /* Base resting Z Ã¢â‚¬â€ JS overrides per-layer */
+  /* Base resting Z - JS overrides per-layer */
   transform: translateZ(4px);
   transform-style: preserve-3d;
 }
@@ -2429,13 +2429,13 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   STICKY DECK Ã¢â‚¬â€ Project Cards Stack
+   STICKY DECK - Project Cards Stack
    Cards use position:sticky to stack; GSAP animates scale/opacity
    on background cards as each new card slides over them.
    ============================================================ */
 
 /* ============================================================
-   STICKY DECK Ã¢â‚¬â€ Asymmetric Split Layout
+   STICKY DECK - Asymmetric Split Layout
    Left:  sticky text panel that crossfades between projects
    Right: stacking image cards using position:sticky + GSAP depth
    ============================================================ */
@@ -2447,7 +2447,7 @@ canvas.glass-image-canvas {
 
 /* Below 900px the WebGL laptop is display:none, so don't let this section's
    reveal hinge on the laptop's scroll-driven crossfade (which flips the
-   initial inline opacity:0 Ã¢â€ â€™ 1). Force it visible here Ã¢â‚¬â€ !important beats the
+   initial inline opacity:0 -> 1). Force it visible here - !important beats the
    inline style; bulletproof, no scroll/GSAP timing dependency. */
 @media (max-width: 899px) {
   .sticky-deck-section {
@@ -2456,7 +2456,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Section header Ã¢â‚¬â€ a full standalone page. Centered display heading
+/* Section header - a full standalone page. Centered display heading
    over a clean obsidian field, ready for a 3D background layer to be
    slotted behind it later. */
 .sd-header {
@@ -2477,7 +2477,7 @@ canvas.glass-image-canvas {
   margin-bottom: 0;
 }
 
-/* Scroll cue Ã¢â‚¬â€ anchored to the page's bottom-left grid edge */
+/* Scroll cue - anchored to the page's bottom-left grid edge */
 .sd-header-cue {
   position: absolute;
   bottom: 44px;
@@ -2514,18 +2514,18 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-   CASE-STUDY STAGE Ã¢â‚¬â€ one project on screen at a time
+/* --------------------------------------------------------------
+   CASE-STUDY STAGE - one project on screen at a time
 
    Desktop: a tall .cs-track provides scroll length while the inner
-   .cs-viewport is held still with position:sticky (NOT a GSAP pin Ã¢â‚¬â€
+   .cs-viewport is held still with position:sticky (NOT a GSAP pin -
    .stack-section is transformed by StackTransitions, which would
    break position:fixed; this matches the sticky pattern About /
    Contact use). A scrub trigger reads scroll and crossfades the
    slides (see StickyDeckSection.tsx). The rail jumps on click.
    Mobile / reduced-motion: the track is auto-height and the viewport
    is static, so slides simply flow as a plain vertical stack.
-   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+   -------------------------------------------------------------- */
 .cs-track {
   position: relative;
   width: 100%;
@@ -2541,7 +2541,7 @@ canvas.glass-image-canvas {
 }
 
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  /* ~85vh of scroll per project transition Ã¢â‚¬â€ a deliberate beat
+  /* ~85vh of scroll per project transition - a deliberate beat
      without an exhausting track. */
   .cs-track {
     height: calc(100vh + (var(--cs-count, 4) - 1) * 85vh);
@@ -2601,7 +2601,7 @@ canvas.glass-image-canvas {
   color: var(--ink-1);
 }
 
-/* Slide host Ã¢â‚¬â€ vertical stack by default (mobile / reduced-motion);
+/* Slide host - vertical stack by default (mobile / reduced-motion);
    on the desktop scrub it collapses to a single block holding the
    absolutely-stacked, crossfading slides. */
 .cs-stagebox {
@@ -2650,7 +2650,7 @@ canvas.glass-image-canvas {
   overflow: hidden;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Image carousel Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Image carousel ------------------------------------------- */
 .cs-imgwrap {
   position: absolute;
   inset: 0;
@@ -2668,7 +2668,7 @@ canvas.glass-image-canvas {
   opacity: 1;
 }
 
-/* Edge arrows Ã¢â‚¬â€ hidden until hover/focus, never overlap the lightbox click */
+/* Edge arrows - hidden until hover/focus, never overlap the lightbox click */
 .cs-arrow {
   position: absolute;
   top: 50%;
@@ -2711,7 +2711,7 @@ canvas.glass-image-canvas {
   .cs-arrow { opacity: 0.85; }
 }
 
-/* Touch tap target Ã¢â€°Â¥ 44px for the carousel arrows */
+/* Touch tap target >= 44px for the carousel arrows */
 @media (max-width: 767px) {
   .cs-arrow {
     width: 44px;
@@ -2748,7 +2748,7 @@ canvas.glass-image-canvas {
 
 
 /* Touch: pad the dot's clickable box out to ~42px while keeping the
-   visual dot small (placed AFTER the base .cs-dot so it isn't overridden Ã¢â‚¬â€
+   visual dot small (placed AFTER the base .cs-dot so it isn't overridden -
    media queries add no specificity). */
 @media (max-width: 767px) {
   .cs-dots {
@@ -2769,7 +2769,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Caption under the image Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Caption under the image ---------------------------------- */
 .cs-caption {
   display: flex;
   flex-direction: column;
@@ -2921,7 +2921,7 @@ canvas.glass-image-canvas {
   color: var(--ink-1);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile / reduced-motion: plain vertical stack Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Mobile / reduced-motion: plain vertical stack -- */
 @media (max-width: 767px) {
   .cs-viewport {
     padding: 0 24px;
@@ -2990,7 +2990,7 @@ canvas.glass-image-canvas {
   object-fit: contain;
 }
 
-/* Vignette overlay Ã¢â‚¬â€ faint now that the caption moved out from over the
+/* Vignette overlay - faint now that the caption moved out from over the
    image; just enough to seat the image in the frame. */
 .sd-img-vignette {
   position: absolute;
@@ -3002,7 +3002,7 @@ canvas.glass-image-canvas {
 }
 
 /* Pipeline visualisation */
-/* Ã¢â€â‚¬Ã¢â€â‚¬ High-End Animated Pipeline Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- High-End Animated Pipeline -- */
 .sd-pipeline {
   position: absolute;
   inset: 3px;
@@ -3122,7 +3122,7 @@ canvas.glass-image-canvas {
   color: rgba(201, 168, 82, 0.10);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Shared text styles (reused by the case-study stage) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Shared text styles (reused by the case-study stage) ------- */
 .sd-card-tags {
   display: flex;
   flex-wrap: wrap;
@@ -3152,7 +3152,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Tap-toggled glow (mobile/touch Ã¢â‚¬â€ applied via JS only when hover is
+/* Tap-toggled glow (mobile/touch - applied via JS only when hover is
    unavailable; mirrors the desktop :hover look). */
 .sd-tag.is-glow {
   color: var(--ink-1);
@@ -3192,7 +3192,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Outro Ã¢â‚¬â€ centers the CTA as a closing beat and supplies the
+/* -- Outro - centers the CTA as a closing beat and supplies the
    trailing scroll length that delays the CRT collapse until after it.
    .stack-section's "bottom bottom" (the CRT trigger) only arrives once
    this block has fully scrolled past, so the fold happens after the CTA. */
@@ -3211,7 +3211,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ CTA Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- CTA ------------------------------------------------------- */
 .sd-cta {
   position: relative;
   z-index: 1;
@@ -3244,10 +3244,10 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-   LIGHTBOX Ã¢â‚¬â€ portalled to <body>, so a real viewport-fixed overlay
+/* --------------------------------------------------------------
+   LIGHTBOX - portalled to <body>, so a real viewport-fixed overlay
    (the .stack-section transform can't reach it here).
-   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+   -------------------------------------------------------------- */
 .cs-lightbox {
   position: fixed;
   inset: 0;
@@ -3363,7 +3363,7 @@ canvas.glass-image-canvas {
   gap: 7px;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Reduced motion override Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Reduced motion override ----------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   /* No pin / scrub: slides flow as a stack and chrome that only makes
      sense while scrubbing (ghost numeral, counter, progress) is hidden. */
@@ -3379,7 +3379,7 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   REDUCED MOTION Ã¢â‚¬â€ mandatory accessibility
+   REDUCED MOTION - mandatory accessibility
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
 
@@ -3413,10 +3413,10 @@ canvas.glass-image-canvas {
   will-change: transform, opacity;
   transform: translateZ(0);
   isolation: isolate;
-  /* margin-bottom not needed Ã¢â‚¬â€ position:fixed is out of document flow */
+  /* margin-bottom not needed - position:fixed is out of document flow */
 }
 
-/* Atmospheric depth Ã¢â‚¬â€ a raspberry pool low-left and a faint teal orb
+/* Atmospheric depth - a raspberry pool low-left and a faint teal orb
    upper-left, painted BEHIND the transparent canvas so the laptop mesh
    always sits above it (never tinted) and the glow fades out with the
    layer at the projects handoff. Desktop only (layer is hidden < 900px). */
@@ -3445,14 +3445,14 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   COMET CARD Ã¢â‚¬â€ Perspective tilt card (Perplexity Comet style)
-   Architecture: wrap Ã¢â€ â€™ shell (outer bezel) Ã¢â€ â€™ core (inner bezel)
+   COMET CARD - Perspective tilt card (Perplexity Comet style)
+   Architecture: wrap -> shell (outer bezel) -> core (inner bezel)
    Motion: RAF lerp via inline transform on .comet-card-wrap
    ============================================================ */
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Outermost wrapper: owns the perspective transform Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Outermost wrapper: owns the perspective transform -- */
 .comet-card-wrap {
-  /* transform is applied via JS Ã¢â‚¬â€ keep GPU on this layer */
+  /* transform is applied via JS - keep GPU on this layer */
   will-change: transform;
   transform-style: preserve-3d;
   /* Smooth snap back when JS resets to identity */
@@ -3463,7 +3463,7 @@ canvas.glass-image-canvas {
   height: 100%;
 }
 
-/* Honour system motion preference Ã¢â‚¬â€ freeze the card flat */
+/* Honour system motion preference - freeze the card flat */
 @media (prefers-reduced-motion: reduce) {
   .comet-card-wrap {
     transform: none !important;
@@ -3471,7 +3471,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Outer shell: 1 px glass border + ambient glow Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Outer shell: 1 px glass border + ambient glow -- */
 .comet-card-shell {
   width: 100%;
   height: 100%;
@@ -3496,7 +3496,7 @@ canvas.glass-image-canvas {
     var(--shadow-hover);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Inner core: OLED black pane, inner refraction on top edge Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Inner core: OLED black pane, inner refraction on top edge -- */
 .comet-card-core {
   width: 100%;
   height: 100%;
@@ -3513,7 +3513,7 @@ canvas.glass-image-canvas {
 /* ============================================================
    EDITORIAL HEADER SYSTEM
    Oversized asymmetric display headings with serif-italic
-   accents Ã¢â‚¬â€ replaces the tiny mono section labels in the
+   accents - replaces the tiny mono section labels in the
    Projects and About sections.
    ============================================================ */
 .ed-header {
@@ -3564,7 +3564,7 @@ canvas.glass-image-canvas {
   text-wrap: balance;
 }
 
-/* Serif italic counterpoint Ã¢â‚¬â€ the single most editorial gesture */
+/* Serif italic counterpoint - the single most editorial gesture */
 .ed-heading em {
   font-family: var(--font-instrument), Georgia, serif;
   font-style: italic;
@@ -3575,7 +3575,7 @@ canvas.glass-image-canvas {
   margin-right: 0.06em;
 }
 
-/* Asymmetric shove Ã¢â‚¬â€ heading steps off the left margin grid */
+/* Asymmetric shove - heading steps off the left margin grid */
 .ed-heading--indent {
   margin-left: clamp(0px, 9vw, 150px);
 }
@@ -3586,13 +3586,13 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Medium variant Ã¢â‚¬â€ for headers living inside a split column */
+/* Medium variant - for headers living inside a split column */
 .ed-heading--md {
   font-size: clamp(34px, 4.2vw, 56px);
 }
 
 /* ============================================================
-   GLASS PANEL Ã¢â‚¬â€ project text card on obsidian ground
+   GLASS PANEL - project text card on obsidian ground
    ============================================================ */
 .glass-panel {
   position: relative;
@@ -3614,7 +3614,7 @@ canvas.glass-image-canvas {
   }
 }
 
-/* Ghost folio numeral Ã¢â‚¬â€ oversized magazine-style index in the
+/* Ghost folio numeral - oversized magazine-style index in the
    top-right corner of each project text panel */
 .sd-index-ghost {
   position: absolute;
@@ -3632,19 +3632,19 @@ canvas.glass-image-canvas {
 }
 
 /* Keep real panel content above the ghost numeral
-   (accent line excluded Ã¢â‚¬â€ it positions itself absolutely) */
+   (accent line excluded - it positions itself absolutely) */
 .glass-panel>*:not(.sd-index-ghost):not(.sd-card-accent) {
   position: relative;
   z-index: 1;
 }
 
 /* ============================================================
-   NEWFORMCAP Ã¢â‚¬â€ "EDITORIAL FINANCIAL" DESIGN SYSTEM
+   NEWFORMCAP - "EDITORIAL FINANCIAL" DESIGN SYSTEM
    Light "Linen" theme applied to every section below the Hero.
    NOTE: these tokens were authored to the brief (Linen #FAFFFA,
    Obsidian Ink #0D0B09, Editorial-New-role serif display, TWK-
    Lausanne-role grotesk UI). Swap exact values from the official
-   style guide here when available Ã¢â‚¬â€ everything below reads from
+   style guide here when available - everything below reads from
    these variables.
    ============================================================ */
 :root {
@@ -3660,7 +3660,7 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   STACK TRANSITIONS Ã¢â‚¬â€ "String-Tune" scroll choreography
+   STACK TRANSITIONS - "String-Tune" scroll choreography
    Each post-hero section is a sheet. The outgoing section pins,
    scales back under a darkening veil, while the incoming sheet
    slides over it with rounded corners that flatten on arrival.
@@ -3671,7 +3671,7 @@ canvas.glass-image-canvas {
   background: var(--surface-0);
 }
 
-/* Dimming veil Ã¢â‚¬â€ sits above the section's content, faded in by
+/* Dimming veil - sits above the section's content, faded in by
    the boundary timeline as the next sheet covers it */
 .stack-veil {
   position: absolute;
@@ -3682,7 +3682,7 @@ canvas.glass-image-canvas {
   z-index: 50;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Skills section: tighter vertical rhythm + shifted up Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* -- Skills section: tighter vertical rhythm + shifted up -- */
 .skills-spatial .sp-sticky {
   padding-top: clamp(48px, 5vh, 72px);
 }
@@ -3693,19 +3693,19 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   CRT COLLAPSE Ã¢â‚¬â€ Projects Ã¢â€ â€™ Building boundary
-   A fixed, full-viewport layer. A champagne field squashes scaleY Ã¢â€ â€™ 0
-   into a blinding blade across a dark void, then pinches scaleX Ã¢â€ â€™ 0
+   CRT COLLAPSE - Projects -> Building boundary
+   A fixed, full-viewport layer. A champagne field squashes scaleY -> 0
+   into a blinding blade across a dark void, then pinches scaleX -> 0
    inward from both sides and winks out, revealing the Building bento.
    All motion is driven (scaleY / scaleX / opacity / brightness) by
-   StackTransitions on the boundary scrub Ã¢â‚¬â€ these are just the static
+   StackTransitions on the boundary scrub - these are just the static
    styles. Desktop only: never injected on mobile / reduced-motion.
    ============================================================ */
 .crt-fx {
   position: fixed;
   inset: 0;
   z-index: 60;
-  /* sits above the stacked sections (z 1Ã¢â‚¬â€œ5) + veils (z 50),
+  /* sits above the stacked sections (z 1-5) + veils (z 50),
      below the floating nav (z 100) and grain (z 9999) */
   pointer-events: none;
   contain: strict;
@@ -3720,7 +3720,7 @@ canvas.glass-image-canvas {
   will-change: opacity;
 }
 
-/* champagne concentrated at the vertical centre with a white-hot core Ã¢â‚¬â€
+/* champagne concentrated at the vertical centre with a white-hot core -
    squashing scaleY collapses this into the blade; pinching scaleX winks it */
 .crt-fx__blade {
   position: absolute;
@@ -3740,15 +3740,15 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   BURN AWAY Ã¢â‚¬â€ About Ã¢â€ â€™ Contact boundary (R3F overlay)
+   BURN AWAY - About -> Contact boundary (R3F overlay)
    A fixed, full-viewport WebGL canvas (BurnTransition) that
    burns the outgoing surface off to reveal a fully-painted,
    dead-still Contact beneath. Mounted only while the boundary
    is in view; uProgress is scrubbed by StackTransitions.
    Critical positioning is also set inline on the <Canvas> so
-   it overrides R3F's default container style Ã¢â‚¬â€ this block
+   it overrides R3F's default container style - this block
    documents the slot and is the styling hook for later polish.
-   Same z-slot as .crt-fx: above sheets (z 1Ã¢â‚¬â€œ5) + veils (z 50),
+   Same z-slot as .crt-fx: above sheets (z 1-5) + veils (z 50),
    below the floating nav (z 100) and grain (z 9999).
    ============================================================ */
 .burn-fx,
@@ -3765,19 +3765,19 @@ canvas.glass-image-canvas {
 /* Contact burn runway (desktop only). The 200vh track gives the burn
    100vh of sticky travel; the inner .contact-sticky holds Contact
    dead-still at top:0 while the fire scrubs away over it. Sticky
-   rather than a ScrollTrigger pin Ã¢â‚¬â€ a pin engaging under Lenis momentum
+   rather than a ScrollTrigger pin - a pin engaging under Lenis momentum
    at the page bottom dead-locks the main thread. On mobile the wrapper
    is display:contents (a no-op) so the section flows natively. */
 .contact-runway {
   position: relative;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ About Ã¢â€ â€™ Contact burn choreography (desktop + full motion only) Ã¢â€â‚¬Ã¢â€â‚¬
+/* -- About -> Contact burn choreography (desktop + full motion only) --
    The About runway gains a 100vh dead-still tail (350vh total: 150vh
    word-reveal + 100vh hold + 100vh burn) and the Contact runway is
    pulled up underneath it by 200vh. During the entire burn BOTH
-   stickies sit overlapped at top:0 Ã¢â‚¬â€ About (z6, background moved onto
-   its sticky) above, Contact (z5) hidden beneath Ã¢â‚¬â€ and the shader +
+   stickies sit overlapped at top:0 - About (z6, background moved onto
+   its sticky) above, Contact (z5) hidden beneath - and the shader +
    clip-path wipe swap them in place with zero Y translation.
    Gated on the same media as StackTransitions, so mobile and
    reduced-motion keep the plain stacked flow with no overlap. */
@@ -3808,7 +3808,7 @@ canvas.glass-image-canvas {
 }
 
 /* Motion-gated like the overlap above: with reduced motion there is no
-   burn, so the runway/sticky would only add a dead 100vh frozen hold Ã¢â‚¬â€
+   burn, so the runway/sticky would only add a dead 100vh frozen hold -
    fall through to natural flow instead. */
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .contact-runway {
@@ -3824,7 +3824,7 @@ canvas.glass-image-canvas {
 }
 
 /* ============================================================
-   SCROLL GLYPH-STAMP Ã¢â‚¬â€ About heading entry (ScrollScrambleText)
+   SCROLL GLYPH-STAMP - About heading entry (ScrollScrambleText)
    The heading stamps through raw terminal syntax and freezes into
    its final state as the section enters, a champagne hairline tick
    blinking beside it like a metronome. Layout-stable: a hidden sizer
@@ -3836,7 +3836,7 @@ canvas.glass-image-canvas {
   gap: clamp(14px, 1.2vw, 20px);
 }
 
-/* 50Ãƒâ€”2px champagne hairline Ã¢â‚¬â€ the mechanical metronome */
+/* 50-2px champagne hairline - the mechanical metronome */
 .scramble-tick {
   flex: 0 0 auto;
   width: 50px;
@@ -3895,7 +3895,7 @@ canvas.glass-image-canvas {
   border: 0;
 }
 
-/* No stamp on mobile / reduced-motion Ã¢â‚¬â€ heading + tick sit solid */
+/* No stamp on mobile / reduced-motion - heading + tick sit solid */
 @media (max-width: 768px),
 (prefers-reduced-motion: reduce) {
   .scramble-tick {
