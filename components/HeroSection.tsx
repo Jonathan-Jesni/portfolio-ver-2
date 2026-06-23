@@ -316,7 +316,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     <HoverScrambleText text="Connect" />
                   </a>
                   <a
-                    href="https://drive.google.com/file/d/1KbqAgue5IRqOF3_TccUSje8fAvaCFDBK/view?usp=sharing"
+                    href="https://drive.google.com/file/d/1PjAFLcEC_kwnGJyM4wxa47f2SfHLJlmT/view?usp=sharing"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-outline"
