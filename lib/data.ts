@@ -27,11 +27,42 @@ export const PROJECTS = [
     metric: "0.85 F1 · ~25% faster training",
   },
   {
+    id: "bandwidth",
+    title: "BandWidth",
+    subtitle: "Autonomous Multi-Agent CI/CD Pipeline",
+    description:
+      "Orchestrated a 5-agent cross-model pipeline (GPT-4o + DeepSeek-V4-Pro) across 6 containerized microservices to autonomously review, test, fix, and document GitHub PRs via the Band collaboration platform. Built a Flask webhook engine intercepting PR events, executing sandboxed pytest validations, and pushing autonomous fix commits via the GitHub REST API. Deployed on Google Cloud with 100% reliable agent handoffs and deterministic state-routing.",
+    tech: "Python, Flask, Docker, Google Cloud, GitHub API, GPT-4o, DeepSeek-V4-Pro, Band AI, CI/CD, Agentic AI",
+    tags: ["Agentic AI", "Multi-Agent", "CI/CD"],
+    github: "https://github.com/Jonathan-Jesni/BandWidth",
+    links: [
+      { label: "View Source", href: "https://github.com/Jonathan-Jesni/BandWidth" },
+      { label: "Live Demo", href: "http://34.47.213.229:5000/", demo: true },
+    ],
+    images: [
+      "/assets/Bandwidth/High-Precision Medical Image Segmentation using a Hybrid Xception-VGG DoubleUNet.png",
+      "/assets/Bandwidth/Benign Lesion Segmentation_Jaccard-0.9670.png",
+      "/assets/Bandwidth/Malignant Lesion Segmentation_Jaccard-0.9498.png",
+      "/assets/Bandwidth/Model Architecture Diagram.png",
+      "/assets/Bandwidth/BUSI Quantitative Scores.png",
+      "/assets/Bandwidth/BUSI Training and Validation Curves.png",
+    ],
+    imageAlts: [
+      "BandWidth preview 1 (placeholder image)",
+      "BandWidth preview 2 (placeholder image)",
+      "BandWidth preview 3 (placeholder image)",
+      "BandWidth preview 4 (placeholder image)",
+      "BandWidth preview 5 (placeholder image)",
+      "BandWidth preview 6 (placeholder image)",
+    ],
+    metric: "~2-3 min autonomous review cycle · 100% agent handoff reliability",
+  },
+  {
     id: "synthrescue",
     title: "SynthRescue",
     subtitle: "Autonomous AI Triage & Synthetic Data Engine",
     description:
-      "Autonomous AI triage and synthetic data engine. Engineered a procedural 3D Blender pipeline to automate bounding-box annotations across occluded disaster scenes. Trained a custom YOLOv8 model on ~6,115 images to achieve 96.7% precision, and deployed a full-stack dashboard (Next.js, FastAPI, GCP) using Gemini AI to translate drone telemetry into emergency reports.",
+      "Autonomous AI triage and synthetic data engine. Engineered a procedural 3D Blender pipeline to automate bounding-box annotations across occluded disaster scenes. Trained a custom YOLOv8 model on ~6,115 images to achieve 96.7% precision, and deployed a low-latency model inference endpoint (FastAPI REST, Docker, GCP) integrating Gemini AI to translate live drone telemetry into actionable triage reports within ~4.5 seconds.",
     tech: "PyTorch, YOLOv8, Blender Python API, Next.js, FastAPI, Google Cloud",
     tags: ["Computer Vision", "Synthetic Data", "Deep Learning"],
     github:
@@ -61,7 +92,7 @@ export const PROJECTS = [
       "Normalized confusion matrix",
       "SynthRescue system architecture diagram",
     ],
-    metric: "96.7% precision · 6,115 imgs",
+    metric: "96.7% precision · >56% false positive reduction · ~4.5s end-to-end",
   },
   {
     id: "ludex",
@@ -102,7 +133,7 @@ export const PROJECTS = [
     title: "File Converter",
     subtitle: "Document Processing Engine",
     description:
-      "A deterministic two-pass document conversion engine, with structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic.",
+      "A deterministic two-pass document conversion engine, with structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic. Built as the foundation for a document ingestion pipeline: clean, deterministic parsing is the layer that makes downstream ML reliable.",
     tech: "Python, Two-Pass Architecture",
     tags: ["Python", "Document Processing", "Systems Design"],
     github: "https://github.com/Jonathan-Jesni/pdf_converter",
@@ -110,29 +141,29 @@ export const PROJECTS = [
     imageAlts: null,
     pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
     note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
-    metric: "deterministic · no ML / OCR",
+    metric: "two-pass pipeline · fully explainable outputs",
   },
 ] as const;
 
 
 export const BUILDING = [
   {
-    id: "building-converter-v2",
-    status: "In Progress",
-    title: "Document Processing Suite",
+    id: "building-bandwidth",
+    status: "Active",
+    title: "BandWidth",
     description:
-      "Expanding the File Converter into a full document processing system with multi-format conversion, document compression, and extended format support.",
-    tags: ["Python", "Document Processing", "Pipeline"],
-    steps: ["INGEST", "PARSE", "STRUCTURE", "COMPRESS", "RENDER"],
+      "Shipped. Now exploring agent observability and RAG pipeline tooling.",
+    tags: ["Agentic AI", "RAG", "LLMOps"],
+    steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
   {
-    id: "building-exploration",
-    status: "Exploring",
-    title: "New Projects",
+    id: "building-kornia",
+    status: "In Progress",
+    title: "Open Source Contributions (kornia)",
     description:
-      "Researching next areas: LLM tooling, agentic systems, and distributed systems.",
-    tags: ["LLMs", "Agentic AI", "Research"],
-    steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
+      "Contributing to kornia, an open source computer vision library built on PyTorch. Focus on CV utilities and operator implementations.",
+    tags: ["Python", "PyTorch", "Computer Vision", "Open Source"],
+    steps: ["EXPLORE", "IMPLEMENT", "TEST", "PR", "MERGE"],
   },
 ] as const;
 

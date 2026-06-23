@@ -286,12 +286,12 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
               <div ref={subContentRef} className="hero-sub-content">
                 <h2 className="hero-tagline">
-                  I build <TerminalHighlight delay={1.2} color="#C9A852" animate={animate}>AI-powered tools</TerminalHighlight> and systems<br />
-                  that solve <em>real-world problems</em>.
+                  I build <TerminalHighlight delay={1.2} color="#C9A852" animate={animate}>computer vision and deep learning</TerminalHighlight> systems
+                  that go past the notebook, <em>into deployed, production-shaped pipelines</em>.
                 </h2>
 
                 <p className="hero-sub">
-                  AI/ML Engineer focused on <CircuitUnderline delay={2.0} color="#C9A852" animate={animate}>computer vision</CircuitUnderline>, deep learning, and <TerminalHighlight delay={1.4} color="#8FA8C4" animate={animate}>scalable systems</TerminalHighlight>.
+                  AI/ML Engineer focused on <CircuitUnderline delay={2.0} color="#C9A852" animate={animate}>agentic systems</CircuitUnderline> and the <TerminalHighlight delay={1.4} color="#8FA8C4" animate={animate}>infrastructure</TerminalHighlight> that runs them.
                 </p>
 
                 <div className="hero-buttons">

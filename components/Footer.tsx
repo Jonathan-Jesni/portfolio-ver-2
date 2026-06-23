@@ -73,7 +73,7 @@ export default function Footer() {
 
         <span className="footer-status">
           <span className="footer-dot" aria-hidden="true" />
-          available for internships · summer 2026
+          open to Junior AI/ML roles &amp; internships · 2026/2027
         </span>
 
         <span className="footer-stack">

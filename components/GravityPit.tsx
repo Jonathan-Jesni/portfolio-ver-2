@@ -16,6 +16,7 @@ const PILLS = [
   "Keras", "OpenCV", "NumPy", "Pandas", "Blender", "FastAPI",
   "Docker", "Google Cloud", "GPU Computing", "React.js", "JavaScript",
   "HTML5", "CSS3", "Tailwind CSS",
+  "Agentic AI", "CI/CD", "REST APIs", "LangChain", "Hugging Face",
 ];
 
 const PILL_H   = 34;   // px — pill height

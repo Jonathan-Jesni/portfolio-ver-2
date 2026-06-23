@@ -17,6 +17,7 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
   ludex:            "44, 60%, 56%",   /* gold           */
+  bandwidth:        "196, 42%, 56%",  /* teal           */
   "file-converter": "209, 33%, 66%",  /* dusty blue     */
   "double-unet":    "32, 55%, 50%",   /* bronze         */
   synthrescue:      "215, 28%, 60%",  /* slate blue     */
