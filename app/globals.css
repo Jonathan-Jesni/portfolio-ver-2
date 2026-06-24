@@ -3638,26 +3638,6 @@ canvas.glass-image-canvas {
   z-index: 1;
 }
 
-/* ============================================================
-   NEWFORMCAP - "EDITORIAL FINANCIAL" DESIGN SYSTEM
-   Light "Linen" theme applied to every section below the Hero.
-   NOTE: these tokens were authored to the brief (Linen #FAFFFA,
-   Obsidian Ink #0D0B09, Editorial-New-role serif display, TWK-
-   Lausanne-role grotesk UI). Swap exact values from the official
-   style guide here when available - everything below reads from
-   these variables.
-   ============================================================ */
-:root {
-  /* Role-based font stacks */
-  --font-display: var(--font-instrument), Georgia, serif;
-  --font-ui: var(--font-hanken), var(--font-jakarta), system-ui, sans-serif;
-
-  /* Editorial type scale */
-  --nf-display-1: clamp(52px, 8vw, 112px);
-  --nf-display-2: clamp(36px, 5vw, 64px);
-  --nf-display-3: clamp(26px, 3.2vw, 40px);
-  --nf-lead: clamp(18px, 2vw, 22px);
-}
 
 /* ============================================================
    STACK TRANSITIONS - "String-Tune" scroll choreography

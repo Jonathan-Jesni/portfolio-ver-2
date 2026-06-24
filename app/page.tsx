@@ -12,6 +12,7 @@ import ContactSection from "../components/ContactSection";
 import StackTransitions from "../components/StackTransitions";
 import HeadlineReveal from "../components/HeadlineReveal";
 import ScrollVelocitySkew from "../components/ScrollVelocitySkew";
+import InViewMount from "../components/InViewMount";
 
 import { BUILDING } from "../lib/data";
 import gsap from "gsap";
@@ -248,7 +249,9 @@ export default function Home() {
               Technologies and frameworks I use to engineer robust, scalable systems.
             </p>
             <div style={{ touchAction: "none" }}>
-              <GravityPit />
+              <InViewMount minHeight={420}>
+                <GravityPit />
+              </InViewMount>
             </div>
           </div>
         </SpatialSection>
