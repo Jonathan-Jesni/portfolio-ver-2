@@ -502,6 +502,37 @@ class WebGLBoundary extends Component<
 /* ─────────────────────────────────────────────────────────────────────
    INTERACTIVE MODEL — top-level export
    ───────────────────────────────────────────────────────────────── */
+/* Pauses the laptop's render loop once the hero is scrolled past. The
+   Canvas defaults to frameloop="always" (continuous rAF + GPU draws); the
+   laptop only needs frames while the hero is on screen. When the Projects
+   section is comfortably in view the hero 3D layer has already faded out,
+   so we drop to frameloop="never" and resume the moment Projects leaves
+   (scroll back up). Pure visibility gate — no animation logic changes. */
+function FrameloopGate({ targetRef }: { targetRef?: React.RefObject<HTMLElement | null> }) {
+  const setFrameloop = useThree((s) => s.setFrameloop);
+  const invalidate = useThree((s) => s.invalidate);
+
+  useEffect(() => {
+    const el = targetRef?.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setFrameloop("never"); // hero done — stop rendering the laptop
+        } else {
+          setFrameloop("always"); // hero back in view — resume
+          invalidate();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [targetRef, setFrameloop, invalidate]);
+
+  return null;
+}
+
 export interface InteractiveModelProps {
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
 }
@@ -539,6 +570,8 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           onIncline={() => setDpr(2)}
           onDecline={() => setDpr(1)}
         />
+
+        <FrameloopGate targetRef={portfolioSectionRef} />
 
         <ambientLight intensity={1.5} />
         <directionalLight position={[8, 12, 6]} intensity={2.2} />
