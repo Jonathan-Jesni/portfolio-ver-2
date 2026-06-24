@@ -1,0 +1,50 @@
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, 'JetBrains Mono', 'DejaVu Sans Mono', 'Consolas', monospace">
+  <defs>
+    <radialGradient id="vig" cx="50%" cy="2%" r="80%">
+      <stop offset="0" stop-color="#4ade80" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#4ade80" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="#0c0c0c"/>
+  <rect width="1280" height="720" fill="url(#vig)"/>
+
+  <!-- top bar -->
+  <text x="64" y="68" fill="#f2f2ec" font-size="20" font-weight="700"><tspan fill="#4ade80">$ </tspan>bandwidth<tspan fill="#4ade80">▍</tspan></text>
+  <circle cx="1130" cy="62" r="5" fill="#4ade80"/>
+  <text x="1144" y="67" fill="#6b716a" font-size="15">online</text>
+
+  <!-- terminal window -->
+  <g transform="translate(64,104)">
+    <rect x="0" y="0" width="1152" height="500" rx="14" fill="#101010" stroke="#262626" stroke-width="1.5"/>
+    <rect x="0" y="0" width="1152" height="46" rx="14" fill="#0e0e0e"/>
+    <rect x="0" y="30" width="1152" height="16" fill="#0e0e0e"/>
+    <line x1="0" y1="46" x2="1152" y2="46" stroke="#262626" stroke-width="1.5"/>
+    <circle cx="28" cy="23" r="6" fill="#2a2a2a"/>
+    <circle cx="50" cy="23" r="6" fill="#2a2a2a"/>
+    <circle cx="72" cy="23" r="6" fill="#2a2a2a"/>
+    <text x="100" y="28" fill="#6b716a" font-size="14">~/bandwidth</text>
+    <text x="1128" y="28" fill="#6b716a" font-size="12.5" text-anchor="end">the autonomous code-review crew</text>
+
+    <!-- body -->
+    <text x="36" y="92" fill="#6b716a" font-size="18.5"># five specialized agents · one coordination layer — Band</text>
+    <text x="36" y="128" fill="#f2f2ec" font-size="18.5"><tspan fill="#4ade80">$ </tspan>bandwidth run --pr 42</text>
+
+    <text x="36" y="170" font-size="17.5" fill="#4ade80">[architect]<tspan fill="#d7d7cf" dx="14">room created · diff + source posted</tspan></text>
+    <text x="36" y="204" font-size="17.5" fill="#4ade80" xml:space="preserve">[reviewer]<tspan fill="#d7d7cf" dx="14">verdict: </tspan><tspan fill="#f2f2ec" font-weight="700">blocker</tspan><tspan fill="#d7d7cf"> &#8594; engineer</tspan></text>
+    <text x="36" y="238" font-size="17.5" fill="#4ade80" xml:space="preserve">[engineer]<tspan fill="#d7d7cf" dx="14">pushed fix </tspan><tspan fill="#f2f2ec" font-weight="700">a1b2c3d</tspan><tspan fill="#d7d7cf"> · re-running</tspan></text>
+    <text x="36" y="272" font-size="17.5" fill="#4ade80" xml:space="preserve">[reviewer]<tspan fill="#d7d7cf" dx="14">verdict: </tspan><tspan fill="#f2f2ec" font-weight="700">pass</tspan><tspan fill="#d7d7cf"> &#8594; tester</tspan></text>
+    <text x="36" y="306" font-size="17.5" fill="#4ade80" xml:space="preserve">[tester]<tspan fill="#d7d7cf" dx="14">pytest · </tspan><tspan fill="#4ade80" font-weight="700">6 passed</tspan></text>
+    <text x="36" y="340" font-size="17.5" fill="#4ade80">[documenter]<tspan fill="#d7d7cf" dx="14">PR description updated ✓</tspan></text>
+    <text x="36" y="374" font-size="17.5" fill="#4ade80">$ <tspan fill="#4ade80">█</tspan></text>
+
+    <text x="36" y="452" fill="#f2f2ec" font-size="56" font-weight="800" letter-spacing="-1">band<tspan fill="#4ade80">width</tspan></text>
+  </g>
+
+  <!-- footer chips -->
+  <rect x="64" y="648" width="146" height="34" rx="8" fill="#101010" stroke="#262626"/>
+  <text x="80" y="670" fill="#d7d7cf" font-size="15">cross-model</text>
+  <rect x="226" y="648" width="300" height="34" rx="8" fill="#101010" stroke="#262626"/>
+  <text x="242" y="670" fill="#d7d7cf" font-size="15">coordinated through <tspan fill="#4ade80">Band</tspan></text>
+  <text x="1216" y="670" fill="#6b716a" font-size="16" text-anchor="end">built by <tspan fill="#d7d7cf" font-weight="700">Dev Duo</tspan></text>
+</svg>
