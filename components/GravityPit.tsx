@@ -19,37 +19,43 @@ const PILLS = [
   "Agentic AI", "CI/CD", "REST APIs", "LangChain", "Hugging Face",
 ];
 
-const PILL_H   = 34;   // px — pill height
-const CHAR_W   = 7.0;  // px — JetBrains Mono 11px average char width
-const H_PAD    = 36;   // px — total horizontal padding
+/* Pill sizing. Shrinks on phones so the full set fits the pit; the
+   same metrics drive the DOM layout AND the physics bodies, so they
+   always agree. CHAR_W is tuned to the pill font at each FONT size. */
+type PillMetrics = {
+  PILL_H: number; CHAR_W: number; H_PAD: number;
+  MIN_W: number; GUTTER: number; PAD: number; FONT: number;
+};
 
-function pillWidth(text: string) {
-  return Math.max(text.length * CHAR_W + H_PAD, 72);
+function metricsFor(viewportW: number): PillMetrics {
+  return viewportW <= 767
+    ? { PILL_H: 26, CHAR_W: 5.9, H_PAD: 20, MIN_W: 54, GUTTER: 6, PAD: 14, FONT: 9 }
+    : { PILL_H: 34, CHAR_W: 7.0, H_PAD: 36, MIN_W: 72, GUTTER: 8, PAD: 20, FONT: 11 };
+}
+
+function pillWidth(text: string, m: PillMetrics) {
+  return Math.max(text.length * m.CHAR_W + m.H_PAD, m.MIN_W);
 }
 
 // Lays pills in left-to-right, top-to-bottom rows; returns each
 // pill's top-left corner.
-function buildStaticGrid(containerW: number): { x: number; y: number }[] {
-  const GUTTER     = 8;   // px gap between pills
-  const PAD_X      = 20;  // container horizontal padding
-  const PAD_Y      = 20;  // container vertical padding
-
+function buildStaticGrid(containerW: number, m: PillMetrics): { x: number; y: number }[] {
   const positions: { x: number; y: number }[] = [];
-  let curX = PAD_X;
-  let curY = PAD_Y;
-  const rowH = PILL_H + GUTTER; // uniform row height
+  let curX = m.PAD;
+  let curY = m.PAD;
+  const rowH = m.PILL_H + m.GUTTER; // uniform row height
 
   for (const label of PILLS) {
-    const pw = pillWidth(label);
+    const pw = pillWidth(label, m);
 
     /* Wrap to next row if pill doesn't fit */
-    if (curX + pw > containerW - PAD_X && curX > PAD_X) {
-      curX = PAD_X;
+    if (curX + pw > containerW - m.PAD && curX > m.PAD) {
+      curX = m.PAD;
       curY += rowH;
     }
 
     positions.push({ x: curX, y: curY });
-    curX += pw + GUTTER;
+    curX += pw + m.GUTTER;
   }
 
   return positions;
@@ -67,6 +73,9 @@ export default function GravityPit() {
   const bodiesRef     = useRef<Matter.Body[]>([]);
   const rafIdRef      = useRef<number>(0);
   const staticPos     = useRef<{ x: number; y: number }[]>([]);
+  /* Pill metrics, resolved from viewport width on mount (PHASE 1) and
+     reused by the physics setup so layout + bodies stay consistent. */
+  const metricsRef    = useRef<PillMetrics>(metricsFor(1280));
 
   /* Check reduced-motion preference — disable physics entirely if true */
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -81,20 +90,23 @@ export default function GravityPit() {
     const container = containerRef.current;
     if (!container) return;
 
+    const m = metricsFor(window.innerWidth);
+    metricsRef.current = m;
     const W = container.offsetWidth;
-    const positions = buildStaticGrid(W);
+    const positions = buildStaticGrid(W, m);
     staticPos.current = positions;
 
     /* Size and position every pill in the static layout */
     PILLS.forEach((label, i) => {
       const el = pillRefs.current[i];
       if (!el) return;
-      const pw   = pillWidth(label);
+      const pw   = pillWidth(label, m);
       const pos  = positions[i];
 
       el.style.width           = `${pw}px`;
-      el.style.height          = `${PILL_H}px`;
-      el.style.transformOrigin = `${pw / 2}px ${PILL_H / 2}px`;
+      el.style.height          = `${m.PILL_H}px`;
+      el.style.fontSize        = `${m.FONT}px`;
+      el.style.transformOrigin = `${pw / 2}px ${m.PILL_H / 2}px`;
       el.style.transform       = `translate(${pos.x}px, ${pos.y}px) rotate(0rad)`;
       /* Only add the smooth transition when motion is allowed */
       if (!reducedMotion) {
@@ -116,6 +128,7 @@ export default function GravityPit() {
 
       const W = container!.offsetWidth;
       const H = container!.offsetHeight;
+      const m = metricsRef.current;
 
       /* Create engine with gravity */
       const engine = Engine.create({ gravity: { y: 1.6 } });
@@ -136,15 +149,15 @@ export default function GravityPit() {
       // above), so the first drag "shatters" the silent grid in place.
       const positions = staticPos.current;
       const bodies = PILLS.map((label, i) => {
-        const pw  = pillWidth(label);
+        const pw  = pillWidth(label, m);
         const pos = positions[i] ?? { x: W / 2, y: H / 2 };
 
         /* Centre of the pill = top-left + half-dimensions */
         const cx = pos.x + pw / 2;
-        const cy = pos.y + PILL_H / 2;
+        const cy = pos.y + m.PILL_H / 2;
 
-        return Bodies.rectangle(cx, cy, pw, PILL_H, {
-          chamfer:     { radius: PILL_H / 2 },
+        return Bodies.rectangle(cx, cy, pw, m.PILL_H, {
+          chamfer:     { radius: m.PILL_H / 2 },
           restitution: 0.30,
           friction:    0.12,
           frictionAir: 0.022,
@@ -196,9 +209,9 @@ export default function GravityPit() {
         bodies.forEach((body, i) => {
           const el = pillRefs.current[i];
           if (!el) return;
-          const pw = pillWidth(PILLS[i]);
+          const pw = pillWidth(PILLS[i], m);
           const x  = body.position.x - pw / 2;
-          const y  = body.position.y - PILL_H / 2;
+          const y  = body.position.y - m.PILL_H / 2;
           el.style.transition = "none";
           el.style.transform  = `translate(${x}px, ${y}px) rotate(${body.angle}rad)`;
         });

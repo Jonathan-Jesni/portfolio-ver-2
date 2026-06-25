@@ -452,9 +452,20 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
      momentum (matching the {J} logo's power4.inOut feel). */
   const jumpTo = (i: number) => {
     const st = stRef.current;
-    if (!st) return; /* mobile / reduced-motion: slides are already stacked */
-    const target = st.start + (i / (N - 1)) * (st.end - st.start);
     const lenis = getLenis();
+    if (!st) {
+      /* mobile / reduced-motion: slides are stacked in normal flow —
+         scroll to the i-th card directly (clear of the floating nav). */
+      const el = trackRef.current?.querySelectorAll<HTMLElement>(".cs-slide")[i];
+      if (!el) return;
+      if (lenis) {
+        lenis.scrollTo(el, { duration: 1.0, easing: power4InOut, offset: -96 });
+      } else {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+    const target = st.start + (i / (N - 1)) * (st.end - st.start);
     if (lenis) {
       lenis.scrollTo(target, { duration: 1.3, easing: power4InOut });
     } else {

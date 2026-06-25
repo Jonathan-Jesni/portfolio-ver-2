@@ -912,6 +912,14 @@ select:focus-visible,
   -webkit-user-select: none;
 }
 
+/* Phones: taller pit so the shrunk pill grid fits (JS reads offsetHeight
+   for the physics walls, so this just works). */
+@media (max-width: 767px) {
+  .gravity-pit {
+    height: 560px;
+  }
+}
+
 /* Static by default - cursor only changes once physics is active */
 .gravity-pit.physics-active {
   cursor: grab;
