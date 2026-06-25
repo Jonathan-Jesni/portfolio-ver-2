@@ -157,12 +157,12 @@ export const BUILDING = [
     steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
   {
-    id: "building-kornia",
+    id: "building-roboflow",
     status: "In Progress",
-    title: "Open Source Contributions (kornia)",
+    title: "Open Source Contributions (Roboflow)",
     description:
-      "Contributing to kornia, an open source computer vision library built on PyTorch. Focus on CV utilities and operator implementations.",
-    tags: ["Python", "PyTorch", "Computer Vision", "Open Source"],
+      "Contributing to Roboflow's supervision, an open-source computer vision library for building detection, segmentation, and tracking pipelines. Focus on reusable CV utilities and annotation tooling.",
+    tags: ["Python", "Computer Vision", "Open Source"],
     steps: ["EXPLORE", "IMPLEMENT", "TEST", "PR", "MERGE"],
   },
 ] as const;

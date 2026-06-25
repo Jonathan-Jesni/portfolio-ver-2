@@ -36,20 +36,21 @@ export default function SmoothScroll({
     /* Feed Lenis scroll position into ScrollTrigger every frame */
     lenis.on("scroll", ScrollTrigger.update);
 
-    /* Drive Lenis from the GSAP ticker — keeps them frame-locked */
-    gsap.ticker.add((time: number) => {
+    /* Drive Lenis from the GSAP ticker — keeps them frame-locked.
+       Keep the exact same function reference so cleanup can remove it
+       (gsap.ticker.remove matches by reference). */
+    const tickerFn = (time: number) => {
       lenis.raf(time * 1000);
-    });
+    };
+    gsap.ticker.add(tickerFn);
 
     gsap.ticker.lagSmoothing(0);
 
     return () => {
       setLenis(null);
       lenis.off("scroll", ScrollTrigger.update);
+      gsap.ticker.remove(tickerFn);
       lenis.destroy();
-      gsap.ticker.remove((time: number) => {
-        lenis.raf(time * 1000);
-      });
     };
   }, []);
 

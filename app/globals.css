@@ -2968,9 +2968,9 @@ canvas.glass-image-canvas {
   height: 1px;
   background: linear-gradient(90deg,
       transparent 0%,
-      hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 30%,
-      hsl(var(--card-hue, "210, 100%, 56%") / 0.9) 50%,
-      hsl(var(--card-hue, "210, 100%, 56%") / 0.6) 70%,
+      hsla(var(--card-hue, 210, 100%, 56%), 0.6) 30%,
+      hsla(var(--card-hue, 210, 100%, 56%), 0.9) 50%,
+      hsla(var(--card-hue, 210, 100%, 56%), 0.6) 70%,
       transparent 100%);
   pointer-events: none;
   z-index: 2;
@@ -3416,7 +3416,7 @@ canvas.glass-image-canvas {
   /* margin-bottom not needed - position:fixed is out of document flow */
 }
 
-/* Atmospheric depth - a raspberry pool low-left and a faint teal orb
+/* Atmospheric depth - a gold pool low-left and a faint cool-blue orb
    upper-left, painted BEHIND the transparent canvas so the laptop mesh
    always sits above it (never tinted) and the glow fades out with the
    layer at the projects handoff. Desktop only (layer is hidden < 900px). */
@@ -3597,7 +3597,7 @@ canvas.glass-image-canvas {
 .glass-panel {
   position: relative;
   height: 100%;
-  background: rgba(11, 17, 30, 0.88);
+  background: rgba(22, 19, 16, 0.88);
   border: 1px solid var(--border-hairline);
   border-radius: 18px;
   padding: 44px 40px 40px;
