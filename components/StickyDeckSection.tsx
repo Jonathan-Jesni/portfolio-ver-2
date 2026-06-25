@@ -454,8 +454,12 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
     const st = stRef.current;
     const lenis = getLenis();
     if (!st) {
-      /* mobile / reduced-motion: slides are stacked in normal flow —
+      /* mobile / reduced-motion: slides are stacked in normal flow.
+         Move the active "glow" to the tapped box (the scrub-driven
+         render() that normally does this never runs on mobile), then
          scroll to the i-th card directly (clear of the floating nav). */
+      const thumbs = trackRef.current?.querySelectorAll<HTMLElement>(".cs-thumb");
+      thumbs?.forEach((th, ti) => th.classList.toggle("is-active", ti === i));
       const el = trackRef.current?.querySelectorAll<HTMLElement>(".cs-slide")[i];
       if (!el) return;
       if (lenis) {
