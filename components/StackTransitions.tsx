@@ -188,10 +188,15 @@ export default function StackTransitions() {
         const stuckInner =
           section.querySelector<HTMLElement>(".cs-viewport, .sp-sticky") ??
           section;
+        /* NB: deliberately NOT matching .about-sticky here. The About→Contact
+           burn (i===3) animates .about-sticky's clipPath to wipe About away;
+           if the Skills→About incoming clip also targeted .about-sticky, the
+           two scrub timelines would fight over the same property and a fast
+           scroll could leave About un-wiped, covering Contact. About has no
+           .cs-viewport/.sp-sticky, so it falls back to `next` (the wrapper) —
+           a different element from the burn target, as it was pre-refactor. */
         const incomingInner =
-          next.querySelector<HTMLElement>(
-            ".cs-viewport, .sp-sticky, .about-sticky",
-          ) ?? next;
+          next.querySelector<HTMLElement>(".cs-viewport, .sp-sticky") ?? next;
 
         const tl = gsap.timeline({
           scrollTrigger: {
