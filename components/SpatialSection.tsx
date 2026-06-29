@@ -10,12 +10,18 @@ interface SpatialSectionProps {
   id: string;
   children: React.ReactNode;
   className?: string;
+  /* ScrollTrigger `end` for the reveal scrub — controls how much scroll the
+     drop-in is spread across. Larger = slower glide. Must stay shorter than
+     the runway height so a settled hold tail remains for the boundary
+     slide-over (see .sp-runway in globals.css). */
+  revealEnd?: string;
 }
 
 export default function SpatialSection({
   id,
   children,
   className = "",
+  revealEnd = "top top+=240%",
 }: SpatialSectionProps) {
   const runwayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -44,39 +50,40 @@ export default function SpatialSection({
           scrollTrigger: {
             trigger: runway,
             start: "top top",
-            // Cap the reveal to the first ~150vh of the (now 350vh) runway so
-            // content still settles ~110vh in — leaving the remaining ~140vh
-            // as a settled hold for the boundary slide-over. Was "bottom
-            // bottom", which stretched the reveal across the whole runway.
-            end: "top top+=150%",
-            scrub: 1.5,
+            // The reveal is spread across `revealEnd` of scroll (default 240vh)
+            // for a smooth glide-in, leaving the rest of the runway as a settled
+            // hold for the boundary slide-over. Per-section so Building and
+            // Skills can pace independently (see globals.css runway heights).
+            end: revealEnd,
+            scrub: 2,
           },
         });
 
-        // 0 → 0.38: section content drops in and locks into the reading plateau
+        // section content drops in and locks into the reading plateau —
+        // gentle power ease (no overshoot) over a long window so it glides
         tl.to(
           content,
           {
             clipPath: "inset(0% 0 0% 0)",
             opacity: 1,
             y: 0,
-            ease: "back.out(1.5)",
-            duration: 0.38,
+            ease: "power2.out",
+            duration: 0.5,
           },
           0
         );
 
-        // 0.25 → 0.72: each .sp-reveal child snaps in, staggered
+        // each .sp-reveal child eases in, staggered, after the content settles
         reveals.forEach((el, i) => {
           tl.to(
             el,
             {
               clipPath: "inset(-20% -20% -20% -20%)",
               yPercent: 0,
-              ease: "back.out(1.5)",
-              duration: 0.12,
+              ease: "power2.out",
+              duration: 0.22,
             },
-            0.25 + i * 0.06
+            0.30 + i * 0.10
           );
         });
 
@@ -107,7 +114,7 @@ export default function SpatialSection({
   return (
     <section ref={runwayRef} className={`sp-runway ${className}`} style={{ position: "relative" }}>
       {/* Anchor target placed 45% down the runway so content is fully dropped-in */}
-      <div id={id} style={{ position: "absolute", top: "45%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
+      <div id={id} style={{ position: "absolute", top: "55%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
       <div className="sp-sticky">
         <div ref={contentRef} className="sp-content">
           {children}

@@ -234,7 +234,7 @@ export default function Home() {
       </div>
 
       <div className="stack-section stack-section--skills" data-stack style={{ zIndex: 3 }}>
-        <SpatialSection id="skills" className="skills-spatial">
+        <SpatialSection id="skills" className="skills-spatial" revealEnd="top top+=360%">
           <div className="container">
             <header className="ed-header" style={{ marginBottom: "20px" }}>
               <div className="ed-header-row sp-reveal">

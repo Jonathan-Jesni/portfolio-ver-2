@@ -847,13 +847,14 @@ select:focus-visible,
    ============================================================ */
 .sp-runway {
   position: relative;
-  /* 350vh (was 250vh): the extra 100vh extends the .sp-sticky hold so the
-     section stays settled-and-held while the next sheet slides over it. With
-     a 250vh runway the sticky released ~100vh too soon and the pin-free
-     boundary slide-over (StackTransitions) started covering the content
-     before it finished revealing. The reveal scrub is capped to the first
-     ~150vh (see SpatialSection.tsx) so reveal pacing is unchanged. */
-  height: 350vh;
+  /* 360vh (Building): the reveal scrub is spread across the first ~240vh (see
+     SpatialSection.tsx) for a slow, smooth glide-in, leaving the remaining
+     ~120vh as a settled .sp-sticky hold while the next sheet slides over it.
+     The reveal window stays comfortably shorter than the runway so the
+     pin-free boundary slide-over (StackTransitions) never starts covering
+     content before it finishes revealing. Skills overrides this height (it
+     uses a slower 360vh reveal window) — see .skills-spatial below. */
+  height: 360vh;
 }
 
 .sp-sticky {
@@ -3677,6 +3678,13 @@ canvas.glass-image-canvas {
 }
 
 /* -- Skills section: tighter vertical rhythm + shifted up -- */
+/* Taller runway than the base .sp-runway (360vh): Skills reveals over a
+   slower 360vh window (revealEnd prop in page.tsx) so it needs 360vh reveal +
+   ~120vh settled hold for the boundary slide-over. */
+.sp-runway.skills-spatial {
+  height: 480vh;
+}
+
 .skills-spatial .sp-sticky {
   padding-top: clamp(48px, 5vh, 72px);
 }
