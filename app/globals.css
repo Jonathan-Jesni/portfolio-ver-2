@@ -3678,11 +3678,10 @@ canvas.glass-image-canvas {
 }
 
 /* -- Skills section: tighter vertical rhythm + shifted up -- */
-/* Taller runway than the base .sp-runway (360vh): Skills reveals over a
-   slower 360vh window (revealEnd prop in page.tsx) so it needs 360vh reveal +
-   ~120vh settled hold for the boundary slide-over. */
+/* Same runway as base .sp-runway (360vh): reveal spreads over 240vh (default)
+   leaving ~120vh settled hold for the boundary slide-over. */
 .sp-runway.skills-spatial {
-  height: 480vh;
+  height: 360vh;
 }
 
 .skills-spatial .sp-sticky {
