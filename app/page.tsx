@@ -214,7 +214,7 @@ export default function Home() {
         <div className="stack-veil" aria-hidden="true" />
       </div>
 
-      <div className="stack-section" data-stack style={{ zIndex: 2 }}>
+      <div className="stack-section stack-section--building" data-stack style={{ zIndex: 2 }}>
         <SpatialSection id="currently-building">
           <div className="container">
             <header className="ed-header" style={{ marginBottom: "56px" }}>
@@ -233,7 +233,7 @@ export default function Home() {
         <div className="stack-veil" aria-hidden="true" />
       </div>
 
-      <div className="stack-section" data-stack style={{ zIndex: 3 }}>
+      <div className="stack-section stack-section--skills" data-stack style={{ zIndex: 3 }}>
         <SpatialSection id="skills" className="skills-spatial">
           <div className="container">
             <header className="ed-header" style={{ marginBottom: "20px" }}>

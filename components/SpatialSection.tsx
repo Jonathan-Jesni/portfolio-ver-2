@@ -44,7 +44,11 @@ export default function SpatialSection({
           scrollTrigger: {
             trigger: runway,
             start: "top top",
-            end: "bottom bottom",
+            // Cap the reveal to the first ~150vh of the (now 350vh) runway so
+            // content still settles ~110vh in — leaving the remaining ~140vh
+            // as a settled hold for the boundary slide-over. Was "bottom
+            // bottom", which stretched the reveal across the whole runway.
+            end: "top top+=150%",
             scrub: 1.5,
           },
         });

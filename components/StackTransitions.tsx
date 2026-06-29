@@ -170,16 +170,28 @@ export default function StackTransitions() {
         const cfg = BOUNDARIES[Math.min(i, BOUNDARIES.length - 1)];
         const veil = section.querySelector<HTMLElement>(":scope > .stack-veil");
 
-        /* Pin the outgoing sheet for exactly the 100vh it takes the
-           incoming sheet to travel across the viewport */
-        ScrollTrigger.create({
-          trigger: section,
-          start: "bottom bottom",
-          endTrigger: next,
-          end: "top top",
-          pin: true,
-          pinSpacing: false,
-        });
+        /* ── Hold strategy: pin-free sticky + overlap ─────────────────────
+           Every boundary now holds its outgoing sheet with the section's own
+           internal CSS sticky (.cs-viewport for Projects, .sp-sticky for
+           Building/Skills) and overlaps the incoming sheet with a CSS
+           negative margin (.stack-section--building / --skills / --about),
+           mirroring the About → Contact boundary (i=3) which has always
+           worked this way. We transform the STUCK INNER, never the flow box,
+           so nothing leaves flow → no ~100vh reflow → no CLS. (The old
+           pin:true/pinSpacing:false on boundaries 0–2 was the dominant CLS
+           source: it pulled the section out of flow with no spacer.)
+
+           Boundary 0 (Projects → Building) is special only in that Projects'
+           .cs-viewport has already released by the boundary — but the CRT
+           collapse overlay masks the swap, so transforming the released inner
+           is harmless and the overlap margin still lands Building correctly. */
+        const stuckInner =
+          section.querySelector<HTMLElement>(".cs-viewport, .sp-sticky") ??
+          section;
+        const incomingInner =
+          next.querySelector<HTMLElement>(
+            ".cs-viewport, .sp-sticky, .about-sticky",
+          ) ?? next;
 
         const tl = gsap.timeline({
           scrollTrigger: {
@@ -191,7 +203,7 @@ export default function StackTransitions() {
         });
 
         tl.to(
-          section,
+          stuckInner,
           {
             scale: cfg.scale,
             yPercent: cfg.y,
@@ -272,7 +284,7 @@ export default function StackTransitions() {
         }
 
         tl.fromTo(
-          next,
+          incomingInner,
           {
             clipPath: `inset(0% ${cfg.inset}% 0% ${cfg.inset}% round ${cfg.radius}px ${cfg.radius}px 0px 0px)`,
           },

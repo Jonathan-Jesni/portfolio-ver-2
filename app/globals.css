@@ -847,7 +847,13 @@ select:focus-visible,
    ============================================================ */
 .sp-runway {
   position: relative;
-  height: 250vh;
+  /* 350vh (was 250vh): the extra 100vh extends the .sp-sticky hold so the
+     section stays settled-and-held while the next sheet slides over it. With
+     a 250vh runway the sticky released ~100vh too soon and the pin-free
+     boundary slide-over (StackTransitions) started covering the content
+     before it finished revealing. The reveal scrub is capped to the first
+     ~150vh (see SpatialSection.tsx) so reveal pacing is unchanged. */
+  height: 350vh;
 }
 
 .sp-sticky {
@@ -3788,6 +3794,26 @@ canvas.glass-image-canvas {
 
   .contact-runway {
     margin-top: -200vh;
+  }
+
+  /* ── Pin-free boundary overlap (CLS fix) ──────────────────────────────
+     Boundaries 1 & 2 dropped their GSAP pins (pinSpacing:false reflowed the
+     page ~100vh and was the dominant CLS source). Instead the incoming sheet
+     is pulled up one viewport so its sticky inner overlaps the still-held
+     .sp-sticky of the outgoing section for the 100vh transition window the
+     scrub timeline maps — same mechanism as .contact-runway above. Gated to
+     desktop + full motion so mobile / reduced-motion keep plain stacked flow.
+     NOTE: -100vh is a starting value; tune against the in-browser CLS meter. */
+  .stack-section--building {
+    margin-top: -100vh;
+  }
+
+  .stack-section--skills {
+    margin-top: -100vh;
+  }
+
+  .stack-section--about {
+    margin-top: -100vh;
   }
 }
 
