@@ -37,8 +37,8 @@ useTexture.preload("/assets/textures/Mac Keyboard.jpg");
    (a ~1440px viewport @ dpr 2 ≈ 2880 device px across the face); 1024 was the
    source of the zoom-in blur. The heavy per-frame upload only happens during
    the brief dots phase. ── */
-const BOOT_W = 2048;
-const BOOT_H = 1316;
+const BOOT_W = 1536;
+const BOOT_H = 987;
 
 /* ── Phase thresholds (hero scroll progress, 0→1) ── */
 const BOOT_P1 = 0.40; // black  →  spinning-dots  start
@@ -166,9 +166,11 @@ function drawBootScreen(
 function LaptopScene({
   canvasWrapperDOMRef,
   portfolioSectionRef,
+  lowPerf = false,
 }: {
   canvasWrapperDOMRef: React.RefObject<HTMLDivElement | null>;
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+  lowPerf?: boolean;
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
@@ -255,7 +257,11 @@ function LaptopScene({
       materials.Image.needsUpdate      = true;
     }
     if (materials.Screen) {
-      materials.Screen.roughness = 0.2;
+      // Rougher than a true glossy panel on purpose: at 0.2 the env reflection
+      // catches the screen at a grazing angle as the lid tilts and the thin
+      // highlight breaks into stair-stepped "lines" (specular aliasing MSAA
+      // can't resolve). 0.35 spreads it into a soft sheen.
+      materials.Screen.roughness = 0.35;
       materials.Screen.metalness = 0.1;
     }
     if (materials.Keys) {
@@ -454,7 +460,9 @@ function LaptopScene({
      reduced motion. ── */
   useFrame((state) => {
     const g = parallaxGroupRef.current;
-    if (!g || prefersReduced) return;
+    // lowPerf machines skip the per-frame tilt lerp entirely (one of the two
+    // biggest per-frame costs alongside supersampling).
+    if (!g || prefersReduced || lowPerf) return;
     // 1 before the plunge zone, ramping to 0 across 0.55→0.75 progress.
     const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.55) / 0.2));
     const targetX = state.pointer.y * 0.10 * fade;
@@ -539,10 +547,28 @@ export interface InteractiveModelProps {
 
 export default function InteractiveModel({ portfolioSectionRef }: InteractiveModelProps) {
   const canvasWrapperDOMRef = useRef<HTMLDivElement>(null);
-  // Adaptive resolution: start at a balanced 1.5×, let PerformanceMonitor
-  // pull it down to 1× on sustained frame drops and back up to 2× when the
-  // GPU has headroom. Cheaper than a fixed dpr={[1,2]} on weak hardware.
-  const [dpr, setDpr] = useState(1.5);
+  // Adaptive resolution: start at native 1× so even weak/integrated GPUs get a
+  // smooth hero from the first frame. PerformanceMonitor only climbs to 1.5×
+  // when there's sustained headroom (never 2×), and flipflops caps the number
+  // of swings so it settles instead of oscillating on borderline hardware.
+  const [dpr, setDpr] = useState(1);
+
+  // Sticky low-perf mode. Once true it never flips back — a weak GPU shouldn't
+  // oscillate in and out of the heavy path. When active we pin DPR at 1 and
+  // drop pointer parallax (the two biggest per-frame costs). MSAA stays on for
+  // everyone because antialias is a context-creation flag — toggling it would
+  // force a Canvas remount (visible flash). Seeded from a cheap, reliable hint
+  // (low core count) so very weak machines start light instead of stuttering
+  // until PerformanceMonitor reacts.
+  const [degraded, setDegraded] = useState(() => {
+    if (typeof navigator === "undefined") return false;
+    const cores = navigator.hardwareConcurrency;
+    return typeof cores === "number" && cores > 0 && cores <= 4;
+  });
+  // Mirror for reads inside the PerformanceMonitor callbacks (which close over
+  // stale state otherwise).
+  const degradedRef = useRef(degraded);
+  degradedRef.current = degraded;
 
   return (
     <div
@@ -559,7 +585,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
       <Canvas
         camera={{ position: [0, 0, 6.5], fov: 45 }}
         dpr={dpr}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        gl={{ antialias: true, alpha: true, powerPreference: "default" }}
         style={{
           width: "100%",
           height: "100%",
@@ -567,8 +593,9 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         }}
       >
         <PerformanceMonitor
-          onIncline={() => setDpr(2)}
-          onDecline={() => setDpr(1)}
+          flipflops={3}
+          onIncline={() => { if (!degradedRef.current) setDpr(1.5); }}
+          onDecline={() => { setDpr(1); setDegraded(true); }}
         />
 
         <FrameloopGate targetRef={portfolioSectionRef} />
@@ -593,6 +620,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           <LaptopScene
             canvasWrapperDOMRef={canvasWrapperDOMRef}
             portfolioSectionRef={portfolioSectionRef}
+            lowPerf={degraded}
           />
         </Suspense>
       </Canvas>
