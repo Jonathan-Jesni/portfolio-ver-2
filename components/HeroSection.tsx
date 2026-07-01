@@ -161,12 +161,12 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
          repulsion and the scroll-out fly-apart are never clipped. */
       gsap.to(".name-part-1", {
         yPercent: 0,
-        ease: "power4.out",
+        ease: "power3.out",
         duration: 1.35,
       });
       gsap.to(".name-part-2", {
         yPercent: 0,
-        ease: "power4.out",
+        ease: "power3.out",
         duration: 1.35,
         onComplete: () => {
           gsap.set(".hero-name-mask", { overflow: "visible" });
@@ -177,7 +177,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
       gsap.to([".hero-tagline", ".hero-sub", ".hero-buttons"], {
         y: 0,
         opacity: 1,
-        ease: "power4.out",
+        ease: "power3.out",
         duration: 1.1,
         stagger: 0.08,
         delay: 0.25,

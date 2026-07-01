@@ -77,7 +77,7 @@ export default function AboutSection() {
         tl.fromTo(
           terminalRef.current,
           { y: 150, opacity: 0 },
-          { y: 0, opacity: 1, duration: 2.0, ease: "power4.out" },
+          { y: 0, opacity: 1, duration: 2.0, ease: "power3.out" },
           0
         );
       }

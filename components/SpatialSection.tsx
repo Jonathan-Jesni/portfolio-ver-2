@@ -75,7 +75,7 @@ export default function SpatialSection({
             clipPath: "inset(0% 0 0% 0)",
             opacity: 1,
             y: 0,
-            ease: "power2.out",
+            ease: "power3.out",
             duration: 0.5,
           },
           0
@@ -88,7 +88,7 @@ export default function SpatialSection({
             {
               clipPath: "inset(-20% -20% -20% -20%)",
               yPercent: 0,
-              ease: "power2.out",
+              ease: "power3.out",
               duration: 0.22,
             },
             0.30 + i * 0.10
