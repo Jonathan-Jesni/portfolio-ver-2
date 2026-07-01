@@ -447,7 +447,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         frameloop="demand"
         dpr={dpr}
         gl={{
-          antialias: !isLowGPU,
+          antialias: true,
           alpha: true,
           // "high-performance" routes to the dGPU on hybrid systems.
           // On a pure iGPU machine it has no effect but doesn't hurt.
