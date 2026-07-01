@@ -72,6 +72,7 @@ export default function GravityPit() {
   const runnerRef     = useRef<Matter.Runner | null>(null);
   const bodiesRef     = useRef<Matter.Body[]>([]);
   const rafIdRef      = useRef<number>(0);
+  const observerRef   = useRef<IntersectionObserver | null>(null);
   const staticPos     = useRef<{ x: number; y: number }[]>([]);
   /* Pill metrics, resolved from viewport width on mount (PHASE 1) and
      reused by the physics setup so layout + bodies stay consistent. */
@@ -206,6 +207,8 @@ export default function GravityPit() {
 
       /* RAF loop: sync DOM to physics bodies */
       const sync = () => {
+        (window as unknown as { __pitSyncCount: number }).__pitSyncCount =
+          ((window as unknown as { __pitSyncCount: number }).__pitSyncCount ?? 0) + 1;
         bodies.forEach((body, i) => {
           const el = pillRefs.current[i];
           if (!el) return;
@@ -226,6 +229,26 @@ export default function GravityPit() {
       /* Begin syncing */
       rafIdRef.current = requestAnimationFrame(sync);
 
+      /* Pause the physics step + DOM sync whenever the pit scrolls out of
+         view — otherwise the Runner and RAF loop burn CPU forever once the
+         section is behind you. 200px margin resumes just before it re-enters. */
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            if (rafIdRef.current) return; // already running
+            if (runnerRef.current) Runner.run(runnerRef.current, engine);
+            rafIdRef.current = requestAnimationFrame(sync);
+          } else {
+            cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = 0;
+            if (runnerRef.current) Runner.stop(runnerRef.current);
+          }
+        },
+        { rootMargin: "200px" }
+      );
+      observer.observe(container!);
+      observerRef.current = observer;
+
       /* Mark state */
       setPhysicsActive(true);
     }
@@ -241,6 +264,7 @@ export default function GravityPit() {
   /* ── Cleanup physics engine on unmount ── */
   useEffect(() => {
     return () => {
+      observerRef.current?.disconnect();
       cancelAnimationFrame(rafIdRef.current);
       if (runnerRef.current)  Runner.stop(runnerRef.current);
       if (engineRef.current)  {

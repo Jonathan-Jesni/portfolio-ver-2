@@ -234,7 +234,12 @@ export default function Home() {
       </div>
 
       <div className="stack-section stack-section--skills" data-stack style={{ zIndex: 3 }}>
-        <SpatialSection id="skills" className="skills-spatial">
+        {/* anchorPercent=40: Skills' 360vh runway + About's -100vh overlap
+            margin means About starts entering the viewport at 44.4% down
+            the runway ((360-100-100)/360) — 40% keeps the nav landing point
+            (and scroll-spy "active" threshold) safely before that, per
+            SpatialSection's anchorPercent doc. */}
+        <SpatialSection id="skills" className="skills-spatial" anchorPercent={40}>
           <div className="container">
             <header className="ed-header" style={{ marginBottom: "20px" }}>
               <div className="ed-header-row sp-reveal">

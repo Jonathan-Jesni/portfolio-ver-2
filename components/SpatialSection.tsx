@@ -15,6 +15,13 @@ interface SpatialSectionProps {
      the runway height so a settled hold tail remains for the boundary
      slide-over (see .sp-runway in globals.css). */
   revealEnd?: string;
+  /* Where the nav's scroll-to anchor sits, as % down the runway. Must stay
+     below (runwayHeight − nextSectionOverlapMargin − 100vh) / runwayHeight,
+     or the next section's overlap margin (see .stack-section--* in
+     globals.css) will already be bleeding into view when landed on. Default
+     55% is safe for runway/margin combos with more headroom; nav-linked
+     sections with tighter overlap (e.g. Skills) should pass a lower value. */
+  anchorPercent?: number;
 }
 
 export default function SpatialSection({
@@ -22,6 +29,7 @@ export default function SpatialSection({
   children,
   className = "",
   revealEnd = "top top+=240%",
+  anchorPercent = 55,
 }: SpatialSectionProps) {
   const runwayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -113,8 +121,10 @@ export default function SpatialSection({
 
   return (
     <section ref={runwayRef} className={`sp-runway ${className}`} style={{ position: "relative" }}>
-      {/* Anchor target placed 45% down the runway so content is fully dropped-in */}
-      <div id={id} style={{ position: "absolute", top: "55%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
+      {/* Anchor target placed anchorPercent down the runway so content is
+          settled but the nav landing stays clear of the next section's
+          overlap margin (see anchorPercent doc above). */}
+      <div id={id} style={{ position: "absolute", top: `${anchorPercent}%`, width: "100%", pointerEvents: "none" }} aria-hidden="true" />
       <div className="sp-sticky">
         <div ref={contentRef} className="sp-content">
           {children}

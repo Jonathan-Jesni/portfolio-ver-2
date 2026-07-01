@@ -44,9 +44,15 @@ export default function ScrollVelocitySkew() {
         );
 
         let lastY = window.scrollY;
+        let lastSkewTime = 0;
 
-        /* gsap.ticker passes (time, deltaTime[ms]) — derive px/sec */
+        /* gsap.ticker passes (time, deltaTime[ms]) — derive px/sec.
+           Capped at ~60fps: the quickTo 0.5s ease absorbs the coarser cadence,
+           so on 120Hz displays we skip every other frame for free. */
         const apply = (_time: number, deltaTime: number) => {
+          const now = performance.now();
+          if (now - lastSkewTime < 16) return;
+          lastSkewTime = now;
           const y = window.scrollY;
           const v = deltaTime > 0 ? ((y - lastY) / deltaTime) * 1000 : 0;
           lastY = y;

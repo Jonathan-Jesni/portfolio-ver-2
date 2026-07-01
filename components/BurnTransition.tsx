@@ -4,6 +4,13 @@ import { useEffect, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { burnControls } from "../lib/burnControls";
+import { detectGPU } from "../lib/detectGPU";
+
+/* iGPU tier, probed once at module load. On low-end GPUs the fullscreen fbm is
+   the single most expensive thing on the page, so we drop octaves 5 → 3 and
+   render the burn canvas at 0.75× — both invisible at scroll speed. */
+const isLowGPU =
+  typeof window !== "undefined" && detectGPU() === "low";
 
 /* ─────────────────────────────────────────────────────────────
    BurnTransition — full-viewport R3F burn overlay for the
@@ -42,7 +49,9 @@ const VERTEX = /* glsl */ `
   }
 `;
 
-const FRAGMENT = /* glsl */ `
+/* Octave count is baked in as a compile-time constant (a `uniform int` loop
+   bound won't compile under GLSL ES 1.00 — bounds must be constant). */
+const buildFragment = (octaves: number) => /* glsl */ `
   precision highp float;
 
   varying vec2 vUv;
@@ -80,7 +89,7 @@ const FRAGMENT = /* glsl */ `
     float v = 0.0;
     float amp = 0.5;
     mat2 rot = mat2(0.80, 0.60, -0.60, 0.80);  // rotate each octave to break grid
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < ${octaves}; i++) {
       v += amp * noise(p);
       p = rot * p * 2.0;
       amp *= 0.5;
@@ -160,7 +169,7 @@ function BurnPlane() {
     () =>
       new THREE.ShaderMaterial({
         vertexShader: VERTEX,
-        fragmentShader: FRAGMENT,
+        fragmentShader: buildFragment(isLowGPU ? 3 : 5),
         uniforms: {
           uProgress: { value: 0 },
           uActive: { value: 0 },
@@ -218,6 +227,7 @@ export default function BurnTransition() {
       className="burn-fx"
       style={{ position: "fixed", inset: 0, zIndex: 60, pointerEvents: "none" }}
       frameloop="demand"
+      dpr={isLowGPU ? 0.75 : 1}
       gl={{ alpha: true, antialias: false }}
       onCreated={({ gl }) => gl.setClearAlpha(0)}
     >

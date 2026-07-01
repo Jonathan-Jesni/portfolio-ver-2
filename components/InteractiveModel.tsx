@@ -15,6 +15,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { detectGPU } from "../lib/detectGPU";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -26,31 +27,6 @@ useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
 // manifest and force the 9s failsafe.
 useTexture.preload("/assets/textures/bg.jpg");
 useTexture.preload("/assets/textures/Mac Keyboard.jpg");
-
-/* ── GPU tier detection ────────────────────────────────────────────────────
-   Probes WEBGL_debug_renderer_info before the Canvas mounts so we can set
-   antialias (a context-creation flag, not toggleable post-mount) correctly.
-   Returns "low" for Intel/Mesa iGPU and software renderers, "high" otherwise.
-   Falls back to "high" if the extension is unavailable (privacy mode, etc.).
-   ──────────────────────────────────────────────────────────────────────── */
-function detectGPU(): "low" | "high" {
-  try {
-    const canvas = document.createElement("canvas");
-    const gl =
-      canvas.getContext("webgl") ??
-      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
-    if (!gl) return "high";
-    const ext = gl.getExtension("WEBGL_debug_renderer_info");
-    if (!ext) return "high";
-    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string;
-    // Do NOT call loseContext() — on some GPU drivers it propagates a context-
-    // lost event to all active WebGL contexts on the page. Let GC collect it.
-    canvas.remove();
-    return /intel|mesa|llvmpipe|swiftshader/i.test(renderer) ? "low" : "high";
-  } catch {
-    return "high";
-  }
-}
 
 /* ── Boot-screen canvas dimensions ── */
 const BOOT_W = 1536;
@@ -249,12 +225,12 @@ function LaptopScene({
         trigger: "#hero",
         start: "top top",
         end: "bottom bottom",
-        scrub: 0.6,
+        scrub: 0.3,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           bootProgressRef.current = self.progress;
           // Mark the last scroll time so useFrame can keep ticking for
-          // the 700ms GSAP scrub:0.6 settle tail.
+          // the 350ms GSAP scrub:0.3 settle tail.
           scrollSettleRef.current = performance.now();
           invalidate();
         },
@@ -346,7 +322,7 @@ function LaptopScene({
   useFrame((state) => {
     const progress = bootProgressRef.current;
     const inDots   = !prefersReduced && progress >= BOOT_P1 && progress < BOOT_P2;
-    const inScrubTail = performance.now() - scrollSettleRef.current < 700;
+    const inScrubTail = performance.now() - scrollSettleRef.current < 350;
 
     if (progress !== lastBootProgressRef.current || inDots) {
       lastBootProgressRef.current = progress;
@@ -386,7 +362,15 @@ function LaptopScene({
     if (prefersReduced || lowPerf) return;
     const el = canvasWrapperDOMRef.current;
     if (!el) return;
-    const onMove = () => invalidate();
+    // Throttle to ~30fps — a demand frame every ~32ms is plenty for the 0.06
+    // lerp parallax, and it halves per-move invalidate churn on iGPU.
+    let lastMove = 0;
+    const onMove = () => {
+      const now = performance.now();
+      if (now - lastMove < 32) return;
+      lastMove = now;
+      invalidate();
+    };
     el.addEventListener("pointermove", onMove, { passive: true });
     return () => el.removeEventListener("pointermove", onMove);
   }, [prefersReduced, lowPerf, canvasWrapperDOMRef, invalidate]);
@@ -434,12 +418,11 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
 
   // GPU tier — detected once before Canvas mounts so antialias (a context-
   // creation flag) can be set correctly. "low" = Intel/Mesa iGPU or software
-  // renderer, or any machine with ≤8 logical cores as a conservative fallback.
+  // renderer. (No hardwareConcurrency fallback: ≤8 cores mislabels most capable
+  // laptops as low-end, needlessly disabling antialias + defaulting degraded.)
   const [isLowGPU] = useState(() => {
     if (typeof window === "undefined") return false;
-    if (detectGPU() === "low") return true;
-    const cores = navigator.hardwareConcurrency;
-    return typeof cores === "number" && cores > 0 && cores <= 8;
+    return detectGPU() === "low";
   });
 
   const [dpr, setDpr] = useState(1);
@@ -478,7 +461,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
       >
         <PerformanceMonitor
           flipflops={3}
-          onIncline={() => { if (!degradedRef.current) setDpr(1.5); }}
+          onIncline={() => { if (!degradedRef.current) setDpr(1.2); }}
           onDecline={() => { setDpr(1); setDegraded(true); }}
         />
 
