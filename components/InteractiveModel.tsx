@@ -199,14 +199,6 @@ function LaptopScene({
       materials.Image.toneMapped       = false;
       materials.Image.metalness        = 0;
       materials.Image.roughness        = 1;
-      // The emissive display sits near-coplanar with the glossy Screen glass on
-      // the Lid_Screen mesh; at equal depth the GPU flip-flops which renders on
-      // top at the shared edge → a dashed shimmer as the camera moves through the
-      // lid rotation. Bias the display slightly forward in depth so it
-      // deterministically wins — kills the z-fighting with no geometry change.
-      materials.Image.polygonOffset       = true;
-      materials.Image.polygonOffsetFactor = -1;
-      materials.Image.polygonOffsetUnits  = -1;
       materials.Image.needsUpdate      = true;
     }
     if (materials.Screen) {
@@ -517,13 +509,9 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         <pointLight position={[0, 4, 3]} intensity={1.0} />
 
         {/* Skip Environment IBL on degraded/iGPU — the extra ambient light
-            above compensates so the model doesn't go flat.
-            resolution 256 (up from 64): a 64px env baked the sharp Lightformers
-            into a blocky cubemap → aliased specular on the metallic body edges
-            (read as "jagged" on dGPU, where iGPU skips IBL entirely). 256 is a
-            correctly-filtered one-time render — no per-frame cost. */}
+            above compensates so the model doesn't go flat. */}
         {!degraded && (
-          <Environment resolution={256} background={false}>
+          <Environment resolution={64} background={false}>
             <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#eef2f4" />
             <Lightformer intensity={0.4} position={[-4, 2, -3]} scale={[5, 5, 1]} color="#9fb4d8" />
             <Lightformer form="ring" intensity={0.3} position={[0, 5, 2]} scale={[3, 3, 1]} color="#ffffff" />
