@@ -139,6 +139,9 @@ function LaptopScene({
   const globalContainerRef  = useRef<THREE.Group>(null);
   const lidHingeGroupRef    = useRef<THREE.Group>(null);
   const parallaxGroupRef    = useRef<THREE.Group>(null);
+  // Persistent (unfaded) pointer-parallax accumulator. The applied group
+  // rotation is this × fade, so fade can force it to exactly 0 at cover time.
+  const parallaxCur         = useRef({ x: 0, y: 0 });
   const { camera, size, invalidate } = useThree();
 
   const bootProgressRef     = useRef(0);
@@ -196,6 +199,14 @@ function LaptopScene({
       materials.Image.toneMapped       = false;
       materials.Image.metalness        = 0;
       materials.Image.roughness        = 1;
+      // The emissive display sits near-coplanar with the glossy Screen glass on
+      // the Lid_Screen mesh; at equal depth the GPU flip-flops which renders on
+      // top at the shared edge → a dashed shimmer as the camera moves through the
+      // lid rotation. Bias the display slightly forward in depth so it
+      // deterministically wins — kills the z-fighting with no geometry change.
+      materials.Image.polygonOffset       = true;
+      materials.Image.polygonOffsetFactor = -1;
+      materials.Image.polygonOffsetUnits  = -1;
       materials.Image.needsUpdate      = true;
     }
     if (materials.Screen) {
@@ -372,12 +383,20 @@ function LaptopScene({
     const g = parallaxGroupRef.current;
     if (!g || prefersReduced || lowPerf) return;
     const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.55) / 0.2));
-    const targetX = state.pointer.y * 0.10 * fade;
-    const targetY = state.pointer.x * 0.16 * fade;
-    const dx = targetX - g.rotation.x;
-    const dy = targetY - g.rotation.y;
-    g.rotation.x += dx * 0.06;
-    g.rotation.y += dy * 0.06;
+    // Lerp the UNFADED pointer target in a persistent accumulator, then apply
+    // fade to the resulting rotation. Fading the applied value (not the target)
+    // forces the tilt to exactly 0 the instant fade hits 0 at bootProgress 0.75
+    // — so the cover shot lands dead-center regardless of where the mouse was,
+    // instead of a residual lerp still decaying into the framing.
+    const targetX = state.pointer.y * 0.10;
+    const targetY = state.pointer.x * 0.16;
+    const c = parallaxCur.current;
+    const dx = targetX - c.x;
+    const dy = targetY - c.y;
+    c.x += dx * 0.06;
+    c.y += dy * 0.06;
+    g.rotation.x = c.x * fade;
+    g.rotation.y = c.y * fade;
     // Self-perpetuate the demand loop until the lerp has settled, so the
     // parallax finishes easing after the pointer stops instead of freezing
     // mid-glide (frameloop="demand" renders no frame unless we ask for one).
