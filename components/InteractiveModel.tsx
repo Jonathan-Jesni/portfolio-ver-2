@@ -143,9 +143,13 @@ function LaptopScene({
 
   const bootProgressRef     = useRef(0);
   const lastBootProgressRef = useRef(-1);
-  // Timestamp of the last scroll event. useFrame self-perpetuates for 700ms
-  // after this to let the GSAP scrub:0.6 tail finish easing.
+  // Timestamp of the last scroll event — kept only as a short jitter grace now;
+  // the demand loop is really held open by the scrub tween's own activity below.
   const scrollSettleRef     = useRef(0);
+  // The main scrub timeline's ScrollTrigger, captured so the boot useFrame can
+  // keep rendering until its scrub tween has actually finished easing (a fixed
+  // timeout under-shoots the ease tail → the lid-open stalls just short).
+  const scrollTriggerRef    = useRef<ScrollTrigger | null>(null);
 
   const prefersReduced = useMemo(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -229,13 +233,16 @@ function LaptopScene({
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           bootProgressRef.current = self.progress;
-          // Mark the last scroll time so useFrame can keep ticking for
-          // the 350ms GSAP scrub:0.3 settle tail.
+          // Short grace so a frame is guaranteed right after the last update;
+          // the real settle window is the scrub tween's isActive() (see useFrame).
           scrollSettleRef.current = performance.now();
           invalidate();
         },
       },
     });
+    // Capture the ScrollTrigger so the boot useFrame can keep the demand loop
+    // alive for the full duration of the scrub catch-up ease.
+    scrollTriggerRef.current = tl.scrollTrigger ?? null;
 
     tl.fromTo(
       lidHingeGroupRef.current.rotation,
@@ -322,10 +329,16 @@ function LaptopScene({
   useFrame((state) => {
     const progress = bootProgressRef.current;
     const inDots   = !prefersReduced && progress >= BOOT_P1 && progress < BOOT_P2;
-    const inScrubTail = performance.now() - scrollSettleRef.current < 350;
 
-    if (progress !== lastBootProgressRef.current || inDots) {
-      lastBootProgressRef.current = progress;
+    // Change-detection key: the flat-dark phase (< BOOT_P1) renders identically
+    // regardless of exact progress, so collapse it to a single value. Otherwise
+    // we'd redraw + re-upload the 1536×987 CanvasTexture (~6 MB texImage2D) every
+    // frame across the first 40% of the hero for ZERO visual change — the main
+    // cause of the iGPU scroll stutter. (Dots + fade genuinely change per frame.)
+    const drawKey = progress < BOOT_P1 ? 0 : progress;
+
+    if (drawKey !== lastBootProgressRef.current || inDots) {
+      lastBootProgressRef.current = drawKey;
       drawBootScreen(
         boot.ctx,
         progress,
@@ -336,7 +349,14 @@ function LaptopScene({
       boot.tex.needsUpdate = true;
     }
 
-    // Keep scheduling frames while time-driven animation is running.
+    // Keep scheduling frames while a time- or scrub-driven animation is still
+    // running. The scrub demand window is tied to the scrub tween's actual
+    // activity (not a fixed timeout, which under-shoots the ease tail and stalls
+    // the lid-open just short of complete); a small grace covers update jitter.
+    const scrubTween = scrollTriggerRef.current?.getTween?.();
+    const inScrubTail =
+      (scrubTween ? scrubTween.isActive() : false) ||
+      performance.now() - scrollSettleRef.current < 120;
     if (inDots || inScrubTail) {
       invalidate();
     }
@@ -354,23 +374,26 @@ function LaptopScene({
     const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.55) / 0.2));
     const targetX = state.pointer.y * 0.10 * fade;
     const targetY = state.pointer.x * 0.16 * fade;
-    g.rotation.x += (targetX - g.rotation.x) * 0.06;
-    g.rotation.y += (targetY - g.rotation.y) * 0.06;
+    const dx = targetX - g.rotation.x;
+    const dy = targetY - g.rotation.y;
+    g.rotation.x += dx * 0.06;
+    g.rotation.y += dy * 0.06;
+    // Self-perpetuate the demand loop until the lerp has settled, so the
+    // parallax finishes easing after the pointer stops instead of freezing
+    // mid-glide (frameloop="demand" renders no frame unless we ask for one).
+    if (Math.abs(dx) > 1e-4 || Math.abs(dy) > 1e-4) invalidate();
   });
 
   useEffect(() => {
     if (prefersReduced || lowPerf) return;
     const el = canvasWrapperDOMRef.current;
     if (!el) return;
-    // Throttle to ~30fps — a demand frame every ~32ms is plenty for the 0.06
-    // lerp parallax, and it halves per-move invalidate churn on iGPU.
-    let lastMove = 0;
-    const onMove = () => {
-      const now = performance.now();
-      if (now - lastMove < 32) return;
-      lastMove = now;
-      invalidate();
-    };
+    // Invalidate on every move (no throttle): the parallax useFrame self-limits
+    // its work and self-perpetuates its own settle, and the hero's real cost is
+    // the boot-texture upload, not pointermove. Throttling here starved the lerp
+    // between ticks and left the tilt feeling choppy/stuck. Parallax is
+    // gated off on the lowPerf/iGPU path anyway, so this only runs on dGPU.
+    const onMove = () => invalidate();
     el.addEventListener("pointermove", onMove, { passive: true });
     return () => el.removeEventListener("pointermove", onMove);
   }, [prefersReduced, lowPerf, canvasWrapperDOMRef, invalidate]);
@@ -475,9 +498,13 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         <pointLight position={[0, 4, 3]} intensity={1.0} />
 
         {/* Skip Environment IBL on degraded/iGPU — the extra ambient light
-            above compensates so the model doesn't go flat. */}
+            above compensates so the model doesn't go flat.
+            resolution 256 (up from 64): a 64px env baked the sharp Lightformers
+            into a blocky cubemap → aliased specular on the metallic body edges
+            (read as "jagged" on dGPU, where iGPU skips IBL entirely). 256 is a
+            correctly-filtered one-time render — no per-frame cost. */}
         {!degraded && (
-          <Environment resolution={64} background={false}>
+          <Environment resolution={256} background={false}>
             <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#eef2f4" />
             <Lightformer intensity={0.4} position={[-4, 2, -3]} scale={[5, 5, 1]} color="#9fb4d8" />
             <Lightformer form="ring" intensity={0.3} position={[0, 5, 2]} scale={[3, 3, 1]} color="#ffffff" />

@@ -24,6 +24,10 @@ export function CometCard({
   const wrapRef  = useRef<HTMLDivElement>(null);
   const rafRef   = useRef<number | null>(null);
   const stateRef = useRef({ rx: 0, ry: 0, tx: 0, ty: 0 });
+  /* Idle gate: the rAF lerp loop parks itself once the card has settled back to
+     rest (no hover) so it isn't writing a transform every frame forever. Any
+     pointer move (or leave) re-arms it via wake(). */
+  const wakeRef  = useRef<() => void>(() => {});
 
   /* ── Derive the target tilt/translate from pointer position ── */
   const handleMouseMove = useCallback(
@@ -42,6 +46,7 @@ export function CometCard({
         tx:  nx * translateDepth,
         ty:  ny * translateDepth,
       };
+      wakeRef.current();
     },
     [rotateDepth, translateDepth],
   );
@@ -49,12 +54,15 @@ export function CometCard({
   /* ── Reset on leave ── */
   const handleMouseLeave = useCallback(() => {
     stateRef.current = { rx: 0, ry: 0, tx: 0, ty: 0 };
+    wakeRef.current();
   }, []);
 
   /* ── Animate: lerp the current transform toward the target each frame ── */
   useEffect(() => {
     let crx = 0, cry = 0, ctx = 0, cty = 0;
     const LERP = 0.09;
+    /* Below this the card is visually at its target — stop writing/scheduling. */
+    const EPS = 0.01;
 
     function tick() {
       const { rx, ry, tx, ty } = stateRef.current;
@@ -74,12 +82,40 @@ export function CometCard({
         `;
       }
 
+      /* Park the loop once we've converged on the target (typically rest, 0/0).
+         Snap to the exact target for the final frame so we don't leave a sub-EPS
+         residual transform, then stop scheduling until wake() re-arms. */
+      const settled =
+        Math.abs(rx - crx) < EPS && Math.abs(ry - cry) < EPS &&
+        Math.abs(tx - ctx) < EPS && Math.abs(ty - cty) < EPS;
+
+      if (settled) {
+        crx = rx; cry = ry; ctx = tx; cty = ty;
+        if (el) {
+          el.style.transform = `
+            perspective(900px)
+            rotateX(${crx}deg)
+            rotateY(${cry}deg)
+            translate3d(${ctx * 0.4}px, ${cty * 0.4}px, 0)
+          `;
+        }
+        rafRef.current = null;
+        return;
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     }
+
+    /* wake(): (re)start the loop if it's parked. Called on every pointer move
+       and on leave, so the card animates only while it has somewhere to go. */
+    wakeRef.current = () => {
+      if (rafRef.current === null) rafRef.current = requestAnimationFrame(tick);
+    };
 
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, []);
 
