@@ -16,6 +16,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { detectGPU } from "../lib/detectGPU";
+import { GlProbe } from "./MemProbe";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -143,6 +144,13 @@ function LaptopScene({
   // rotation is this × fade, so fade can force it to exactly 0 at cover time.
   const parallaxCur         = useRef({ x: 0, y: 0 });
   const { camera, size, invalidate } = useThree();
+  /* Live mirror for coverZ: ScrollTrigger's invalidateOnRefresh re-evaluates
+     function-based values on every refresh (which resize triggers), so the
+     scrub setup below must NOT depend on `size` — each PerformanceMonitor
+     DPR flip changed its identity and re-ran the setup, stacking scrub
+     ScrollTriggers (measured 45 on #hero) until the tab OOM'd. */
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
 
   const bootProgressRef     = useRef(0);
   const lastBootProgressRef = useRef(-1);
@@ -272,7 +280,7 @@ function LaptopScene({
     const FACE_HALF_H  = 0.9485;
     const coverZ = () => {
       const t      = Math.tan(THREE.MathUtils.degToRad(45 / 2));
-      const aspect = size.width / Math.max(1, size.height);
+      const aspect = sizeRef.current.width / Math.max(1, sizeRef.current.height);
       const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * COVER_OVERSHOOT;
       return FACE_FRONT_Z + d;
     };
@@ -320,7 +328,13 @@ function LaptopScene({
         .to(layerEl, { opacity: 0, ease: "power2.in", duration: 1 }, 0);
     }
 
-  }, [camera, size, canvasWrapperDOMRef, portfolioSectionRef, invalidate]);
+  }, {
+    /* revertOnUpdate kills the previous timelines/ScrollTriggers before any
+       re-run — @gsap/react's default (revert on unmount only) leaks them in
+       this never-unmounting component. */
+    dependencies: [camera, canvasWrapperDOMRef, portfolioSectionRef, invalidate],
+    revertOnUpdate: true,
+  });
 
   /* ── Boot-screen rendering ──────────────────────────────────────────
      With frameloop="demand" this only runs when a frame was requested.
@@ -498,6 +512,9 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           onIncline={() => { if (!degradedRef.current) setDpr(1.2); }}
           onDecline={() => { setDpr(1); setDegraded(true); }}
         />
+
+        {/* temporary OOM-investigation probe — inert without ?memprobe */}
+        <GlProbe name="hero" />
 
         {/* FrameloopGate removed: frameloop="demand" already renders zero
             frames when nobody calls invalidate(). When hero is offscreen the

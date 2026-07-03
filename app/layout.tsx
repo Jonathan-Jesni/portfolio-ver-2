@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
 import CursorReticle from "../components/CursorReticle";
+import MemProbe from "../components/MemProbe";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -101,6 +102,8 @@ export default function RootLayout({
             never trapped inside a transformed ancestor. Renders null on
             touch / reduced-motion. */}
         <CursorReticle />
+        {/* Temporary OOM-investigation HUD — renders nothing without ?memprobe */}
+        <MemProbe />
         <Analytics />
         <SpeedInsights />
       </body>

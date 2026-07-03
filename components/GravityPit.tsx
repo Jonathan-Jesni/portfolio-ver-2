@@ -37,6 +37,11 @@ function pillWidth(text: string, m: PillMetrics) {
   return Math.max(text.length * m.CHAR_W + m.H_PAD, m.MIN_W);
 }
 
+/* Module-level so they survive InViewMount unmount/remount cycles —
+   temporary OOM-investigation counters, read by MemProbe via window.__pit */
+let probeMounts = 0;
+let probeEngines = 0;
+
 // Lays pills in left-to-right, top-to-bottom rows; returns each
 // pill's top-left corner.
 function buildStaticGrid(containerW: number, m: PillMetrics): { x: number; y: number }[] {
@@ -131,6 +136,7 @@ export default function GravityPit() {
       const H = container!.offsetHeight;
       const m = metricsRef.current;
 
+      probeEngines++;
       /* Create engine with gravity */
       const engine = Engine.create({ gravity: { y: 1.6 } });
       const world  = engine.world;
@@ -207,8 +213,6 @@ export default function GravityPit() {
 
       /* RAF loop: sync DOM to physics bodies */
       const sync = () => {
-        (window as unknown as { __pitSyncCount: number }).__pitSyncCount =
-          ((window as unknown as { __pitSyncCount: number }).__pitSyncCount ?? 0) + 1;
         bodies.forEach((body, i) => {
           const el = pillRefs.current[i];
           if (!el) return;
@@ -260,6 +264,21 @@ export default function GravityPit() {
       container.removeEventListener("pointerdown", activatePhysics);
     };
   }, [reducedMotion]);
+
+  /* ── Temporary OOM-investigation probe (inert without ?memprobe) ── */
+  useEffect(() => {
+    if (!window.location.search.includes("memprobe")) return;
+    probeMounts++;
+    const id = setInterval(() => {
+      (window as unknown as { __pit: object }).__pit = {
+        mounts: probeMounts,
+        engines: probeEngines,
+        bodies: engineRef.current?.world.bodies.length ?? 0,
+        pairs: engineRef.current?.pairs.list.length ?? 0,
+      };
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   /* ── Cleanup physics engine on unmount ── */
   useEffect(() => {

@@ -237,7 +237,9 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
         }
       );
     },
-    { dependencies: [pathD, duration] }
+    /* revertOnUpdate: pathD changes on every resize; without it each change
+       stacked another infinite (repeat: -1) timeline that ran forever. */
+    { dependencies: [pathD, duration], revertOnUpdate: true }
   );
 
   return (

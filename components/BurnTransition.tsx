@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { burnControls } from "../lib/burnControls";
+import { GlProbe } from "./MemProbe";
 
 /* ─────────────────────────────────────────────────────────────
    BurnTransition — full-viewport R3F burn overlay for the
@@ -225,6 +226,8 @@ export default function BurnTransition() {
       onCreated={({ gl }) => gl.setClearAlpha(0)}
     >
       <BurnPlane />
+      {/* temporary OOM-investigation probe — inert without ?memprobe */}
+      <GlProbe name="burn" />
     </Canvas>
   );
 }
