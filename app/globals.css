@@ -4050,3 +4050,18 @@ canvas.glass-image-canvas {
   opacity: 1;
 }
 
+/* Tall targets (project cards, gravity pit): label tucks inside the frame's
+   top-left so it never overlaps page content outside the box */
+.cursor-reticle.is-inside .cr-label {
+  bottom: auto;
+  top: 5px;
+  left: 5px;
+}
+
+/* Small targets near the viewport top (fixed nav): label flips below the box
+   instead of clipping offscreen */
+.cursor-reticle.is-below .cr-label {
+  bottom: auto;
+  top: calc(100% + 5px);
+}
+

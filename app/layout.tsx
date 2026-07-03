@@ -14,7 +14,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-jakarta",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  // 300 was loaded but never referenced anywhere in globals.css or TSX
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({

@@ -102,8 +102,19 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
         ✕
       </button>
       <div className="cs-lightbox-stage" style={{ "--card-hue": hue } as React.CSSProperties} onClick={(e) => e.stopPropagation()}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="cs-lightbox-img" src={images[i]} alt={alts[i] ?? title} />
+        {/* quality 95: these are technical result images (detection grids,
+            curves) where visible compression artifacts would undercut them.
+            width/height are nominal — .cs-lightbox-img CSS (auto + max
+            constraints) controls layout from the real intrinsic ratio. */}
+        <Image
+          className="cs-lightbox-img"
+          src={images[i]}
+          alt={alts[i] ?? title}
+          width={2400}
+          height={1500}
+          quality={95}
+          sizes="92vw"
+        />
 
         {multi && (
           <>
@@ -173,6 +184,7 @@ function ProjectVisual({ project, hue, metric, priority, onOpen }: {
             className="cs-imgwrap"
             role="button"
             tabIndex={0}
+            data-cursor-ignore
             aria-label={`Enlarge ${project.title} screenshot`}
             onClick={() => onOpen(cur)}
             onKeyDown={onKey}

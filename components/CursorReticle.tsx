@@ -52,7 +52,13 @@ function resolveTarget(from: Element): Match | null {
   }
   consider(from.closest(".gravity-pit"), "DRAG", "0.88");
   consider(from.closest('a[href*="drive.google"]'), "RESUME", "1.00");
-  consider(from.closest('a, button, [role="button"]'), "LINK", "1.00");
+  /* data-cursor-ignore opts a control out of the generic matcher — used for
+     large zone-like triggers (the card image's lightbox role="button") that
+     should read as their labelled ancestor, not as a LINK. */
+  const generic = from.closest('a, button, [role="button"]');
+  if (generic && !generic.hasAttribute("data-cursor-ignore")) {
+    consider(generic, "LINK", "1.00");
+  }
   return best;
 }
 
@@ -208,9 +214,17 @@ function Reticle() {
       lock = match;
       if (match) {
         root.classList.add("is-locked");
+        /* Label placement, decided once per lock: inside the frame for tall
+           targets (never overlaps content outside the box — e.g. the Skills
+           paragraph above the gravity pit), below the box for small targets
+           near the viewport top (nav links — above would clip offscreen),
+           otherwise the default above-the-box position. */
+        const r = match.el.getBoundingClientRect();
+        root.classList.toggle("is-inside", r.height >= 120);
+        root.classList.toggle("is-below", r.height < 120 && r.top < 56);
         scrambleIn(`[ ${match.label.toUpperCase()} · ${match.conf} ]`);
       } else {
-        root.classList.remove("is-locked");
+        root.classList.remove("is-locked", "is-inside", "is-below");
         cancelAnimationFrame(scrambleRaf);
         label.textContent = "";
       }
@@ -221,7 +235,7 @@ function Reticle() {
     const onOut = (e: PointerEvent) => {
       if (e.relatedTarget === null) {
         lock = null;
-        root.classList.remove("is-visible", "is-locked");
+        root.classList.remove("is-visible", "is-locked", "is-inside", "is-below");
         label.textContent = "";
       }
     };
