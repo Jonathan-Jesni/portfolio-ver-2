@@ -15,6 +15,10 @@ cinematic shader transitions and physics-based interactions.
   authored as custom GLSL shaders.
 - **Physics & motion** — a Matter.js "gravity pit" skills cloud, Lenis smooth scrolling, and a
   GSAP + ScrollTrigger timeline choreographing every section boundary.
+- **Detection-reticle cursor** — a custom object-detection-style cursor (nodding to the CV work
+  in the projects): corner brackets that snap to frame interactive targets with a scrambling
+  `[ LABEL · 0.9X ]` confidence readout and a live pointer dot. Fine-pointer only, and disabled
+  entirely under `prefers-reduced-motion`.
 - **Built to behave** — adaptive DPR, `prefers-reduced-motion` fallbacks, a WebGL-unsupported
   boundary, full SEO (Open Graph / Twitter cards, `robots`, `sitemap`, `theme-color`), and a
   keyboard-visible focus system.
@@ -24,7 +28,7 @@ cinematic shader transitions and physics-based interactions.
 - **Framework:** Next.js 16 (App Router) · React 19 · TypeScript
 - **3D / graphics:** three.js · @react-three/fiber · @react-three/drei (Draco GLB, `next/og`)
 - **Motion:** GSAP + ScrollTrigger · Lenis (smooth scroll) · Matter.js (physics)
-- **Fonts:** Plus Jakarta Sans, JetBrains Mono, Instrument Serif, Hanken Grotesk (via `next/font`)
+- **Fonts:** Plus Jakarta Sans, JetBrains Mono, Instrument Serif (via `next/font`)
 
 > Styling is hand-written in `app/globals.css` — there is no Tailwind layer (the dependency is
 > present but never imported, so utility classes are inert; edit the CSS directly).
