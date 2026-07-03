@@ -261,6 +261,7 @@ function ProjectSlide({ project, index, hue, onOpen }: {
     <article
       className="cs-slide"
       data-project-id={project.id}
+      data-cursor-label={project.title}
       style={{ "--card-hue": hue } as React.CSSProperties}
       aria-label={`Project: ${project.title}`}
     >

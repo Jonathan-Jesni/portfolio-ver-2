@@ -188,6 +188,8 @@ select:focus-visible,
   /* film-grain overlay: always on top */
   --z-preloader: 9998;
   /* preloader curtain */
+  --z-cursor: 9997;
+  /* detection-reticle custom cursor */
   --z-nav: 100;
   /* floating nav pill */
   --z-mobile-menu: 99;
@@ -3923,5 +3925,128 @@ canvas.glass-image-canvas {
     opacity: 1;
     animation: none;
   }
+}
+
+/* ============================================================
+   Detection-reticle cursor (CursorReticle.tsx)
+   Four autofocus-style corner brackets that follow the pointer
+   and expand to frame interactive targets with a confidence
+   label, YOLO-detection style.
+   ============================================================ */
+
+/* Hide the native cursor only while the reticle is actually mounted
+   (JS adds .reticle-on under the same fine-pointer + motion gate); the
+   media query is a second fence so touch devices are never affected. */
+@media (hover: hover) and (pointer: fine) {
+
+  html.reticle-on,
+  html.reticle-on * {
+    cursor: none !important;
+  }
+}
+
+/* Root is a zero-size fixed anchor; the bracket box and the pointer dot are
+   independent transform layers inside it. The box frames the hovered zone,
+   the dot always marks the exact live pointer position. */
+.cursor-reticle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: var(--z-cursor);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out-expo);
+}
+
+.cursor-reticle.is-visible {
+  opacity: 1;
+}
+
+.cr-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  will-change: transform, width, height;
+}
+
+/* Precision layer - true pointer position, independent of the box state */
+.cr-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  will-change: transform;
+}
+
+/* Corner brackets - thin champagne L-shapes, quiet at rest */
+.cr-corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 0 solid var(--accent);
+  transition: width 150ms var(--ease-out-expo), height 150ms var(--ease-out-expo);
+}
+
+.cr-tl {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.cr-tr {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.cr-bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.cr-br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* Locked onto a target: longer bracket arms */
+.cursor-reticle.is-locked .cr-corner {
+  width: 12px;
+  height: 12px;
+}
+
+/* Confidence readout - sits on the top edge like a detection label */
+.cr-label {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  font-family: var(--font-jetbrains), 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--accent);
+  background: rgba(13, 11, 9, 0.72);
+  border: 1px solid var(--accent-glow);
+  padding: 2px 6px;
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out-expo);
+}
+
+.cursor-reticle.is-locked .cr-label {
+  opacity: 1;
 }
 

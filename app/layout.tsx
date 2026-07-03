@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
+import CursorReticle from "../components/CursorReticle";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -95,6 +96,10 @@ export default function RootLayout({
         {/* Film-grain noise overlay — fixed, pointer-events-none, adds physical texture */}
         <div className="grain-overlay" aria-hidden="true" />
         <SmoothScroll>{children}</SmoothScroll>
+        {/* Detection-reticle cursor — body-level sibling so position:fixed is
+            never trapped inside a transformed ancestor. Renders null on
+            touch / reduced-motion. */}
+        <CursorReticle />
         <Analytics />
         <SpeedInsights />
       </body>
