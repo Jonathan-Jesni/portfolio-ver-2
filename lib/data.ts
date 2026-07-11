@@ -152,11 +152,11 @@ export const PROJECTS = [
 
 export const BUILDING = [
   {
-    id: "building-bandwidth",
+    id: "building-observability",
     status: "Active",
-    title: "BandWidth",
+    title: "Agent Observability & RAG Tooling",
     description:
-      "Shipped. Now exploring agent observability and RAG pipeline tooling.",
+      "Instrumenting BandWidth's multi-agent runs — trace capture, handoff timelines, and RAG pipeline tooling.",
     tags: ["Agentic AI", "RAG", "LLMOps"],
     steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },
@@ -165,7 +165,7 @@ export const BUILDING = [
     status: "In Progress",
     title: "Open Source Contributions (Roboflow)",
     description:
-      "Contributing to Roboflow's supervision, an open-source computer vision library for building detection, segmentation, and tracking pipelines. Focus on reusable CV utilities and annotation tooling.",
+      "Working toward first contributions to Roboflow's supervision, an open-source computer vision library. Focus on reusable CV utilities and annotation tooling.",
     tags: ["Python", "Computer Vision", "Open Source"],
     steps: ["EXPLORE", "IMPLEMENT", "TEST", "PR", "MERGE"],
   },
