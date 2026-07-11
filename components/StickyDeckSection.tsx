@@ -16,11 +16,11 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
-  "double-unet":    "38, 56%, 52%",   /* gold  (01) */
-  bandwidth:        "209, 34%, 64%",  /* blue  (02) */
-  synthrescue:      "44, 60%, 56%",   /* gold  (03) */
-  ludex:            "214, 30%, 62%",  /* blue  (04) */
-  "file-converter": "32, 52%, 52%",   /* gold  (05) */
+  "neuro-genesis":  "188, 45%, 52%",  /* cyan  (01) */
+  "double-unet":    "38, 56%, 52%",   /* gold  (02) */
+  bandwidth:        "209, 34%, 64%",  /* blue  (03) */
+  synthrescue:      "44, 60%, 56%",   /* gold  (04) */
+  ludex:            "214, 30%, 62%",  /* blue  (05) */
 };
 
 const N = PROJECTS.length;

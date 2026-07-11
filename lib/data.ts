@@ -1,5 +1,24 @@
 export const PROJECTS = [
   {
+    id: "neuro-genesis",
+    title: "Neuro-Genesis Engine",
+    subtitle: "Self-Modifying Mixture-of-Experts",
+    description:
+      "Self-modifying Mixture-of-Experts network — on loss spikes, a local Gemma-2-2b-it generates PyTorch source for a new expert module, validated via AST screening + sandboxed execution + smoke test, then hot-swapped into the live MoE mid-training with full rollback on failure. No human in the loop.",
+    tech: "PyTorch, ROCm, Gemma-2-2b-it, Mixture-of-Experts, AST Validation",
+    tags: ["Agentic AI", "Mixture-of-Experts", "AMD/ROCm"],
+    github: "https://github.com/Jonathan-Jesni/neuro-genesis-engine",
+    links: [
+      { label: "View Source", href: "https://github.com/Jonathan-Jesni/neuro-genesis-engine" },
+      { label: "Live Demo", href: "https://neuro-genesis-engine.vercel.app/", demo: true },
+    ],
+    images: null,
+    imageAlts: null,
+    pipeline: ["LOSS SPIKE", "GENERATE", "VALIDATE", "HOT-SWAP", "RESUME"],
+    note: "Live demo is the run visualizer — not an interactive training system.",
+    metric: "Verified on AMD Radeon Pro W7900D (ROCm 7.2) · 300-step self-expanding run · 0 rejected experts",
+  },
+  {
     id: "double-unet",
     title: "Modified Double U-Net",
     subtitle: "Medical Image Segmentation",
@@ -127,21 +146,6 @@ export const PROJECTS = [
       "Ludex system architecture diagram",
     ],
     metric: "+12-18% relevance · +20% coverage",
-  },
-  {
-    id: "file-converter",
-    title: "File Converter",
-    subtitle: "Document Processing Engine",
-    description:
-      "A deterministic two-pass document conversion engine, with structural analysis separated from rendering. Handles paragraph reconstruction, list detection, heading inference, and conservative table extraction with fully explainable outputs. No OCR, no ML, fully deterministic. Built as the foundation for a document ingestion pipeline: clean, deterministic parsing is the layer that makes downstream ML reliable.",
-    tech: "Python, Two-Pass Architecture",
-    tags: ["Python", "Document Processing", "Systems Design"],
-    github: "https://github.com/Jonathan-Jesni/pdf_converter",
-    images: null,
-    imageAlts: null,
-    pipeline: ["PDF", "Parse", "Structure", "Render", "DOCX"],
-    note: "Evolving into a full document processing suite with multi-format conversion and PDF compression.",
-    metric: "two-pass pipeline · fully explainable outputs",
   },
 ] as const;
 
