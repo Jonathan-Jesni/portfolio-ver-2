@@ -43,14 +43,14 @@ export const PROJECTS = [
       "BUSI dataset quantitative scores",
       "BUSI training and validation curves",
     ],
-    metric: "0.85 F1 · ~25% faster training",
+    metric: "0.85 F1 (BUSI, 3-class) · ~25% faster training (AMP)",
   },
   {
     id: "bandwidth",
     title: "BandWidth",
     subtitle: "Autonomous Multi-Agent CI/CD Pipeline",
     description:
-      "Orchestrated a 5-agent cross-model pipeline (GPT-4o + DeepSeek-V4-Pro) across 6 containerized microservices to autonomously review, test, fix, and document GitHub PRs via the Band collaboration platform. Built a Flask webhook engine intercepting PR events, executing sandboxed pytest validations, and pushing autonomous fix commits via the GitHub REST API. Deployed on Google Cloud with 100% reliable agent handoffs and deterministic state-routing.",
+      "Orchestrated a 5-agent cross-model pipeline (GPT-4o + DeepSeek-V4-Pro) across 6 containerized microservices to autonomously review, test, fix, and document GitHub PRs via the Band collaboration platform. Built a Flask webhook engine intercepting PR events, executing sandboxed pytest validations, and pushing autonomous fix commits via the GitHub REST API. Deployed on Google Cloud with zero dropped handoffs across 30+ autonomous PR cycles and deterministic state-routing.",
     tech: "Python, Flask, Docker, Google Cloud, GitHub API, GPT-4o, DeepSeek-V4-Pro, Band AI, CI/CD, Agentic AI",
     tags: ["Agentic AI", "Multi-Agent", "CI/CD"],
     github: "https://github.com/Jonathan-Jesni/BandWidth",
@@ -74,7 +74,7 @@ export const PROJECTS = [
       "Autonomously generated pull request documentation on GitHub",
       "GitHub PR thread: a BandWidth agent answering a human reviewer's question",
     ],
-    metric: "~2-3 min autonomous review cycle · 100% agent handoff reliability",
+    metric: "~2-3 min autonomous review cycle · 30+ autonomous PR cycles, zero dropped handoffs",
   },
   {
     id: "synthrescue",
@@ -111,14 +111,14 @@ export const PROJECTS = [
       "Normalized confusion matrix",
       "SynthRescue system architecture diagram",
     ],
-    metric: "96.7% precision · >56% false positive reduction · ~4.5s end-to-end",
+    metric: "96.7% precision (held-out synthetic val) · >56% false positive reduction vs baseline YOLOv8 · ~4.5s end-to-end",
   },
   {
     id: "ludex",
     title: "Ludex",
     subtitle: "Hybrid Game Recommendation System",
     description:
-      "A hybrid recommendation engine combining content-based filtering and collaborative filtering to improve relevance by ~12-18% over standalone baselines. Integrates diversity-aware re-ranking to increase catalog coverage by ~20% (reducing popularity bias) and handles cold-start user scenarios using metadata-driven fallback logic, evaluated on large-scale Steam interaction data.",
+      "A hybrid recommendation engine combining content-based filtering and collaborative filtering to improve NDCG by ~12-18% over standalone baselines. Integrates diversity-aware re-ranking to increase catalog coverage by ~20% (reducing popularity bias) and handles cold-start user scenarios using metadata-driven fallback logic, evaluated on large-scale Steam interaction data.",
     tech: "Python, Scikit-learn, Implicit ALS, Steam API",
     tags: ["Machine Learning", "Recommendation Systems", "Python"],
     github: "https://github.com/Jonathan-Jesni/LudexSite",
@@ -145,7 +145,7 @@ export const PROJECTS = [
       "Steam played vs unplayed analysis",
       "Ludex system architecture diagram",
     ],
-    metric: "+12-18% relevance · +20% coverage",
+    metric: "+12-18% NDCG vs standalone CF/CBF baselines (Steam interaction data) · +20% catalog coverage",
   },
 ] as const;
 
