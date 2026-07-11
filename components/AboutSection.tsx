@@ -24,8 +24,7 @@ const BIO_PARAGRAPHS = [
     on software that <strong>works in the real world</strong>.
   </>,
   <>
-    I&apos;m always working on something new. Currently leveling up and looking for opportunities to
-    build at scale.
+    Final-year CS @ IIIT Pune (Class of 2027) · open to <strong>Junior AI/ML roles &amp; internships</strong>.
   </>,
 ];
 
