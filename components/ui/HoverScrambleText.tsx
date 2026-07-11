@@ -76,9 +76,13 @@ export function HoverScrambleText({ text, className = "", duration = 300 }: Hove
       ref={spanRef}
       className={`relative inline-block ${className}`}
       style={{ position: "relative", display: "inline-block" }}
+      aria-label={text}
     >
-      <span style={{ visibility: "hidden" }}>{text}</span>
-      <span style={{ position: "absolute", left: 0, top: 0, whiteSpace: "nowrap" }}>
+      <span style={{ visibility: "hidden" }} aria-hidden="true">{text}</span>
+      <span
+        style={{ position: "absolute", left: 0, top: 0, whiteSpace: "nowrap" }}
+        aria-hidden="true"
+      >
         {displayText}
       </span>
     </span>
