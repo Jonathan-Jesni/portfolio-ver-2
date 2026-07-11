@@ -45,6 +45,7 @@ export default function ScrollVelocitySkew() {
 
         let lastY = window.scrollY;
         let lastSkewTime = 0;
+        let lastApplied = 0;
 
         /* gsap.ticker passes (time, deltaTime[ms]) — derive px/sec.
            Capped at ~60fps: the quickTo 0.5s ease absorbs the coarser cadence,
@@ -57,7 +58,12 @@ export default function ScrollVelocitySkew() {
           const v = deltaTime > 0 ? ((y - lastY) / deltaTime) * 1000 : 0;
           lastY = y;
           const skew = gsap.utils.clamp(-2, 2, v / -500);
+          // Idle frames skip the setter fan-out; quickTo's own easing still
+          // finishes the spring-back because the final set(0) call was made
+          // on the last moving frame.
+          if (skew === 0 && lastApplied === 0) return;
           for (const set of setters) set(skew);
+          lastApplied = skew;
         };
 
         gsap.ticker.add(apply);
