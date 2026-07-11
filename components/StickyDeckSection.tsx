@@ -112,7 +112,7 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
           alt={alts[i] ?? title}
           width={2400}
           height={1500}
-          quality={95}
+          quality={85}
           sizes="92vw"
         />
 
@@ -152,17 +152,40 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
    the lightbox; arrows/dots are siblings (not nested in the clickable)
    and stopPropagation so they never trigger it.
    ═══════════════════════════════════════════════════════════════════ */
-function ProjectVisual({ project, hue, metric, priority, onOpen }: {
+function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
   project: Project;
   hue: string;
   metric: string;
   priority: boolean;
+  eager: boolean;
   onOpen: (start: number) => void;
 }) {
   const images = (project.images ?? []) as readonly string[];
   const alts = (project.imageAlts ?? []) as readonly string[];
   const [cur, setCur] = useState(0);
   const multi = images.length > 1;
+  /* Once an image has been shown, keep it mounted — prevents unmount/
+     refetch flashes when navigating back after the ±1 window moves on.
+     State (not a ref) because render reads it — react-hooks/refs forbids
+     reading ref.current during render. Updated via the React-docs
+     "adjust state during render" pattern (guarded by tracked prev
+     cur/eager) rather than an effect, since react-hooks/set-state-in-effect
+     forbids unconditional setState inside a useEffect body. */
+  const [shown, setShown] = useState<Set<number>>(() => new Set([0]));
+  const [trackedCur, setTrackedCur] = useState(cur);
+  const [trackedEager, setTrackedEager] = useState(eager);
+  if (cur !== trackedCur || eager !== trackedEager) {
+    setTrackedCur(cur);
+    setTrackedEager(eager);
+    const lo = Math.max(0, cur - 1);
+    const hi = Math.min(images.length - 1, cur + 1);
+    const toAdd = eager ? [cur, lo, hi] : [cur];
+    if (!toAdd.every((i) => shown.has(i))) {
+      const next = new Set(shown);
+      toAdd.forEach((i) => next.add(i));
+      setShown(next);
+    }
+  }
 
   const prev = () => setCur((v) => (v - 1 + images.length) % images.length);
   const next = () => setCur((v) => (v + 1) % images.length);
@@ -189,18 +212,26 @@ function ProjectVisual({ project, hue, metric, priority, onOpen }: {
             onClick={() => onOpen(cur)}
             onKeyDown={onKey}
           >
-            {images.map((src, idx) => (
-              <div key={src} className={`cs-img-slide${idx === cur ? " is-cur" : ""}`} aria-hidden={idx !== cur}>
-                <Image
-                  src={src}
-                  alt={alts[idx] ?? project.title}
-                  fill
-                  sizes="(max-width: 900px) 100vw, 55vw"
-                  className="sd-img"
-                  priority={priority && idx === 0}
-                />
-              </div>
-            ))}
+            {images.map((src, idx) => {
+              const show =
+                idx === 0 ||
+                (eager && Math.abs(idx - cur) <= 1) ||
+                shown.has(idx);
+              return (
+                <div key={src} className={`cs-img-slide${idx === cur ? " is-cur" : ""}`} aria-hidden={idx !== cur}>
+                  {show && (
+                    <Image
+                      src={src}
+                      alt={alts[idx] ?? project.title}
+                      fill
+                      sizes="(max-width: 900px) 100vw, 55vw"
+                      className="sd-img"
+                      priority={priority && idx === 0}
+                    />
+                  )}
+                </div>
+              );
+            })}
             <div className="sd-img-vignette" aria-hidden="true" />
           </div>
 
@@ -238,10 +269,11 @@ function ProjectVisual({ project, hue, metric, priority, onOpen }: {
 /* ═══════════════════════════════════════════════════════════════════
    PROJECT SLIDE — one case-study card (visual column + copy column)
    ═══════════════════════════════════════════════════════════════════ */
-function ProjectSlide({ project, index, hue, onOpen }: {
+function ProjectSlide({ project, index, hue, eager, onOpen }: {
   project: Project;
   index: number;
   hue: string;
+  eager: boolean;
   onOpen: (start: number) => void;
 }) {
   const tags = project.tags as readonly string[];
@@ -279,7 +311,7 @@ function ProjectSlide({ project, index, hue, onOpen }: {
     >
       {/* LEFT — visual column */}
       {hasImage ? (
-        <ProjectVisual project={project} hue={hue} metric={metric} priority={index === 0} onOpen={onOpen} />
+        <ProjectVisual project={project} hue={hue} metric={metric} priority={index === 0} eager={eager} onOpen={onOpen} />
       ) : (
         <div className="cs-visual-col">
           <CometCard rotateDepth={10} translateDepth={6}>
@@ -381,6 +413,15 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
   /* the active scrub trigger — read by the rail's click-to-jump handler */
   const stRef = useRef<ScrollTrigger | null>(null);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+  /* Active slide index, mirrored from render()'s imperative scrub so the
+     image-gating logic below (a plain render decision, not layout/paint)
+     can read it without touching the opacity/transform writes themselves. */
+  const [activeSlide, setActiveSlide] = useState(0);
+  const activeIdxRef = useRef(0);
+  /* Whether the desktop scrub ScrollTrigger is live — false on mobile /
+     reduced-motion, where slides stack in normal flow and all should be
+     eager. */
+  const [scrubActive, setScrubActive] = useState(false);
 
   useGSAP(() => {
     const track = trackRef.current;
@@ -414,6 +455,10 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
       });
 
       const idx = Math.round(p);
+      if (idx !== activeIdxRef.current) {
+        activeIdxRef.current = idx;
+        setActiveSlide(idx);
+      }
       if (curEl) curEl.textContent = pad(idx + 1);
       if (ghost) ghost.textContent = pad(idx + 1);
       const pct = (p / Math.max(1, N - 1)) * 100;
@@ -447,11 +492,13 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
         onRefresh: (self) => render(self.progress * (N - 1)),
       });
       stRef.current = st;
+      setScrubActive(true);
 
       render(0); /* first project fully formed at entry — no dead lead-in */
 
       return () => {
         stRef.current = null;
+        setScrubActive(false);
         gsap.set(slides, { clearProps: "opacity,pointerEvents" });
         texts.forEach((t) => t && (t.style.transform = ""));
       };
@@ -535,12 +582,14 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
           <div className="cs-stagebox">
             {PROJECTS.map((project, i) => {
               const hue = hueOf(project.id);
+              const eager = !scrubActive || Math.abs(i - activeSlide) <= 1;
               return (
                 <ProjectSlide
                   key={project.id}
                   project={project}
                   index={i}
                   hue={hue}
+                  eager={eager}
                   onOpen={(start) =>
                     setLightbox({
                       images: [...((project.images ?? []) as readonly string[])],
