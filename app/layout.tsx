@@ -97,6 +97,27 @@ export default function RootLayout({
         />
         {/* Film-grain noise overlay — fixed, pointer-events-none, adds physical texture */}
         <div className="grain-overlay" aria-hidden="true" />
+        {/* Person structured data for name-search rich results */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Person",
+              name: "Jonathan Jesni",
+              url: SITE_URL,
+              jobTitle: "AI & Systems Developer",
+              alumniOf: {
+                "@type": "CollegeOrUniversity",
+                name: "Indian Institute of Information Technology, Pune",
+              },
+              sameAs: [
+                "https://github.com/Jonathan-Jesni",
+                "https://www.linkedin.com/in/jonathan-jesni/",
+              ],
+            }),
+          }}
+        />
         <SmoothScroll>{children}</SmoothScroll>
         {/* Detection-reticle cursor — body-level sibling so position:fixed is
             never trapped inside a transformed ancestor. Renders null on
