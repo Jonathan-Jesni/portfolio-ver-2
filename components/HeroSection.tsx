@@ -5,9 +5,11 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
-import { GitHubIcon, LinkedInIcon } from "./ui/icons";
+import { LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
+import { getLenis } from "../lib/lenisInstance";
+import { power4InOut, absoluteTop } from "../lib/scrollTarget";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -294,13 +296,19 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
                 <div className="hero-buttons">
                   <a
-                    href="https://github.com/Jonathan-Jesni"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="#projects"
                     className="btn btn-primary"
-                    id="hero-github-btn"
+                    id="hero-projects-btn"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const el = document.getElementById("projects");
+                      if (!el) return;
+                      const y = Math.max(0, absoluteTop(el));
+                      const lenis = getLenis();
+                      if (lenis) lenis.scrollTo(y, { duration: 1.3, easing: power4InOut, force: true, lock: true });
+                      else window.scrollTo({ top: y, behavior: "smooth" });
+                    }}
                   >
-                    <GitHubIcon size={16} />
                     <HoverScrambleText text="View My Work" />
                   </a>
                   <a

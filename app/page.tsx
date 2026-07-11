@@ -20,6 +20,7 @@ import ScrollToPlugin from "gsap/ScrollToPlugin";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { HoverScrambleText } from "../components/ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
+import { power4InOut, absoluteTop } from "../lib/scrollTarget";
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 /* Nav sections in document order (top → bottom of scroll). */
@@ -35,10 +36,6 @@ const NAV_ITEMS = [
    are sticky with internal padding), so no extra nav clearance is needed — a
    positive offset just pushed the centered Projects title down too far. */
 const NAV_OFFSET = 0;
-
-/* power4.inOut — matches the {J} logo's scroll-to feel. */
-const power4InOut = (t: number) =>
-  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 
 const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
 const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });
@@ -61,24 +58,8 @@ export default function Home() {
     setIsMenuOpen(false);
   }
 
-  /* Canonical scroll-Y for a nav target.
-     getBoundingClientRect() is unreliable here: StackTransitions leaves a
-     persistent transform (scale/yPercent) on each section after its boundary,
-     so a section's rect is shifted once you've scrolled past it — clicking a
-     section from below would miss. offsetTop accumulation ignores transforms,
-     giving a stable layout position from ANY scroll position.
-     Contact is special-cased: it's revealed at the END of the burn (where its
+  /* Contact is special-cased: it's revealed at the END of the burn (where its
      sticky still fills the viewport), i.e. footerTop − innerHeight. */
-  const absoluteTop = (el: HTMLElement) => {
-    let y = 0;
-    let node: HTMLElement | null = el;
-    while (node) {
-      y += node.offsetTop;
-      node = node.offsetParent as HTMLElement | null;
-    }
-    return y;
-  };
-
   const sectionTargetY = useCallback((id: string): number | null => {
     if (id === "contact") {
       const footer = document.getElementById("footer");
