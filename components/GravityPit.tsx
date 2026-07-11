@@ -300,7 +300,7 @@ export default function GravityPit() {
       id="gravity-pit"
       data-lenis-prevent
       role="region"
-      aria-label="Interactive skills playground, click to activate physics"
+      aria-label="Interactive skills playground, drag to activate physics"
     >
       {/* Corner label — only shows until physics activates, hidden under reduced motion */}
       {!physicsActive && !reducedMotion && (
@@ -322,7 +322,7 @@ export default function GravityPit() {
             zIndex:        2,
           }}
         >
-          Click to interact
+          Drag to interact
         </p>
       )}
 
