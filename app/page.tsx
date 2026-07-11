@@ -145,7 +145,7 @@ export default function Home() {
             ))}
           </ul>
           <a
-            href="https://drive.google.com/file/d/1PjAFLcEC_kwnGJyM4wxa47f2SfHLJlmT/view?usp=sharing"
+            href="/assets/Jonathan_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="nav-resume"
@@ -180,7 +180,7 @@ export default function Home() {
             {item.label}
           </a>
         ))}
-        <a href="https://drive.google.com/file/d/1PjAFLcEC_kwnGJyM4wxa47f2SfHLJlmT/view?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
+        <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
       </div>
 
       <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />

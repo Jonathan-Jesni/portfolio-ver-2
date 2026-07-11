@@ -217,7 +217,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             </a>
 
             <a
-              href="https://drive.google.com/file/d/1PjAFLcEC_kwnGJyM4wxa47f2SfHLJlmT/view?usp=sharing"
+              href="/assets/Jonathan_Resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
