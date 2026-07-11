@@ -7,7 +7,6 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
 import { GitHubIcon, LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
-import { CircuitUnderline } from "./ui/CircuitUnderline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -286,12 +285,11 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
               <div ref={subContentRef} className="hero-sub-content">
                 <h2 className="hero-tagline">
-                  I build <TerminalHighlight delay={1.2} color="#C9A852" animate={animate}>computer vision and deep learning</TerminalHighlight> systems
-                  that go past the notebook, <em>into deployed, production-shaped pipelines</em>.
+                  I build and deploy <TerminalHighlight delay={1.2} color="#C9A852" animate={animate}>computer vision and multi-agent systems</TerminalHighlight> — <em>from Blender-generated training data to live inference endpoints</em>.
                 </h2>
 
                 <p className="hero-sub">
-                  AI/ML Engineer focused on <CircuitUnderline delay={2.0} color="#C9A852" animate={animate}>agentic systems</CircuitUnderline> and the <TerminalHighlight delay={1.4} color="#8FA8C4" animate={animate}>infrastructure</TerminalHighlight> that runs them.
+                  Final-year CS @ IIIT Pune (Class of 2027) · open to Junior AI/ML roles &amp; internships.
                 </p>
 
                 <div className="hero-buttons">
