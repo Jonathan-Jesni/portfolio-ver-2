@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
+import { getLenis } from "../lib/lenisInstance";
+import { power4InOut } from "../lib/scrollTarget";
 
 gsap.registerPlugin(ScrollToPlugin);
 
@@ -61,7 +63,9 @@ function LocalClock() {
 
 export default function Footer() {
   const backToTop = () => {
-    gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: "power4.inOut" });
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(0, { duration: 1.3, easing: power4InOut, force: true, lock: true });
+    else gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: "power4.inOut" });
   };
 
   return (
