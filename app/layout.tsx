@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
 import CursorReticle from "../components/CursorReticle";
@@ -80,6 +81,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Kick off hero-critical asset fetches from the initial HTML instead of
+  // waiting for client JS to evaluate useGLTF.preload — parallel with the
+  // JS download, shortens the preloader's wall time on cold loads.
+  preload("/assets/hardware_laptop.glb", { as: "fetch", crossOrigin: "anonymous" });
+  preload("/assets/textures/bg.jpg", { as: "image" });
+  preload("/assets/textures/Mac Keyboard.jpg", { as: "image" });
+
   return (
     <html
       lang="en"
