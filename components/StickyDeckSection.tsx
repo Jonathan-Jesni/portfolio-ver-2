@@ -112,7 +112,7 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
           alt={alts[i] ?? title}
           width={2400}
           height={1500}
-          quality={85}
+          quality={95}
           sizes="92vw"
         />
 

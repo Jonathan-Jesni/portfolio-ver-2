@@ -4,24 +4,21 @@ export const PROJECTS = [
     title: "Neuro-Genesis Engine",
     subtitle: "Self-Modifying Mixture-of-Experts",
     description:
-      "Self-modifying Mixture-of-Experts network — on loss spikes, a local Gemma-2-2b-it generates PyTorch source for a new expert module, validated via AST screening + sandboxed execution + smoke test, then hot-swapped into the live MoE mid-training with full rollback on failure. No human in the loop.",
+      "Engineered a self-modifying Mixture-of-Experts architecture that autonomously expands its capacity during training. Upon detecting loss plateaus, a local Gemma-2-2b-it model generates PyTorch source code for new expert modules. These are rigorously validated through AST screening, sandboxed execution, and smoke testing before being dynamically hot-swapped into the live MoE. Optimized for AMD ROCm hardware, the system ensures zero downtime with automatic rollbacks on failure.",
     tech: "PyTorch, ROCm, Gemma-2-2b-it, Mixture-of-Experts, AST Validation",
     tags: ["Agentic AI", "Mixture-of-Experts", "AMD/ROCm"],
     github: "https://github.com/Jonathan-Jesni/neuro-genesis-engine",
     links: [
       { label: "View Source", href: "https://github.com/Jonathan-Jesni/neuro-genesis-engine" },
-      { label: "Live Demo", href: "https://neuro-genesis-engine.vercel.app/", demo: true },
+      { label: "Run Visualizer", href: "https://neuro-genesis-engine.vercel.app/", demo: true },
     ],
     images: [
-      "/assets/Neuro-genesis/cover.jpg",
       "/assets/Neuro-genesis/hackathon-card.png",
     ],
     imageAlts: [
-      "Abstract visualization of a self-growing mixture-of-experts network — a new expert node crystallizing",
-      "AMD Developer Hackathon Act II title card: Neuro-Genesis Engine, 4 to 11 experts on ROCm",
+      "Neuro-Genesis Engine: AMD Developer Hackathon title card",
     ],
-    note: "Live demo is the run visualizer — not an interactive training system.",
-    metric: "Verified on AMD Radeon Pro W7900D (ROCm 7.2) · 300-step self-expanding run · 4 → 11 experts · 0 rejected experts",
+    metric: "300-step self-expanding MoE · 4 → 11 experts · ROCm 7.2",
   },
   {
     id: "double-unet",
