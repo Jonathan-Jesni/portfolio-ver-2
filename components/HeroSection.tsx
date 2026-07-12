@@ -55,6 +55,24 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
       const maxPush = 56;
       let isActive = false;
 
+      /* Cached untransformed char centers (viewport space) — measured
+         once via getBoundingClientRect, then reused on every mousemove.
+         Reading rects per mousemove is expensive (forced layout) and,
+         worse, rects include the chars' own live push transform, which
+         moves the measured center and feeds back into the force calc
+         (wobble). Subtracting the char's current applied offset (cur)
+         yields the rest-position center regardless of when we measure. */
+      const centers = allChars.map(() => ({ x: 0, y: 0 }));
+      let measureRaf = 0;
+
+      function measureCenters() {
+        allChars.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          centers[i].x = r.left + r.width / 2 - cur[i].x;
+          centers[i].y = r.top + r.height / 2 - cur[i].y;
+        });
+      }
+
       function resetTargets() {
         tgt.forEach((target) => {
           target.x = 0;
@@ -65,10 +83,9 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
       function onMouseMove(e: MouseEvent) {
         if (!isActive) return;
 
-        allChars.forEach((el, i) => {
-          const r = el.getBoundingClientRect();
-          const cx = r.left + r.width / 2;
-          const cy = r.top + r.height / 2;
+        allChars.forEach((_, i) => {
+          const cx = centers[i].x;
+          const cy = centers[i].y;
           const dx = e.clientX - cx;
           const dy = e.clientY - cy;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -84,6 +101,17 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
         });
       }
 
+      /* Scroll/resize can move the chars (e.g. once the sticky hero
+         releases post-scroll), so re-measure then — but batched to at
+         most once per frame via rAF, never per raw scroll event. */
+      function onScrollOrResize() {
+        if (!isActive || measureRaf) return;
+        measureRaf = requestAnimationFrame(() => {
+          measureRaf = 0;
+          measureCenters();
+        });
+      }
+
       const tickFn = () => {
         allChars.forEach((_, i) => {
           cur[i].x = lerp(cur[i].x, tgt[i].x, 0.075);
@@ -96,7 +124,10 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
       function startInteraction() {
         if (isActive) return;
         isActive = true;
+        measureCenters();
         window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("scroll", onScrollOrResize, { passive: true });
+        window.addEventListener("resize", onScrollOrResize);
         gsap.ticker.add(tickFn);
       }
 
@@ -104,6 +135,12 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
         if (!isActive) return;
         isActive = false;
         window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("scroll", onScrollOrResize);
+        window.removeEventListener("resize", onScrollOrResize);
+        if (measureRaf) {
+          cancelAnimationFrame(measureRaf);
+          measureRaf = 0;
+        }
         gsap.ticker.remove(tickFn);
         resetTargets();
         allChars.forEach((_, i) => {
