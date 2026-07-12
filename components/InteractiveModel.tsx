@@ -21,7 +21,10 @@ import { GlProbe } from "./MemProbe";
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 // Preload assets outside component render loop.
-const DRACO_DECODER_PATH = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
+// Self-hosted (three's bundled decoder) — a gstatic outage/block must not
+// take down the hero; the GLB would otherwise dead-end into the preloader's
+// 9s failsafe.
+const DRACO_DECODER_PATH = "/draco/";
 useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
 // Keep bg.jpg in this preload list — PreLoader.tsx reads useProgress() off the
 // THREE.DefaultLoadingManager global, so removing this call would empty the
