@@ -12,11 +12,16 @@ export const PROJECTS = [
       { label: "View Source", href: "https://github.com/Jonathan-Jesni/neuro-genesis-engine" },
       { label: "Live Demo", href: "https://neuro-genesis-engine.vercel.app/", demo: true },
     ],
-    images: null,
-    imageAlts: null,
-    pipeline: ["LOSS SPIKE", "GENERATE", "VALIDATE", "HOT-SWAP", "RESUME"],
+    images: [
+      "/assets/Neuro-genesis/cover.jpg",
+      "/assets/Neuro-genesis/hackathon-card.png",
+    ],
+    imageAlts: [
+      "Abstract visualization of a self-growing mixture-of-experts network — a new expert node crystallizing",
+      "AMD Developer Hackathon Act II title card: Neuro-Genesis Engine, 4 to 11 experts on ROCm",
+    ],
     note: "Live demo is the run visualizer — not an interactive training system.",
-    metric: "Verified on AMD Radeon Pro W7900D (ROCm 7.2) · 300-step self-expanding run · 0 rejected experts",
+    metric: "Verified on AMD Radeon Pro W7900D (ROCm 7.2) · 300-step self-expanding run · 4 → 11 experts · 0 rejected experts",
   },
   {
     id: "double-unet",
