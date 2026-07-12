@@ -436,12 +436,19 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
     const ghost  = track.querySelector<HTMLElement>(".cs-ghost");
     if (slides.length < 1) return;
 
+    /* Per-slide cache of the last applied nearness — skips redundant style
+       writes for far slides whose `a` hasn't meaningfully changed between
+       scroll updates (only 1-2 slides actually move per frame). */
+    const lastA = slides.map(() => -1);
+
     /* Single render pass — every readout derives from the SAME progress
        value (p ∈ [0, N-1]) so the visual, text, counter, rail and ghost
        can never drift out of sync. */
     const render = (p: number) => {
       slides.forEach((slide, i) => {
         const a = Math.max(0, 1 - Math.abs(i - p)); /* nearness 0→1 */
+        if (Math.abs(a - lastA[i]) < 0.001) return;
+        lastA[i] = a;
         slide.style.opacity = a.toFixed(3);
         slide.style.pointerEvents = a > 0.5 ? "auto" : "none";
         const t = texts[i];
@@ -501,6 +508,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
         setScrubActive(false);
         gsap.set(slides, { clearProps: "opacity,pointerEvents" });
         texts.forEach((t) => t && (t.style.transform = ""));
+        lastA.fill(-1);
       };
     });
 
