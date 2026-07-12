@@ -148,6 +148,11 @@ function LaptopScene({
   // Persistent (unfaded) pointer-parallax accumulator. The applied group
   // rotation is this × fade, so fade can force it to exactly 0 at cover time.
   const parallaxCur         = useRef({ x: 0, y: 0 });
+  // Manual pointer tracker (normalized -1..1, R3F convention: x right+, y up+).
+  // The canvas is pointer-events:none (see InteractiveModel wrapper) so
+  // state.pointer never updates from real input — this window listener
+  // replaces it for the parallax below.
+  const pointerRef          = useRef({ x: 0, y: 0 });
   const { camera, size, invalidate } = useThree();
   /* Live mirror for coverZ: ScrollTrigger's invalidateOnRefresh re-evaluates
      function-based values on every refresh (which resize triggers), so the
@@ -311,10 +316,13 @@ function LaptopScene({
          fadeTl's four imperative onEnter/onLeave zIndex callbacks. */
       tl.set(layerEl, { zIndex: 30 }, 0.62);
       tl.set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.975);
-      tl.set(canvasWrapperDOMRef.current, { pointerEvents: "none" }, 0.975);
       /* The dissolve: ~7vh of scroll, exactly where the screen capture and
          the real projects header are pixel-aligned. */
       tl.to(layerEl, { opacity: 0, ease: "none", duration: 0.025 }, 0.975);
+      /* Once the dissolve completes the fixed layer leaves hit-testing and
+         compositing entirely; this .set() reverts automatically when
+         scrolling back up into the transition. */
+      tl.set(layerEl, { display: "none" }, 1.0);
     }
 
   }, {
@@ -386,7 +394,7 @@ function LaptopScene({
      actual lerp still happens in useFrame (which runs because invalidate
      was just called). On lowPerf / reduced-motion the listener is never
      attached, saving per-event work entirely. ── */
-  useFrame((state) => {
+  useFrame(() => {
     const g = parallaxGroupRef.current;
     if (!g || prefersReduced || lowPerf) return;
     const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.37) / 0.13));
@@ -395,8 +403,8 @@ function LaptopScene({
     // forces the tilt to exactly 0 the instant fade hits 0 at bootProgress 0.37
     // — so the cover shot lands dead-center regardless of where the mouse was,
     // instead of a residual lerp still decaying into the framing.
-    const targetX = state.pointer.y * 0.10;
-    const targetY = state.pointer.x * 0.16;
+    const targetX = pointerRef.current.y * 0.10;
+    const targetY = pointerRef.current.x * 0.16;
     const c = parallaxCur.current;
     const dx = targetX - c.x;
     const dy = targetY - c.y;
@@ -412,17 +420,21 @@ function LaptopScene({
 
   useEffect(() => {
     if (prefersReduced || lowPerf) return;
-    const el = canvasWrapperDOMRef.current;
-    if (!el) return;
+    // Canvas + wrapper are pointer-events:none (see InteractiveModel), so the
+    // listener lives on window instead of the wrapper DOM element.
     // Invalidate on every move (no throttle): the parallax useFrame self-limits
     // its work and self-perpetuates its own settle, and the hero's real cost is
     // the boot-texture upload, not pointermove. Throttling here starved the lerp
     // between ticks and left the tilt feeling choppy/stuck. Parallax is
     // gated off on the lowPerf/iGPU path anyway, so this only runs on dGPU.
-    const onMove = () => invalidate();
-    el.addEventListener("pointermove", onMove, { passive: true });
-    return () => el.removeEventListener("pointermove", onMove);
-  }, [prefersReduced, lowPerf, canvasWrapperDOMRef, invalidate]);
+    const onMove = (e: PointerEvent) => {
+      pointerRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointerRef.current.y = -((e.clientY / window.innerHeight) * 2 - 1);
+      invalidate();
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [prefersReduced, lowPerf, invalidate]);
 
   return (
     <group ref={parallaxGroupRef}>
@@ -519,8 +531,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
       style={{
         position: "absolute",
         inset: 0,
-        pointerEvents: "auto",
-        touchAction: "none",
+        pointerEvents: "none",
         zIndex: 0,
       }}
     >
@@ -540,6 +551,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           width: "100%",
           height: "100%",
           display: "block",
+          pointerEvents: "none",
         }}
         onCreated={() => { createdRef.current = true; }}
       >
