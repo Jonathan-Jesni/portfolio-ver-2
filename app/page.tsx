@@ -234,11 +234,9 @@ export default function Home() {
             <p className="sp-reveal" style={{ color: "var(--ink-2)", marginBottom: "20px", fontFamily: "var(--font-jakarta)", fontSize: "15px", letterSpacing: "-0.01em" }}>
               Technologies and frameworks I use to engineer robust, scalable systems.
             </p>
-            <div style={{ touchAction: "none" }}>
-              <InViewMount minHeight={420}>
-                <GravityPit />
-              </InViewMount>
-            </div>
+            <InViewMount minHeight={420}>
+              <GravityPit />
+            </InViewMount>
           </div>
         </SpatialSection>
         <div className="stack-veil" aria-hidden="true" />

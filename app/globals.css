@@ -960,6 +960,9 @@ select:focus-visible,
   pointer-events: none;
   /* overridden when physics is active */
   will-change: transform;
+  /* Drags start on a pill (physics grab); swipes on empty pit space
+     stay native page scroll. */
+  touch-action: none;
   /* Machined glass inner-edge highlight */
   box-shadow:
     inset 0 1px 0 rgba(201, 168, 82, 0.08),
