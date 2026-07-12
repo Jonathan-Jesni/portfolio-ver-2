@@ -338,7 +338,19 @@ function LaptopScene({
     // we'd redraw + re-upload the 1536×987 CanvasTexture (~6 MB texImage2D) every
     // frame across the first 40% of the hero for ZERO visual change — the main
     // cause of the iGPU scroll stutter. (Dots + fade genuinely change per frame.)
-    const drawKey = progress < BOOT_P1 ? 0 : progress;
+    // Quantize the change-detection key per phase so the 1536×987 texture
+    // only re-uploads when pixels actually change:
+    //   < P1        — flat dark, one key (0): zero redraws
+    //   P1–P2 dots  — raw progress (inDots forces per-frame redraws anyway)
+    //   P2–P3 fade  — 24 discrete alpha buckets: ≤24 uploads for the whole fade
+    //   ≥ P3        — header fully faded in, one key: ZERO redraws during the
+    //                 entire camera zoom (0.62→0.98), the window that must
+    //                 stay butter-smooth.
+    const drawKey =
+      progress < BOOT_P1 ? 0
+      : progress < BOOT_P2 ? progress
+      : progress < BOOT_P3 ? 1 + Math.round(((progress - BOOT_P2) / (BOOT_P3 - BOOT_P2)) * 24)
+      : 1000;
 
     if (drawKey !== lastBootProgressRef.current || inDots) {
       lastBootProgressRef.current = drawKey;
