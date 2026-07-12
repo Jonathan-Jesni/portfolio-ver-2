@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 "use client";
 
-import { useRef, useMemo, useEffect, useState, Suspense, Component } from "react";
+import { useRef, useMemo, useEffect, useState, useCallback, Suspense, Component } from "react";
 import type { ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
@@ -443,12 +443,18 @@ function LaptopScene({
    WEBGL FALLBACK
    ───────────────────────────────────────────────────────────────── */
 class WebGLBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; onFail?: () => void },
   { failed: boolean }
 > {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  componentDidCatch() {
+    // Boundary renders null on failure, which would otherwise strand the
+    // GSAP reveal timeline that lives inside the Canvas subtree — nothing
+    // left to ever flip #projects visible. Reveal it directly via DOM.
+    this.props.onFail?.();
   }
   render() {
     return this.state.failed ? null : this.props.children;
@@ -476,6 +482,34 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
   const degradedRef = useRef(degraded);
   degradedRef.current = degraded;
 
+  // GL context creation signal + fallback-reveal guards. The scrub timeline
+  // that normally reveals #projects lives inside <Canvas>; if WebGL throws
+  // (WebGLBoundary) or context creation just never resolves, that timeline
+  // never exists and everything below the hero stays permanently hidden.
+  const createdRef = useRef(false);
+  const revealedRef = useRef(false);
+
+  const revealFallback = useCallback(() => {
+    if (revealedRef.current) return; // idempotent — boundary + timeout can both fire
+    revealedRef.current = true;
+    const layerEl = canvasWrapperDOMRef.current?.closest(".hero-3d-layer") as HTMLElement | null;
+    if (layerEl) layerEl.style.display = "none";
+    const projectsEl = portfolioSectionRef?.current;
+    if (projectsEl) {
+      projectsEl.style.opacity = "1";
+      projectsEl.style.pointerEvents = "auto";
+    }
+  }, [portfolioSectionRef]);
+
+  useEffect(() => {
+    // Cover the case where the context never fires onCreated at all (no
+    // thrown error for WebGLBoundary to catch, just a silent stall).
+    const timeoutId = window.setTimeout(() => {
+      if (!createdRef.current) revealFallback();
+    }, 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [revealFallback]);
+
   return (
     <div
       ref={canvasWrapperDOMRef}
@@ -487,7 +521,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         zIndex: 0,
       }}
     >
-      <WebGLBoundary>
+      <WebGLBoundary onFail={revealFallback}>
       <Canvas
         camera={{ position: [0, 0, 6.5], fov: 45 }}
         frameloop="demand"
@@ -504,6 +538,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           height: "100%",
           display: "block",
         }}
+        onCreated={() => { createdRef.current = true; }}
       >
         <PerformanceMonitor
           flipflops={3}
