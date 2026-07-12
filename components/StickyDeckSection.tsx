@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -11,8 +12,11 @@ import { ArrowUpRightIcon } from "./ui/icons";
 import { CometCard } from "@/components/ui/comet-card";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
+import { detectGPU } from "../lib/detectGPU";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+const NeuroArtifact = dynamic(() => import("./NeuroArtifact"), { ssr: false });
 
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
@@ -174,6 +178,59 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
   const [shown, setShown] = useState<Set<number>>(() => new Set([0]));
   const [trackedCur, setTrackedCur] = useState(cur);
   const [trackedEager, setTrackedEager] = useState(eager);
+
+  /* ── Neuro-Genesis 3D artifact gating ──────────────────────────────
+     Replaces idx-0 (cover.jpg) with a scroll-reactive R3F canvas on
+     capable desktops only. Decision tree:
+       1. project.id === "neuro-genesis" (gate is a no-op elsewhere)
+       2. viewport ≥900px, no-preference motion, GPU tier !== "low"
+          — evaluated once on mount, no resize listeners
+       3. the visual column has entered (or is within 400px of) the
+          viewport — via IntersectionObserver, so the chunk + GLB don't
+          load for a slide the user may never scroll to
+       4. the canvas hasn't thrown (WebGLBoundary / context-creation
+          timeout inside NeuroArtifact) — falls back to the cover image
+     All four must hold; any failure (or a non-Neuro-Genesis project)
+     renders the <Image> exactly as before. */
+  const isNeuroGenesis = project.id === "neuro-genesis";
+  // Lazy initializer (not an effect): evaluated once, synchronously, on the
+  // first client render — mirrors InteractiveModel's isLowGPU gate. Doing
+  // this in an effect would call setState synchronously within the effect
+  // body (banned by react-hooks/set-state-in-effect) purely to compute a
+  // value that never changes again; the guard below just keeps SSR safe.
+  const [artifact3d] = useState(() => {
+    if (!isNeuroGenesis || typeof window === "undefined") return false;
+    return (
+      window.matchMedia("(min-width: 900px)").matches &&
+      window.matchMedia("(prefers-reduced-motion: no-preference)").matches &&
+      detectGPU() !== "low"
+    );
+  });
+  const [artifactFailed, setArtifactFailed] = useState(false);
+  const [near, setNear] = useState(false);
+  const visualColRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isNeuroGenesis) return;
+    const el = visualColRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [isNeuroGenesis]);
+
+  const useArtifact = isNeuroGenesis && artifact3d && !artifactFailed && near;
   if (cur !== trackedCur || eager !== trackedEager) {
     setTrackedCur(cur);
     setTrackedEager(eager);
@@ -197,7 +254,7 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
   };
 
   return (
-    <div className="cs-visual-col">
+    <div className="cs-visual-col" ref={visualColRef}>
       <CometCard rotateDepth={10} translateDepth={6}>
         <div className="cs-visual" style={{ "--card-hue": hue } as React.CSSProperties}>
           <div className="sd-card-accent" aria-hidden="true" />
@@ -213,21 +270,26 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
             onKeyDown={onKey}
           >
             {images.map((src, idx) => {
+              const isArtifactSlide = idx === 0 && useArtifact;
               const show =
                 idx === 0 ||
                 (eager && Math.abs(idx - cur) <= 1) ||
                 shown.has(idx);
               return (
                 <div key={src} className={`cs-img-slide${idx === cur ? " is-cur" : ""}`} aria-hidden={idx !== cur}>
-                  {show && (
-                    <Image
-                      src={src}
-                      alt={alts[idx] ?? project.title}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 55vw"
-                      className="sd-img"
-                      priority={priority && idx === 0}
-                    />
+                  {isArtifactSlide ? (
+                    <NeuroArtifact onFail={() => setArtifactFailed(true)} />
+                  ) : (
+                    show && (
+                      <Image
+                        src={src}
+                        alt={alts[idx] ?? project.title}
+                        fill
+                        sizes="(max-width: 900px) 100vw, 55vw"
+                        className="sd-img"
+                        priority={priority && idx === 0}
+                      />
+                    )
                   )}
                 </div>
               );
