@@ -44,6 +44,10 @@ const BOOT_P3 = 0.62;
 
 const COVER_OVERSHOOT = 0.90;
 
+// Length (in vh of scroll) of the velocity-matched, pixel-locked dissolve
+// at the end of the hero trigger — see the timeline header comment below.
+const MATCH_WINDOW_VH = 10;
+
 /* ─────────────────────────────────────────────────────────────────────
    BOOT-SCREEN DRAWING — pure function, called from useFrame.
    ───────────────────────────────────────────────────────────────────── */
@@ -245,12 +249,26 @@ function LaptopScene({
 
     lidHingeGroupRef.current.rotation.x = 1.7285;
 
+    /* Hero scrub timeline, keyed to #hero scroll progress 0→1:
+         0     – 0.267  entry — lid opens, laptop swings/slides into frame
+         0.27  – 0.62   boot — spinner, then header bitmap fades in on the
+                         virtual screen (see drawBootScreen phases)
+         0.62  – 0.9667 dolly — camera zooms/pans to the cover-framed screen
+         0.9667– 1.0    matched window — camera drifts the remaining
+                         MATCH_WINDOW_VH so the on-screen capture translates
+                         up at exactly 1:1 with scroll, pixel-locked to the
+                         real Projects header rising beneath it; the opacity
+                         dissolve spans this same window, crossfading two
+                         identical, identically-moving images. */
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: "#hero",
         start: "top top",
         end: "bottom top",
-        scrub: 0.3,
+        // Lenis is the single smoothing layer; a numeric scrub double-smooths
+        // only the pre-swap side and breaks the velocity match under fast
+        // scroll during the matched window above.
+        scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           bootProgressRef.current = self.progress;
@@ -294,17 +312,40 @@ function LaptopScene({
       const d = Math.min(FACE_HALF_H / t, FACE_HALF_W / (aspect * t)) * COVER_OVERSHOOT;
       return FACE_FRONT_Z + d;
     };
+    /* World-units of ONE viewport-height at the screen plane when the camera
+       sits at coverZ — converts scroll vh into camera-Y drift so the on-screen
+       capture can translate up at exactly 1:1 with the page during the
+       matched handoff window. Function-based (invalidateOnRefresh re-evaluates
+       on resize), like coverZ. */
+    const vhWorld = () => {
+      const dist = coverZ() - FACE_FRONT_Z;
+      return 2 * dist * Math.tan(THREE.MathUtils.degToRad(45 / 2));
+    };
     tl.fromTo(
       camera.position,
       { z: 6.5, y: 0 },
-      { z: coverZ, y: FACE_CY, duration: 0.36, ease: "power2.in" },
+      {
+        z: coverZ,
+        y: () => FACE_CY + (MATCH_WINDOW_VH / 100) * vhWorld(),
+        duration: 0.3467,
+        ease: "power2.inOut",
+      },
       0.62
     );
     tl.fromTo(
       camera.rotation,
       { x: 0, y: 0, z: 0 },
-      { x: 0, y: 0, z: 0, duration: 0.36, ease: "power2.in" },
+      { x: 0, y: 0, z: 0, duration: 0.3467, ease: "power2.inOut" },
       0.62
+    );
+    /* Matched segment: content translates up MATCH_WINDOW_VH over
+       MATCH_WINDOW_VH of scroll, 1:1 with the page. Linear (ease: "none") so
+       the camera's velocity — and thus the on-screen capture's velocity —
+       exactly matches the page's scroll velocity for the whole window. */
+    tl.to(
+      camera.position,
+      { y: FACE_CY, duration: 0.0333, ease: "none" },
+      0.9667
     );
 
     const layerEl     = canvasWrapperDOMRef.current?.closest<HTMLElement>(".hero-3d-layer");
@@ -315,10 +356,14 @@ function LaptopScene({
          revert automatically when the playhead crosses back — this replaces
          fadeTl's four imperative onEnter/onLeave zIndex callbacks. */
       tl.set(layerEl, { zIndex: 30 }, 0.62);
-      tl.set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.975);
-      /* The dissolve: ~7vh of scroll, exactly where the screen capture and
-         the real projects header are pixel-aligned. */
-      tl.to(layerEl, { opacity: 0, ease: "none", duration: 0.025 }, 0.975);
+      /* The real header must sit beneath the screen for the whole matched
+         window (0.9667–1.0), not just the dissolve tail — it's what the
+         screen capture is pixel-locked against as both translate up. */
+      tl.set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.9667);
+      /* The dissolve: spans the matched window exactly, crossfading two
+         identical, identically-moving images — the screen capture and the
+         real projects header are pixel-aligned and co-moving throughout. */
+      tl.to(layerEl, { opacity: 0, ease: "none", duration: 0.0333 }, 0.9667);
       /* Once the dissolve completes the fixed layer leaves hit-testing and
          compositing entirely; this .set() reverts automatically when
          scrolling back up into the transition. */
