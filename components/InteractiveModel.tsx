@@ -542,7 +542,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
       >
         <PerformanceMonitor
           flipflops={3}
-          onIncline={() => { if (!degradedRef.current) setDpr(1.2); }}
+          onIncline={() => { if (!degradedRef.current) setDpr(Math.min(window.devicePixelRatio, 1.75)); }}
           onDecline={() => { setDpr(1); setDegraded(true); }}
         />
 
