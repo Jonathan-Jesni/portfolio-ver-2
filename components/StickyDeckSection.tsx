@@ -164,6 +164,21 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
   const alts = (project.imageAlts ?? []) as readonly string[];
   const [cur, setCur] = useState(0);
   const multi = images.length > 1;
+
+  /* Neuro-Genesis only: upgrade the cover slide (idx 0) to an ambient
+     looping video on capable desktops. Lazy-initializer (evaluated once,
+     client-only render) rather than an effect — react-hooks/set-state-in-effect
+     forbids unconditional setState in an effect body, and this only needs
+     to be read once at mount. */
+  const isNeuroGenesis = project.id === "neuro-genesis";
+  const [useLoop] = useState(() =>
+    isNeuroGenesis &&
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 900px)").matches &&
+    window.matchMedia("(prefers-reduced-motion: no-preference)").matches
+  );
+  const [loopFailed, setLoopFailed] = useState(false);
+  const loopVideoRef = useRef<HTMLVideoElement>(null);
   /* Once an image has been shown, keep it mounted — prevents unmount/
      refetch flashes when navigating back after the ±1 window moves on.
      State (not a ref) because render reads it — react-hooks/refs forbids
@@ -196,6 +211,23 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
     else if (multi && e.key === "ArrowRight") { e.preventDefault(); next(); }
   };
 
+  /* Play/pause the ambient loop with visibility — saves decode work while
+     the deck (or this slide) is offscreen. */
+  useEffect(() => {
+    if (!useLoop || loopFailed) return;
+    const video = loopVideoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) video.play().catch(() => {});
+        else video.pause();
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [useLoop, loopFailed]);
+
   return (
     <div className="cs-visual-col">
       <CometCard rotateDepth={10} translateDepth={6}>
@@ -217,17 +249,34 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
                 idx === 0 ||
                 (eager && Math.abs(idx - cur) <= 1) ||
                 shown.has(idx);
+              const useVideoForThisSlide = idx === 0 && useLoop && !loopFailed;
               return (
                 <div key={src} className={`cs-img-slide${idx === cur ? " is-cur" : ""}`} aria-hidden={idx !== cur}>
                   {show && (
-                    <Image
-                      src={src}
-                      alt={alts[idx] ?? project.title}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 55vw"
-                      className="sd-img"
-                      priority={priority && idx === 0}
-                    />
+                    useVideoForThisSlide ? (
+                      <video
+                        ref={loopVideoRef}
+                        className="sd-img"
+                        src="/assets/Neuro-genesis/cover-loop.mp4"
+                        poster="/assets/Neuro-genesis/cover.jpg"
+                        muted
+                        loop
+                        playsInline
+                        autoPlay
+                        preload="none"
+                        onError={() => setLoopFailed(true)}
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Image
+                        src={src}
+                        alt={alts[idx] ?? project.title}
+                        fill
+                        sizes="(max-width: 900px) 100vw, 55vw"
+                        className="sd-img"
+                        priority={priority && idx === 0}
+                      />
+                    )
                   )}
                 </div>
               );
