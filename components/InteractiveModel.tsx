@@ -321,15 +321,25 @@ function LaptopScene({
       const dist = coverZ() - FACE_FRONT_Z;
       return 2 * dist * Math.tan(THREE.MathUtils.degToRad(45 / 2));
     };
+    /* z: the dolly — settles fully before the matched window (zero radial flow
+       at the swap). */
     tl.fromTo(
       camera.position,
-      { z: 6.5, y: 0 },
-      {
-        z: coverZ,
-        y: () => FACE_CY + (MATCH_WINDOW_VH / 100) * vhWorld(),
-        duration: 0.3467,
-        ease: "power2.inOut",
-      },
+      { z: 6.5 },
+      { z: coverZ, duration: 0.3467, ease: "power2.inOut" },
+      0.62
+    );
+    /* y: rises on power1.in (t²) — zero velocity at onset, and its END velocity
+       (2× average ≈ 0.016 world/vh at 16:9) lands within ~7% of the matched
+       window's 1:1 rate (vhWorld/100 ≈ 0.015), instead of the old power2.inOut
+       ending at ZERO and stepping instantly to 1:1 (the felt "catch"). The
+       mid-zoom framing arc changes slightly — camera rides low longer, then
+       sweeps up into the lock; intentional, reads as settling into frame.
+       Revert path: merge y back into the z tween above. */
+    tl.fromTo(
+      camera.position,
+      { y: 0 },
+      { y: () => FACE_CY + (MATCH_WINDOW_VH / 100) * vhWorld(), duration: 0.3467, ease: "power1.in" },
       0.62
     );
     tl.fromTo(
