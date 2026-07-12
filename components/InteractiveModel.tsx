@@ -34,8 +34,10 @@ const BOOT_W = 1536;
 const BOOT_H = 987;
 
 /* ── Phase thresholds (hero scroll progress, 0→1) ── */
-const BOOT_P1 = 0.40;
-const BOOT_P2 = 0.75;
+const BOOT_P1 = 0.27;
+const BOOT_P2 = 0.50;
+// End of the header fade-in — completes before the camera zoom starts.
+const BOOT_P3 = 0.62;
 
 const COVER_OVERSHOOT = 0.90;
 
@@ -58,7 +60,7 @@ function drawBootScreen(
 
   if (progress <= 0) return;
 
-  // ── Phase 1: spinning-dots (40–75 %) ──────────────────────────────
+  // ── Phase 1: spinning-dots (BOOT_P1–BOOT_P2) ──────────────────────
   if (!prefersReduced && progress >= BOOT_P1 && progress < BOOT_P2) {
     const dp = (progress - BOOT_P1) / (BOOT_P2 - BOOT_P1);
     const fadeIn  = Math.min(1, dp / 0.15);
@@ -92,9 +94,9 @@ function drawBootScreen(
     return;
   }
 
-  // ── Phase 2: header bitmap fade-in (75–100 %) ─────────────────────
+  // ── Phase 2: header bitmap fade-in (BOOT_P2–BOOT_P3) ──────────────
   if (progress >= BOOT_P2 && bgImage) {
-    const raw = (progress - BOOT_P2) / (1 - BOOT_P2);
+    const raw = (progress - BOOT_P2) / (BOOT_P3 - BOOT_P2);
     const t   = Math.max(0, Math.min(1, raw));
     const alpha = t * t * (3 - 2 * t);
 
@@ -239,7 +241,7 @@ function LaptopScene({
       scrollTrigger: {
         trigger: "#hero",
         start: "top top",
-        end: "bottom bottom",
+        end: "bottom top",
         scrub: 0.3,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
@@ -258,19 +260,19 @@ function LaptopScene({
     tl.fromTo(
       lidHingeGroupRef.current.rotation,
       { x: 1.7285 },
-      { x: 0, duration: 0.4, ease: "power2.inOut" },
+      { x: 0, duration: 0.267, ease: "power2.inOut" },
       0
     );
     tl.fromTo(
       globalContainerRef.current.position,
       { x: 1.7 },
-      { x: 0, duration: 0.4, ease: "power2.inOut" },
+      { x: 0, duration: 0.267, ease: "power2.inOut" },
       0
     );
     tl.fromTo(
       globalContainerRef.current.rotation,
       { x: 0.18, y: -0.35, z: 0.05 },
-      { x: 0.1577, y: 0, z: 0, duration: 0.4, ease: "power2.inOut" },
+      { x: 0.1577, y: 0, z: 0, duration: 0.267, ease: "power2.inOut" },
       0
     );
 
@@ -287,45 +289,29 @@ function LaptopScene({
     tl.fromTo(
       camera.position,
       { z: 6.5, y: 0 },
-      { z: coverZ, y: FACE_CY, duration: 0.25, ease: "power2.inOut" },
-      0.75
+      { z: coverZ, y: FACE_CY, duration: 0.36, ease: "power2.in" },
+      0.62
     );
     tl.fromTo(
       camera.rotation,
       { x: 0, y: 0, z: 0 },
-      { x: 0, y: 0, z: 0, duration: 0.25, ease: "power2.inOut" },
-      0.75
+      { x: 0, y: 0, z: 0, duration: 0.36, ease: "power2.in" },
+      0.62
     );
 
     const layerEl     = canvasWrapperDOMRef.current?.closest<HTMLElement>(".hero-3d-layer");
     const projectsEl  = portfolioSectionRef?.current;
     if (layerEl && projectsEl && canvasWrapperDOMRef.current) {
-      const fadeTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: "#hero",
-          start: "bottom bottom",
-          endTrigger: projectsEl,
-          end: "top top",
-          scrub: true,
-          onEnter: () => {
-            gsap.set(layerEl, { zIndex: 30 });
-          },
-          onLeaveBack: () => {
-            gsap.set(layerEl, { zIndex: 0, opacity: 1 });
-          },
-          onLeave: () => {
-            gsap.set(layerEl, { zIndex: 0 });
-          },
-          onEnterBack: () => {
-            gsap.set(layerEl, { zIndex: 30 });
-          },
-        },
-      });
-
-      fadeTl
-        .set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.001)
-        .set(canvasWrapperDOMRef.current, { pointerEvents: "none" }, 0.001)
-        .to(layerEl, { opacity: 0, ease: "power2.in", duration: 1 }, 0);
+      /* Raise the fixed canvas above the incoming stack before any overlap
+         (projects enters the viewport at progress ≈ 0.667). Scrub .set()s
+         revert automatically when the playhead crosses back — this replaces
+         fadeTl's four imperative onEnter/onLeave zIndex callbacks. */
+      tl.set(layerEl, { zIndex: 30 }, 0.62);
+      tl.set(projectsEl, { opacity: 1, pointerEvents: "auto" }, 0.975);
+      tl.set(canvasWrapperDOMRef.current, { pointerEvents: "none" }, 0.975);
+      /* The dissolve: ~7vh of scroll, exactly where the screen capture and
+         the real projects header are pixel-aligned. */
+      tl.to(layerEl, { opacity: 0, ease: "none", duration: 0.025 }, 0.975);
     }
 
   }, {
@@ -388,10 +374,10 @@ function LaptopScene({
   useFrame((state) => {
     const g = parallaxGroupRef.current;
     if (!g || prefersReduced || lowPerf) return;
-    const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.55) / 0.2));
+    const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.37) / 0.13));
     // Lerp the UNFADED pointer target in a persistent accumulator, then apply
     // fade to the resulting rotation. Fading the applied value (not the target)
-    // forces the tilt to exactly 0 the instant fade hits 0 at bootProgress 0.75
+    // forces the tilt to exactly 0 the instant fade hits 0 at bootProgress 0.37
     // — so the cover shot lands dead-center regardless of where the mouse was,
     // instead of a residual lerp still decaying into the framing.
     const targetX = state.pointer.y * 0.10;
