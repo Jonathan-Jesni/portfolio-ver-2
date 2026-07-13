@@ -16,11 +16,12 @@ import { getLenis } from "../lib/lenisInstance";
    │                                                              │
    │ useProgress reads THREE.DefaultLoadingManager, which is      │
    │ GLOBAL, not per-Canvas. This loader only sees the heavy      │
-   │ assets (hardware_laptop.glb + screen/keyboard textures)      │
+   │ assets (hardware_laptop.glb + keyboard texture + bg.jpg)     │
    │ because the main 3D scene (InteractiveModel) mounts          │
    │ CONCURRENTLY as a sibling underneath this overlay in         │
-   │ app/page.tsx, loading via useGLTF/useTexture into that same  │
-   │ global manager.                                              │
+   │ app/page.tsx, loading via useGLTF/useTexture (bg.jpg via a   │
+   │ bare THREE.ImageLoader — CPU-only, never GPU-sampled) into   │
+   │ that same global manager.                                    │
    │                                                              │
    │ If the 3D scene is ever lazy-mounted AFTER the preloader     │
    │ finishes, useProgress sees nothing, the manifest stays       │

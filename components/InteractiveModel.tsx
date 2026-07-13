@@ -26,10 +26,16 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 // 9s failsafe.
 const DRACO_DECODER_PATH = "/draco/";
 useGLTF.preload("/assets/hardware_laptop.glb", DRACO_DECODER_PATH);
-// Keep bg.jpg in this preload list — PreLoader.tsx reads useProgress() off the
-// THREE.DefaultLoadingManager global, so removing this call would empty the
-// manifest and force the 9s failsafe.
-useTexture.preload("/assets/textures/bg.jpg");
+/* bg.jpg is CPU-only (drawn into the boot canvas — never GPU-sampled), so it
+   loads via ImageLoader instead of useTexture: same DefaultLoadingManager
+   registration (the PreLoader manifest gate DEPENDS on that — see
+   PreLoader.tsx header), no ~27MB dead GPU upload. Module scope so the fetch
+   + manifest registration start at exactly the same time as before. */
+let bgImage: HTMLImageElement | null = null;
+const bgImagePromise =
+  typeof window === "undefined"
+    ? null
+    : new THREE.ImageLoader().loadAsync("/assets/textures/bg.jpg").then((img) => { bgImage = img; return img; }).catch(() => null);
 useTexture.preload("/assets/textures/Mac Keyboard.jpg");
 
 /* ── Boot-screen canvas dimensions ── */
@@ -143,7 +149,6 @@ function LaptopScene({
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
-  const screenTex   = useTexture("/assets/textures/bg.jpg");
   const keyboardTex = useTexture("/assets/textures/Mac Keyboard.jpg");
 
   const globalContainerRef  = useRef<THREE.Group>(null);
@@ -193,7 +198,11 @@ function LaptopScene({
     const tex = new THREE.CanvasTexture(canvas);
     tex.flipY       = false;
     tex.colorSpace  = THREE.SRGBColorSpace;
-    tex.anisotropy  = 8;
+    // No mips: −33% GPU memory and no per-upload mip-chain regen (the dots
+    // phase uploads per frame) — the screen is viewed ≥ native scale in every
+    // detail-bearing phase, so mip filtering buys nothing.
+    tex.generateMipmaps = false;
+    tex.minFilter       = THREE.LinearFilter;
     return { canvas, ctx, tex };
   }, []);
 
@@ -201,12 +210,23 @@ function LaptopScene({
     return () => { boot.tex.dispose(); };
   }, [boot]);
 
+  /* bgImage loads async off the module-scope ImageLoader (see top of file).
+     If it resolves AFTER the useFrame's drawKey change-detection has already
+     latched onto a constant key (e.g. playhead parked mid-phase-2 with no new
+     scroll), the header would stay undrawn until the next key change. Force
+     one redraw once the image is actually available. */
+  useEffect(() => {
+    let cancelled = false;
+    bgImagePromise?.then(() => {
+      if (cancelled) return;
+      lastBootProgressRef.current = -1;
+      invalidate();
+    });
+    return () => { cancelled = true; };
+  }, [invalidate]);
+
   /* ── Texture mapping & material calibrations ── */
   useMemo(() => {
-    if (screenTex) {
-      screenTex.flipY      = false;
-      screenTex.colorSpace = THREE.SRGBColorSpace;
-    }
     if (keyboardTex) {
       keyboardTex.flipY      = false;
       keyboardTex.colorSpace = THREE.SRGBColorSpace;
@@ -242,7 +262,7 @@ function LaptopScene({
       materials.Keyboard.roughness = 0.5;
       materials.Keyboard.metalness = 0.1;
     }
-  }, [screenTex, keyboardTex, materials, boot.tex]);
+  }, [keyboardTex, materials, boot.tex]);
 
   useGSAP(() => {
     if (!globalContainerRef.current || !lidHingeGroupRef.current) return;
@@ -424,7 +444,7 @@ function LaptopScene({
         boot.ctx,
         progress,
         state.clock.elapsedTime,
-        screenTex?.image as HTMLImageElement | ImageBitmap | null,
+        bgImage,
         prefersReduced,
       );
       boot.tex.needsUpdate = true;
@@ -612,7 +632,7 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
       >
         <PerformanceMonitor
           flipflops={3}
-          onIncline={() => { if (!degradedRef.current) setDpr(Math.min(window.devicePixelRatio, 1.75)); }}
+          onIncline={() => { if (!degradedRef.current) setDpr(Math.min(window.devicePixelRatio, 1.5)); }}
           onDecline={() => { setDpr(1); setDegraded(true); }}
         />
 
