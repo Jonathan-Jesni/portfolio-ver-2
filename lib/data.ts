@@ -13,10 +13,10 @@ export const PROJECTS = [
       { label: "Run Visualizer", href: "https://neuro-genesis-engine.vercel.app/", demo: true },
     ],
     images: [
-      "/assets/Neuro-genesis/hackathon-card.png",
+      "/assets/Neuro-genesis/title-card.jpg",
     ],
     imageAlts: [
-      "Neuro-Genesis Engine: AMD Developer Hackathon title card",
+      "Neuro-Genesis Engine title card — self-expanding Mixture-of-Experts, AMD Developer Hackathon Act II",
     ],
     metric: "300-step self-expanding MoE · 4 → 11 experts · ROCm 7.2",
   },
