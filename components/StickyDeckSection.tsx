@@ -32,6 +32,12 @@ const hueOf = (id: string) => CARD_HUES[id] ?? "188, 45%, 52%";
    the only places where slides crossfade; rail jumps target the centre of a
    hold, never the sticky track's release boundary. */
 const PROJECT_HOLDS = PROJECT_PHASES.holds;
+if (
+  process.env.NODE_ENV !== "production" &&
+  PROJECT_HOLDS.length !== FEATURED_PROJECTS.length
+) {
+  throw new Error("PROJECT_PHASES.holds must match FEATURED_PROJECTS length");
+}
 
 const projectPositionAt = (progress: number) => {
   const p = Math.max(0, Math.min(1, progress));

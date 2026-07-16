@@ -1,0 +1,973 @@
+/*
+ * Cinematic restoration layer
+ * ---------------------------
+ * globals.css remains the authored visual system. This file owns the
+ * phase geometry, fail-open enhancement contract, short-desktop fitting,
+ * and invisible quality adaptations introduced by the restoration.
+ */
+
+:root {
+  --runway-hero: 300svh;
+  --runway-featured-projects: 345svh;
+  --runway-building: 320svh;
+  --runway-skills: 310svh;
+  --runway-about: 330svh;
+  --runway-contact: 200svh;
+  --overlap-chapter: -100svh;
+  --overlap-contact: -200svh;
+  --nav-clearance: 112px;
+  --chapter-bottom-safe: 24px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: calc(var(--z-preloader) + 2);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--ink-0);
+  color: var(--surface-0);
+  font: 600 13px/1 var(--font-jakarta), sans-serif;
+  transform: translateY(-180%);
+  transition: transform 180ms var(--ease-out-expo);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.terminal-highlight {
+  display: inline;
+  padding: 0 0.11em 0.04em;
+  margin-inline: 0.035em;
+  color: var(--surface-0);
+  background-image: linear-gradient(
+    var(--terminal-highlight-color, var(--accent)),
+    var(--terminal-highlight-color, var(--accent))
+  );
+  background-repeat: no-repeat;
+  background-position: left 58%;
+  background-size: 100% 88%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Original 62508ff scale and reading composition. */
+.hero-name-split {
+  max-width: 100%;
+  font-size: clamp(60px, 10.5vw, 112px);
+}
+
+.hero-text-col {
+  width: 100%;
+  max-width: min(660px, 50vw);
+}
+
+.hero-tagline,
+.hero-sub {
+  max-width: 100%;
+  text-wrap: pretty;
+}
+
+.hero-laptop-poster {
+  position: relative;
+  width: min(82vw, 520px);
+  aspect-ratio: 1.35 / 1;
+  margin: 24px auto 0;
+  perspective: 1100px;
+  filter: drop-shadow(0 28px 38px rgba(0, 0, 0, 0.42));
+  animation: poster-laptop-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-laptop-poster__lid {
+  position: absolute;
+  inset: 10% 4% 21%;
+  padding: 2.3%;
+  border: 1px solid rgba(250, 245, 238, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(145deg, #e8e8e7, #9d9d9c 56%, #d9d9d7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 18px 42px rgba(0, 0, 0, 0.36);
+  transform: rotateX(-5deg) rotateY(-8deg) rotateZ(2.2deg);
+  transform-origin: center bottom;
+}
+
+.hero-laptop-poster__screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 5px solid #131313;
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.hero-laptop-poster__screen img {
+  object-fit: cover;
+}
+
+.hero-laptop-poster__base {
+  position: absolute;
+  z-index: -1;
+  left: 1%;
+  right: 1%;
+  bottom: 13%;
+  height: 13%;
+  border-radius: 4px 4px 15px 15px;
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(90, 90, 90, 0.45) 47% 63%, transparent 63%) center 27% / 35% 22% no-repeat,
+    linear-gradient(180deg, #f3f3f1 0%, #aaa 74%, #777 100%);
+  clip-path: polygon(5% 0, 95% 0, 100% 65%, 96% 100%, 4% 100%, 0 65%);
+  transform: rotateZ(2.2deg) translateY(58%);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.42);
+}
+
+@keyframes poster-laptop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(10%, 18px, 0) rotate(1deg);
+    filter: blur(4px) drop-shadow(0 18px 22px rgba(0, 0, 0, 0.3));
+  }
+  to {
+    opacity: 0.88;
+    transform: translate3d(0, 0, 0) rotate(0);
+    filter: blur(0) drop-shadow(0 28px 38px rgba(0, 0, 0, 0.42));
+  }
+}
+
+/*
+ * One fixed canvas remains mounted throughout the story. The hero timeline
+ * only changes opacity; the About burn raises the same stage over the sheets.
+ */
+.visual-stage,
+.hero-3d-layer {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100svh;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  isolation: isolate;
+}
+
+html[data-burn-active="true"] .visual-stage,
+html[data-burn-active="true"] .hero-3d-layer {
+  display: block !important;
+  opacity: 1 !important;
+  z-index: 60 !important;
+}
+
+html[data-burn-active="true"] .hero-3d-layer::before {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+.crt-fx__residual {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  opacity: 0;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: center;
+  background: #faf5ee;
+  box-shadow:
+    0 0 12px rgba(var(--accent-rgb), 0.9),
+    0 0 34px rgba(var(--accent-rgb), 0.55);
+  will-change: transform, opacity, filter;
+}
+
+.burn-finite-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(250, 245, 238, 0.16), transparent 34%),
+    linear-gradient(
+      180deg,
+      transparent 20%,
+      rgba(var(--accent-rgb), 0.32) 48%,
+      rgba(250, 245, 238, 0.2) 50%,
+      transparent 76%
+    );
+  mix-blend-mode: screen;
+}
+
+/* Exact H-circuit surface. Motion is composited in SVG, not per-frame JS. */
+.motion-border-lite {
+  position: absolute;
+  inset: -12px;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.motion-border-lite svg,
+.motion-border-lite path {
+  display: block;
+  overflow: visible;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.motion-border-lite__track {
+  opacity: 0.9;
+}
+
+[data-circuit-draw] {
+  filter: drop-shadow(0 0 6px var(--motion-border-dot-color, var(--accent-cool)));
+}
+
+.motion-border-lite__runner-group {
+  filter: drop-shadow(0 0 6px var(--motion-border-dot-color, var(--accent-cool)));
+}
+
+.motion-border-lite[data-circuit-active="false"] .motion-border-lite__runner-group {
+  animation-play-state: paused;
+}
+
+@keyframes circuit-run {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+/* Featured proof and metric hierarchy. */
+.cs-lead-metric,
+.cs-metric {
+  display: block;
+  margin: 8px 0 12px;
+  color: var(--accent);
+  font: 600 clamp(12px, 1.05vw, 15px)/1.35 var(--font-jetbrains), monospace;
+  text-wrap: pretty;
+}
+
+.cs-proof {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  max-width: 54ch;
+}
+
+.cs-proof li {
+  position: relative;
+  padding-left: 17px;
+  color: var(--ink-2);
+  font: 500 11px/1.4 var(--font-jetbrains), monospace;
+}
+
+.cs-proof li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 7px;
+  height: 1px;
+  background: var(--accent);
+}
+
+/* Secondary projects remain a concise closing beat before the real CRT exit. */
+.more-work {
+  position: relative;
+  z-index: 3;
+  isolation: isolate;
+  padding: clamp(88px, 10vw, 144px) 0 24px;
+  background: var(--surface-0);
+}
+
+.more-work-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+
+.more-work-header h3 {
+  margin: 0;
+  color: var(--ink-1);
+  font: italic 400 clamp(30px, 4vw, 56px)/0.95 var(--font-instrument), Georgia, serif;
+  letter-spacing: -0.035em;
+}
+
+.more-work-list {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.more-work-item {
+  display: grid;
+  grid-template-columns: 48px minmax(200px, 0.72fr) minmax(0, 1.45fr) minmax(112px, auto);
+  align-items: center;
+  gap: 28px;
+  min-height: 116px;
+  border-top: 1px solid var(--border-default);
+}
+
+.more-work-index {
+  color: var(--ink-4);
+  font-size: 11px;
+}
+
+.more-work-item h4 {
+  margin: 0 0 5px;
+  color: var(--ink-1);
+  font: 700 clamp(20px, 2vw, 28px)/1 var(--font-jakarta), sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.more-work-item p {
+  margin: 0;
+  color: var(--ink-3);
+  font: italic 400 14px/1.4 var(--font-instrument), Georgia, serif;
+}
+
+.more-work-item strong {
+  min-width: 0;
+  max-width: 58ch;
+  color: var(--accent);
+  font: 600 12px/1.4 var(--font-jetbrains), monospace;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.more-work-item a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--ink-2);
+  font: 600 12px/1 var(--font-jakarta), sans-serif;
+  white-space: nowrap;
+  transition: color var(--t-fast);
+}
+
+.more-work-item a:hover {
+  color: var(--accent);
+}
+
+.more-work-item a svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ------------------------------------------------------------------
+   Progressive enhancement contract
+   Natural, fully visible document flow is the default and failure state.
+   Sticky runways are enabled only after every controller has initialized.
+   ------------------------------------------------------------------ */
+.hero-runway,
+.sp-runway,
+.sp-runway.skills-spatial,
+.about-runway,
+.contact-runway,
+.cs-track {
+  height: auto;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.hero-runway {
+  min-height: 100svh;
+}
+
+.hero-sticky,
+.sp-sticky,
+.about-sticky,
+.contact-sticky,
+.cs-viewport {
+  position: relative;
+  inset: auto;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.hero-sticky {
+  min-height: 100svh;
+}
+
+.contact-sticky {
+  display: block;
+}
+
+.stack-section--building,
+.stack-section--skills,
+.stack-section--about {
+  margin-top: 0;
+}
+
+.chapter-marker {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.cs-stagebox {
+  display: grid;
+  min-height: 0;
+  height: auto;
+  gap: clamp(72px, 10vw, 112px);
+}
+
+.cs-slide {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+.cs-progress,
+.cs-ghost {
+  display: none;
+}
+
+.sp-content,
+.sp-reveal,
+.about-split-container,
+.contact-links,
+.reveal-word {
+  opacity: 1;
+  transform: none;
+  clip-path: none;
+}
+
+html[data-motion-ready="false"] .name-part-1,
+html[data-motion-ready="false"] .name-part-2,
+html[data-motion-ready="failed"] .name-part-1,
+html[data-motion-ready="failed"] .name-part-2 {
+  transform: none !important;
+}
+
+html[data-motion-ready="false"] .sp-content,
+html[data-motion-ready="false"] .sp-reveal,
+html[data-motion-ready="false"] .about-split-container,
+html[data-motion-ready="false"] .contact-links,
+html[data-motion-ready="failed"] .sp-content,
+html[data-motion-ready="failed"] .sp-reveal,
+html[data-motion-ready="failed"] [data-chapter-heading],
+html[data-motion-ready="failed"] [data-chapter-body],
+html[data-motion-ready="failed"] .about-split-container,
+html[data-motion-ready="failed"] .about-terminal-wrap,
+html[data-motion-ready="failed"] .contact-links {
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+}
+
+html[data-motion-ready="failed"] .crt-fx {
+  display: none !important;
+}
+
+html[data-motion-ready="failed"] .contact-mask,
+html[data-motion-ready="failed"] .stack-veil {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+html[data-motion-ready="failed"] .stack-section,
+html[data-motion-ready="failed"] .sp-sticky,
+html[data-motion-ready="failed"] .about-sticky,
+html[data-motion-ready="failed"] .contact-sticky,
+html[data-motion-ready="failed"] .cs-viewport,
+html[data-motion-ready="failed"] .cs-slide {
+  position: relative !important;
+  inset: auto !important;
+  height: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  clip-path: none !important;
+  pointer-events: auto !important;
+}
+
+/* Desktop story: no minimum-height or GPU gate. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html[data-motion-ready="true"] .hero-runway {
+    height: var(--runway-hero);
+  }
+
+  html[data-motion-ready="true"] .hero-sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] {
+    height: var(--runway-featured-projects);
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-viewport {
+    position: sticky;
+    inset-block-start: 0;
+    height: 100svh;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) 2px minmax(64px, 8svh);
+    row-gap: clamp(10px, 1.45svh, 16px);
+    justify-content: stretch;
+    justify-items: stretch;
+    overflow: hidden;
+    padding:
+      max(var(--nav-clearance), 108px)
+      clamp(32px, 3.35vw, 48px)
+      var(--chapter-bottom-safe);
+    align-content: stretch;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-topbar {
+    margin: 0;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-stagebox {
+    display: block;
+    position: relative;
+    min-height: 0;
+    height: 100%;
+    container-type: size;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-slide {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.46fr) minmax(290px, 1fr);
+    gap: clamp(30px, 3.4vw, 56px);
+    align-items: center;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-visual-col {
+    height: 100%;
+    min-height: 0;
+    justify-content: center;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-visual-col > .comet-card-wrap {
+    width: min(100%, calc((100cqh - 34px) * 1.6));
+    height: auto;
+    aspect-ratio: 16 / 10;
+    align-self: center;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-visual {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-caption {
+    min-height: 20px;
+    gap: 0;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-text {
+    min-height: 0;
+    max-height: 100%;
+    justify-content: center;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-progress {
+    display: block;
+    margin: 0;
+    align-self: center;
+    overflow: visible;
+  }
+
+  .cs-progress-fill {
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .cs-progress-knob {
+    left: 0;
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-rail {
+    min-height: clamp(64px, 8svh, 84px);
+    align-self: stretch;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-thumb {
+    min-height: 100%;
+    padding: clamp(9px, 1.25svh, 14px);
+  }
+
+  html[data-motion-ready="true"] .sp-runway {
+    height: var(--runway-building);
+  }
+
+  html[data-motion-ready="true"] .chapter-marker--landing {
+    top: var(--chapter-landing);
+  }
+
+  html[data-motion-ready="true"] .chapter-marker--projects-landing {
+    top: 32.5svh;
+  }
+
+  html[data-motion-ready="true"] .chapter-marker--about-landing {
+    top: 80svh;
+  }
+
+  html[data-motion-ready="true"] .chapter-marker--contact-landing {
+    top: auto;
+    bottom: 100svh;
+  }
+
+  html[data-motion-ready="true"] .sp-runway.skills-spatial {
+    height: var(--runway-skills);
+  }
+
+  html[data-motion-ready="true"] .about-runway {
+    height: var(--runway-about);
+  }
+
+  html[data-motion-ready="true"] .contact-runway {
+    height: var(--runway-contact);
+    margin-top: var(--overlap-contact);
+  }
+
+  html[data-motion-ready="true"] .stack-section--building,
+  html[data-motion-ready="true"] .stack-section--skills,
+  html[data-motion-ready="true"] .stack-section--about {
+    margin-top: var(--overlap-chapter);
+  }
+
+  /* Projects owns a complete CRT closing beat. Building starts only after
+     that viewport-long collapse; later sheets keep the paired overlaps. */
+  html[data-motion-ready="true"] .stack-section--building {
+    margin-top: 0;
+  }
+
+  html[data-motion-ready="true"] .sp-sticky,
+  html[data-motion-ready="true"] .about-sticky,
+  html[data-motion-ready="true"] .contact-sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-motion-ready="true"] .sp-sticky,
+  html[data-motion-ready="true"] .about-sticky {
+    display: flex;
+  }
+
+  html[data-motion-ready="true"] .contact-sticky {
+    display: block;
+  }
+
+  html[data-motion-ready="true"] .sd-outro {
+    min-height: 100svh;
+    justify-content: flex-start;
+    padding-top: max(var(--nav-clearance), 10svh);
+  }
+
+  html[data-motion-ready="true"] .sd-outro .sd-cta {
+    padding-top: 0;
+  }
+}
+
+/* Wide but short laptops keep the complete tableau inside the sticky frame. */
+@media (min-width: 1024px) and (max-height: 820px) and (hover: hover) and (pointer: fine) {
+  .container {
+    padding-inline: clamp(28px, 3vw, 42px);
+  }
+
+  .hero-sticky {
+    padding-top: clamp(72px, 10svh, 92px);
+  }
+
+  .hero-inner-grid {
+    grid-template-columns: 50.5fr 49.5fr;
+    gap: clamp(28px, 3vw, 44px);
+  }
+
+  .hero-text-col {
+    max-width: 51vw;
+  }
+
+  .hero-name-split {
+    font-size: clamp(60px, 9.2vw, 112px);
+    margin-bottom: clamp(20px, 3.8svh, 32px);
+  }
+
+  .hero-eyebrow {
+    margin-bottom: clamp(16px, 3svh, 24px);
+  }
+
+  .hero-tagline {
+    font-size: clamp(17px, 2.3svh, 21px);
+    line-height: 1.42;
+  }
+
+  .hero-sub {
+    margin-bottom: clamp(18px, 3.7svh, 28px);
+    line-height: 1.45;
+  }
+
+  .hero-buttons {
+    gap: 8px;
+  }
+
+  .hero-buttons .btn {
+    padding-inline: 13px;
+    font-size: 11px;
+  }
+
+  html[data-motion-ready="true"] .cs-track[data-scrub-ready="true"] .cs-viewport {
+    grid-template-rows: auto minmax(0, 1fr) 2px minmax(64px, 8svh);
+    row-gap: 9px;
+    padding-top: max(var(--nav-clearance), 98px);
+  }
+
+  .cs-slide {
+    grid-template-columns: minmax(0, 1.42fr) minmax(278px, 1fr);
+    gap: clamp(26px, 3vw, 42px);
+  }
+
+  .cs-title {
+    font-size: clamp(22px, 3.8svh, 30px);
+  }
+
+  .cs-subtitle {
+    margin-bottom: 7px;
+    font-size: clamp(12px, 2svh, 14px);
+  }
+
+  .cs-lead-metric,
+  .cs-metric {
+    margin-block: 5px 8px;
+    font-size: clamp(10px, 1.7svh, 12px);
+  }
+
+  .cs-desc {
+    margin-bottom: 8px;
+    font-size: clamp(11px, 1.82svh, 13px);
+    line-height: 1.45;
+  }
+
+  .cs-proof {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .cs-proof li {
+    font-size: clamp(9px, 1.48svh, 10.5px);
+    line-height: 1.28;
+  }
+
+  .sd-card-tags {
+    gap: 4px;
+  }
+
+  .sd-tag {
+    padding: 3px 7px;
+    font-size: 8.5px;
+  }
+
+  .cs-links {
+    gap: 12px;
+    margin-top: 7px;
+  }
+
+  .cs-caption-alt {
+    font-size: 9.5px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 720px) and (hover: hover) and (pointer: fine) {
+  html[data-motion-ready="true"] .sp-sticky {
+    padding-top: calc(var(--nav-clearance) + 8px);
+  }
+
+  html[data-motion-ready="true"] .about-sticky {
+    align-items: flex-start;
+    padding-top: calc(var(--nav-clearance) + 8px);
+    padding-bottom: 16px;
+  }
+
+  .about-bio {
+    gap: 10px;
+  }
+
+  .about-terminal-wrap {
+    margin-top: clamp(30px, 8svh, 52px);
+  }
+}
+
+/* Natural-flow story on touch/coarse pointer and reduced motion. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .hero-runway,
+  .sp-runway,
+  .sp-runway.skills-spatial,
+  .about-runway,
+  .contact-runway,
+  .cs-track {
+    height: auto !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .hero-sticky,
+  .sp-sticky,
+  .about-sticky,
+  .contact-sticky,
+  .cs-viewport {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .hero-sticky {
+    min-height: 100svh !important;
+    display: flex !important;
+  }
+
+  .stack-section--building,
+  .stack-section--skills,
+  .stack-section--about {
+    margin-top: 0 !important;
+  }
+
+  .cs-stagebox {
+    display: grid !important;
+    min-height: 0 !important;
+    height: auto !important;
+    gap: clamp(72px, 14vw, 112px);
+  }
+
+  .cs-slide {
+    position: relative !important;
+    inset: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+  }
+
+  .cs-progress,
+  .cs-ghost {
+    display: none !important;
+  }
+
+  .sp-content,
+  .sp-reveal,
+  .about-split-container,
+  .contact-links {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+
+  .more-work {
+    padding-top: clamp(76px, 12vw, 112px);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-text-col {
+    max-width: 100%;
+  }
+
+  .hero-name-split {
+    font-size: clamp(52px, 14vw, 88px);
+  }
+
+  .hero-3d-layer,
+  .visual-stage {
+    display: none;
+  }
+
+  .more-work-item {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    padding-block: 24px;
+  }
+
+  .more-work-item strong {
+    grid-column: 2;
+  }
+
+  .more-work-item a {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --nav-clearance: 88px;
+  }
+
+  .terminal-highlight {
+    padding-inline: 0.08em;
+    margin-inline: 0.02em;
+  }
+
+  .hero-laptop-poster {
+    width: min(88vw, 340px);
+    margin-top: 18px;
+  }
+
+  .more-work-header {
+    display: block;
+  }
+
+  .more-work-header h3 {
+    margin-top: 12px;
+  }
+
+  .more-work-item {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .more-work-item a {
+    grid-column: 2;
+    grid-row: auto;
+    justify-content: flex-start;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-laptop-poster {
+    animation: none;
+    opacity: 0.88;
+  }
+
+  .motion-border-lite__runner-group,
+  .hero-eyebrow-dot,
+  .sd-pipeline-pulse,
+  .sd-header-cue,
+  .scramble-tick {
+    animation: none !important;
+  }
+
+  .mobile-menu,
+  .mobile-menu a {
+    transition: none !important;
+  }
+}

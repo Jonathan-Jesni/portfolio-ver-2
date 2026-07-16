@@ -3799,17 +3799,6 @@ canvas.glass-image-canvas {
    Same z-slot as .crt-fx: above sheets (z 1-5) + veils (z 50),
    below the floating nav (z 100) and grain (z 9999).
    ============================================================ */
-.burn-fx,
-.burn-fx canvas {
-  pointer-events: none;
-}
-
-.burn-fx {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-}
-
 /* Contact burn runway (desktop only). The 200vh track gives the burn
    100vh of sticky travel; the inner .contact-sticky holds Contact
    dead-still at top:0 while the fire scrubs away over it. Sticky

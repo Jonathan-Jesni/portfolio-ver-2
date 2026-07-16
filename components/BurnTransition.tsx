@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { burnControls } from "../lib/burnControls";
-import { GlProbe } from "./MemProbe";
 
 /* ─────────────────────────────────────────────────────────────
    BurnTransition — full-viewport R3F burn overlay for the
@@ -150,7 +149,7 @@ const buildFragment = (octaves: number) => /* glsl */ `
   }
 `;
 
-function BurnPlane() {
+export function BurnPlane() {
   const invalidate = useThree((s) => s.invalidate);
   const size = useThree((s) => s.size);
 
@@ -212,22 +211,5 @@ function BurnPlane() {
     <mesh frustumCulled={false} material={material}>
       <planeGeometry args={[2, 2]} />
     </mesh>
-  );
-}
-
-export default function BurnTransition() {
-  return (
-    <Canvas
-      className="burn-fx"
-      style={{ position: "fixed", inset: 0, zIndex: 60, pointerEvents: "none" }}
-      frameloop="demand"
-      dpr={1}
-      gl={{ alpha: true, antialias: false }}
-      onCreated={({ gl }) => gl.setClearAlpha(0)}
-    >
-      <BurnPlane />
-      {/* temporary OOM-investigation probe — inert without ?memprobe */}
-      <GlProbe name="burn" />
-    </Canvas>
   );
 }

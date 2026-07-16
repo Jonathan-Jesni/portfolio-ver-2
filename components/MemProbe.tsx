@@ -110,8 +110,7 @@ function Hud() {
         tickerCbs:
           (gsap.ticker as unknown as { _listeners?: unknown[] })._listeners?.length ?? "n/a",
         maxFrameMs: Math.round(maxFrameRef.current),
-        hero: snapshotGl(w.__gl?.hero),
-        burn: snapshotGl(w.__gl?.burn),
+        visualStage: snapshotGl(w.__gl?.["visual-stage"]),
         pit: w.__pit ?? null,
       };
       maxFrameRef.current = 0;
@@ -124,8 +123,7 @@ function Hud() {
           `heap ${data.heapMB} MB`,
           `dom ${data.dom}  st ${data.scrollTriggers}  ticker ${data.tickerCbs}`,
           `maxFrame ${data.maxFrameMs}ms`,
-          gl(data.hero, "hero"),
-          gl(data.burn, "burn"),
+          gl(data.visualStage, "visual-stage"),
           data.pit
             ? `pit mounts:${data.pit.mounts} engines:${data.pit.engines} bodies:${data.pit.bodies} pairs:${data.pit.pairs}`
             : "pit —",
@@ -166,7 +164,10 @@ function Hud() {
 export default function MemProbe() {
   const [on, setOn] = useState(false);
   useEffect(() => {
-    if (flagOn()) setOn(true);
+    const raf = requestAnimationFrame(() => {
+      if (flagOn()) setOn(true);
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   /* Runtime introspection for the investigation console: lets DevTools /
