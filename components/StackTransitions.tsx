@@ -445,172 +445,83 @@ export default function StackTransitions() {
       };
     });
 
-    /* Touch/coarse-pointer story: the same signatures play as finite,
-       interruptible boundary cues in natural document flow. */
-      mm.add(
-      TOUCH_OR_REDUCED_MEDIA_QUERY,
-      () => {
-        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const building = sections[1];
-        const contact = sections[4];
-        if (!building || !contact) return;
+    /* Touch/coarse-pointer story: DOM-only fades in natural document flow.
+       Building replaces the CRT cue; Contact cross-fades from About. */
+    mm.add(TOUCH_OR_REDUCED_MEDIA_QUERY, () => {
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      const building = sections[1];
+      const about = sections[3];
+      const contact = sections[4];
+      if (!building || !about || !contact) return;
 
-        const finiteNodes: HTMLElement[] = [];
-        const crt = document.createElement("div");
-        crt.className = "crt-fx crt-fx--finite";
-        crt.setAttribute("aria-hidden", "true");
-        crt.innerHTML =
-          '<div class="crt-fx__void"></div>' +
-          '<div class="crt-fx__blade"></div>' +
-          '<div class="crt-fx__residual"></div>';
-        document.body.appendChild(crt);
-        finiteNodes.push(crt);
-
-        const voidEl = crt.querySelector<HTMLElement>(".crt-fx__void");
-        const blade = crt.querySelector<HTMLElement>(".crt-fx__blade");
-        const residual = crt.querySelector<HTMLElement>(".crt-fx__residual");
-        const crtTimeline = gsap.timeline({ paused: true });
-
-        if (reduced) {
-          crtTimeline
-            .fromTo(
-              residual,
-              { opacity: 0, scaleX: 0.08 },
-              { opacity: 0.72, scaleX: 0.42, duration: 0.12, ease: "power1.out" },
-            )
-            .to(residual, { opacity: 0, duration: 0.22, ease: "power1.out" });
-        } else {
-          buildCrtSequence(crtTimeline, {
-            voidEl,
-            blade,
-            residual,
-            values: {
-              voidIn: {
-                opacity: 1,
-                duration: 0.2,
-                ease: "power2.out",
-              },
-              voidOut: {
-                opacity: 0,
-                duration: 0.2,
-                ease: "power2.in",
-              },
-              bladeFrom: { opacity: 0 },
-              bladeIn: { opacity: 0.95, duration: 0.12 },
-              bladeCollapseFrom: {
-                scaleY: 1,
-                scaleX: 1,
-                filter: "brightness(1)",
-              },
-              bladeCollapseTo: {
-                scaleY: 0.005,
-                filter: "brightness(3.4)",
-                duration: 0.5,
-                ease: "power3.in",
-              },
-              bladePinch: {
-                scaleX: 0,
-                duration: 0.3,
-                ease: "power2.in",
-              },
-              bladeOut: { opacity: 0, duration: 0.05 },
-              residualFrom: { opacity: 0, scaleX: 0 },
-              residualIn: {
-                opacity: 0.85,
-                scaleX: 0.28,
-                duration: 0.05,
-              },
-              residualInAt: 0.92,
-              residualOut: {
-                opacity: 0,
-                scaleX: 0.48,
-                duration: 0.03,
-              },
-              residualOutAt: 0.97,
-            },
-          });
-        }
-
-        const crtTrigger = ScrollTrigger.create({
-          trigger: building,
-          start: "top 82%",
-          end: "top 18%",
-          onEnter: () => crtTimeline.restart(),
-          onLeave: () => crtTimeline.progress(1).pause(),
-          onEnterBack: () => crtTimeline.progress(1).pause(),
-          onLeaveBack: () => crtTimeline.reverse(),
-        });
-
-        let burnTimeline: gsap.core.Timeline;
-        if (reduced) {
-          const fallback = document.createElement("div");
-          fallback.className = "burn-finite-fallback";
-          fallback.setAttribute("aria-hidden", "true");
-          document.body.appendChild(fallback);
-          finiteNodes.push(fallback);
-          burnTimeline = gsap
-            .timeline({ paused: true })
-            .fromTo(fallback, { opacity: 0 }, { opacity: 0.42, duration: 0.2 })
-            .to(fallback, { opacity: 0, duration: 0.8, ease: "power2.out" });
-        } else {
-          const burnProxy = { value: 0 };
-          burnTimeline = gsap.timeline({
-            paused: true,
-            onStart: () => {
-              document.documentElement.dataset.burnActive = "true";
-              burnControls.setActive(true);
-            },
-            onUpdate: () => {
-              burnControls.setProgress(burnProxy.value);
-              burnControls.invalidate();
-            },
-            onComplete: () => {
-              burnControls.setActive(false);
-              delete document.documentElement.dataset.burnActive;
-            },
-            onReverseComplete: () => {
-              burnControls.setProgress(0);
-              burnControls.setActive(false);
-              burnControls.invalidate();
-              delete document.documentElement.dataset.burnActive;
-            },
-          });
-          burnTimeline.to(burnProxy, {
-            value: 1,
-            duration: 1,
-            ease: "power1.inOut",
-          });
-        }
-
-        const burnTrigger = ScrollTrigger.create({
-          trigger: contact,
-          start: "top 82%",
-          end: "top 18%",
-          onEnter: () => burnTimeline.restart(),
-          onLeave: () => burnTimeline.progress(1).pause(),
-          onEnterBack: () => burnTimeline.progress(1).pause(),
-          onLeaveBack: () => {
-            if (!reduced) {
-              document.documentElement.dataset.burnActive = "true";
-              burnControls.setActive(true);
-            }
-            burnTimeline.reverse();
-          },
-        });
-
+      const fadeTargets = [building, about, contact];
+      if (reduced) {
+        gsap.set(fadeTargets, { opacity: 1 });
         return () => {
-          crtTrigger.kill();
-          burnTrigger.kill();
-          crtTimeline.kill();
-          burnTimeline.kill();
-          finiteNodes.forEach((node) => node.remove());
-          burnControls.setProgress(0);
-          burnControls.setActive(false);
-          burnControls.invalidate();
-          delete document.documentElement.dataset.burnActive;
+          gsap.set(fadeTargets, { clearProps: "opacity" });
         };
-      },
-    );
+      }
+
+      gsap.set([building, contact], { opacity: 0 });
+      gsap.set(about, { opacity: 1 });
+
+      const buildingFade = gsap
+        .timeline({ paused: true })
+        .to(building, {
+          opacity: 1,
+          duration: 0.45,
+          ease: "power2.out",
+        });
+      const contactFade = gsap
+        .timeline({ paused: true })
+        .to(
+          about,
+          {
+            opacity: 0,
+            duration: 0.45,
+            ease: "power2.out",
+          },
+          0,
+        )
+        .to(
+          contact,
+          {
+            opacity: 1,
+            duration: 0.45,
+            ease: "power2.out",
+          },
+          0,
+        );
+
+      const buildingTrigger = ScrollTrigger.create({
+        trigger: building,
+        start: "top 82%",
+        end: "top 18%",
+        onEnter: () => buildingFade.play(),
+        onLeave: () => buildingFade.progress(1).pause(),
+        onEnterBack: () => buildingFade.progress(1).pause(),
+        onLeaveBack: () => buildingFade.reverse(),
+      });
+      const contactTrigger = ScrollTrigger.create({
+        trigger: contact,
+        start: "top 82%",
+        end: "top 18%",
+        onEnter: () => contactFade.play(),
+        onLeave: () => contactFade.progress(1).pause(),
+        onEnterBack: () => contactFade.progress(1).pause(),
+        onLeaveBack: () => contactFade.reverse(),
+      });
+
+      return () => {
+        buildingTrigger.kill();
+        contactTrigger.kill();
+        buildingFade.kill();
+        contactFade.kill();
+        gsap.set(fadeTargets, { clearProps: "opacity" });
+      };
+    });
 
     } catch {
       burnControls.setProgress(0);

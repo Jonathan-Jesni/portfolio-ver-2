@@ -32,6 +32,17 @@ export function resolveMotionEnvironment(): MotionEnvironment {
     "(prefers-reduced-motion: reduce)",
   ).matches;
   const coarsePointer = !window.matchMedia("(pointer: fine)").matches;
+
+  if (coarsePointer) {
+    // Product policy: mobile is DOM-only; this is not a WebGL capability result.
+    return {
+      desktopScrub: false,
+      coarsePointer: true,
+      reducedMotion,
+      webglAvailable: false,
+    };
+  }
+
   const graphics = probeWebGLSupport();
 
   return {

@@ -184,24 +184,6 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   will-change: transform, opacity, filter;
 }
 
-.burn-finite-fallback {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0;
-  background:
-    radial-gradient(circle at 50% 48%, rgba(250, 245, 238, 0.16), transparent 34%),
-    linear-gradient(
-      180deg,
-      transparent 20%,
-      rgba(var(--accent-rgb), 0.32) 48%,
-      rgba(250, 245, 238, 0.2) 50%,
-      transparent 76%
-    );
-  mix-blend-mode: screen;
-}
-
 /* Featured proof and metric hierarchy. */
 .cs-lead-metric,
 .cs-metric {
@@ -245,6 +227,30 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   isolation: isolate;
   padding: clamp(88px, 10vw, 144px) 0 24px;
   background: var(--surface-0);
+}
+
+.gravity-pit.gravity-pit--static {
+  display: flex;
+  height: auto;
+  min-height: 0;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  padding: 14px;
+}
+
+.gravity-pill.gravity-pill--static {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: 28px;
+  padding: 6px 12px;
+  transform: none !important;
+  transform-origin: center;
+  font-size: 10px;
+  pointer-events: none;
+  touch-action: auto;
+  will-change: auto;
 }
 
 .more-work-header {
@@ -846,8 +852,7 @@ html[data-motion-ready="failed"] .cs-slide {
 
   .sp-content,
   .sp-reveal,
-  .about-split-container,
-  .contact-links {
+  .about-split-container {
     opacity: 1 !important;
     transform: none !important;
     clip-path: none !important;

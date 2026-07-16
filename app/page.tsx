@@ -48,6 +48,43 @@ const NAV_ITEMS = [
   { id: "contact", label: "Contact" },
 ] as const;
 
+const SKILL_PILLS = [
+  "Python",
+  "Java",
+  "C/C++",
+  "SQL",
+  "Dart",
+  "Flask",
+  "Flutter",
+  "Deep Learning",
+  "Computer Vision",
+  "Recommender Systems",
+  "LLMs / GenAI",
+  "YOLO",
+  "Semantic Segmentation",
+  "PyTorch",
+  "TensorFlow",
+  "Keras",
+  "OpenCV",
+  "NumPy",
+  "Pandas",
+  "Blender",
+  "FastAPI",
+  "Docker",
+  "Google Cloud",
+  "GPU Computing",
+  "React.js",
+  "JavaScript",
+  "HTML5",
+  "CSS3",
+  "Tailwind CSS",
+  "Agentic AI",
+  "CI/CD",
+  "REST APIs",
+  "LangChain",
+  "Hugging Face",
+] as const;
+
 const CHAPTER_TARGETS = [
   "projects",
   "currently-building",
@@ -72,6 +109,7 @@ const FAILURE_CLEAR_TARGETS = [
   ".about-terminal-wrap",
   ".contact-sticky",
   ".contact-links",
+  ".contact-link",
   ".contact-mask",
   ".stack-veil",
   ".reveal-word",
@@ -609,7 +647,11 @@ export default function Home() {
               >
                 <div className="ed-header-row sp-reveal">
                   <span className="ed-eyebrow">03 / Skills</span>
-                  <span className="ed-meta mono">drag to interact</span>
+                  <span className="ed-meta mono">
+                    {environment?.coarsePointer
+                      ? "static toolkit"
+                      : "drag to interact"}
+                  </span>
                 </div>
                 <h2 className="ed-heading ed-heading--md sp-reveal">
                   The <em>stack</em>
@@ -631,9 +673,27 @@ export default function Home() {
               </p>
 
               <div className="sp-reveal" data-chapter-body>
-                <InViewMount minHeight={420}>
-                  <GravityPit />
-                </InViewMount>
+                {environment === null ? null : environment.coarsePointer ? (
+                  <div
+                    className="gravity-pit gravity-pit--static"
+                    role="list"
+                    aria-label="Skills toolkit"
+                  >
+                    {SKILL_PILLS.map((label) => (
+                      <div
+                        key={label}
+                        className="gravity-pill gravity-pill--static"
+                        role="listitem"
+                      >
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <InViewMount minHeight={420}>
+                    <GravityPit pills={SKILL_PILLS} />
+                  </InViewMount>
+                )}
               </div>
             </div>
           </SpatialSection>

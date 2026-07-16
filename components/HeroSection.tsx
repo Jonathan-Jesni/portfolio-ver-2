@@ -70,7 +70,11 @@ export default function HeroSection({
     !environment?.coarsePointer &&
     !environment?.reducedMotion;
   const mountVisualStage =
-    webglAvailable && !environment?.reducedMotion && !stageFailed;
+    environment != null &&
+    webglAvailable &&
+    !environment.coarsePointer &&
+    !environment.reducedMotion &&
+    !stageFailed;
   const showPoster =
     stageFailed ||
     (environment !== undefined &&

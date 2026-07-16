@@ -1,12 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import { useFrame, useThree, extend } from "@react-three/fiber";
 import { shaderMaterial, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
 import { getLenis } from "../lib/lenisInstance";
+import { loaderControls } from "../lib/loaderControls";
+import { resolveMotionEnvironment } from "../lib/motionEnvironment";
 
 /* ================================================================
    PreLoader — "Liquid Obsidian" honest-manifest burn loader
@@ -30,13 +39,13 @@ import { getLenis } from "../lib/lenisInstance";
    │ manifest is lost. Keep the scene mounting concurrent.        │
    └──────────────────────────────────────────────────────────────┘
 
-   Burn implementation decision: STANDALONE shader, deliberately
-   NOT shared with components/BurnTransition.tsx. That effect is a
+   The loader shader is rendered inside the page's single visual-stage
+   Canvas. It deliberately remains a different material from
+   components/BurnTransition.tsx: that effect is a
    directional fire *line* (bottom→up, ~99% transparent, scroll-
    scrub driven via the burnControls singleton); this one is a
    radial *hole* opening center→out on a fully opaque liquid-metal
-   field, driven by a one-shot GSAP tween. A shared multi-mode
-   shader would be more complexity, not less. For visual DNA, the
+   field, driven by a one-shot GSAP tween. For visual DNA, the
    hash/noise/fbm GLSL helpers and the hot-rim color ramp
    (WHITE_HOT / ORANGE / CHAMPAGNE / CHAR) are lifted verbatim
    from BurnTransition.tsx so the burn edge reads as the same fire.
@@ -202,27 +211,34 @@ declare module "@react-three/fiber" {
   }
 }
 
-/* ── Mutable FX bridge: GSAP tweens this plain object on the React
-      side; the plane copies it into uniforms each frame. Keeps GSAP
-      out of THREE internals and survives re-renders. ── */
-interface FxState {
-  burnProgress: number;
-  speedTarget: number;
-}
-
-function ObsidianPlane({ fx }: { fx: React.RefObject<FxState> }) {
+/* The DOM loader writes plain numbers to loaderControls while this scene
+   copies them into uniforms. No React render occurs during the burn. */
+export function ObsidianPlane() {
+  const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<LiquidObsidianMaterialImpl>(null);
-  const size = useThree((s) => s.size);
+  const { size, invalidate } = useThree();
   const churnTimeRef = useRef(0);
   const speedRef = useRef(0);
 
   useEffect(() => {
     if (matRef.current) matRef.current.uResolution.set(size.width, size.height);
-  }, [size]);
+    invalidate();
+  }, [invalidate, size]);
+
+  useEffect(() => {
+    loaderControls.setInvalidate(invalidate);
+    invalidate();
+    return () => loaderControls.setInvalidate(null);
+  }, [invalidate]);
 
   useFrame((_, delta) => {
     const mat = matRef.current;
-    if (!mat) return;
+    const mesh = meshRef.current;
+    if (!mat || !mesh) return;
+
+    const active = loaderControls.getActive();
+    mesh.visible = active;
+    if (!active) return;
 
     /* Clamp delta: GLB parse / texture upload can stall the main
        thread for 100ms+; an unclamped delta telescopes that stall
@@ -233,7 +249,7 @@ function ObsidianPlane({ fx }: { fx: React.RefObject<FxState> }) {
     /* LERP uSpeed toward the progress-mapped target — progress
        arrives in jumps (0 → 34 → 100); hard-assigning would make
        the churn stutter. */
-    const target = fx.current.speedTarget;
+    const target = loaderControls.getSpeedTarget();
     speedRef.current += (target - speedRef.current) * Math.min(1, safeDelta * 3);
 
     /* integrate the clock on the CPU so a changing speed never
@@ -242,11 +258,15 @@ function ObsidianPlane({ fx }: { fx: React.RefObject<FxState> }) {
 
     mat.uTime = churnTimeRef.current;
     mat.uSpeed = speedRef.current;
-    mat.uBurnProgress = fx.current.burnProgress;
+    mat.uBurnProgress = loaderControls.getBurnProgress();
+
+    // The shared stage uses frameloop="demand". The liquid is time-based
+    // while active, then becomes completely idle once its exit finishes.
+    invalidate();
   });
 
   return (
-    <mesh frustumCulled={false}>
+    <mesh ref={meshRef} frustumCulled={false} renderOrder={100}>
       <planeGeometry args={[2, 2]} />
       <liquidObsidianMaterial
         ref={matRef}
@@ -282,20 +302,46 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const [floorPassed, setFloorPassed] = useState(false);
   const [readyPrinted, setReadyPrinted] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const environment = useMemo(() => resolveMotionEnvironment(), []);
+  const loaderSnapshot = useSyncExternalStore(
+    loaderControls.subscribe,
+    loaderControls.getSnapshot,
+    loaderControls.getServerSnapshot,
+  );
+  const staticFallback =
+    environment.reducedMotion ||
+    environment.coarsePointer ||
+    !environment.webglAvailable ||
+    loaderSnapshot.failed;
 
   const terminalRef = useRef<HTMLDivElement>(null);
+  const staticOverlayRef = useRef<HTMLDivElement>(null);
   const onCompleteRef = useRef(onComplete);
-  const fxRef = useRef<FxState>({ burnProgress: 0, speedTarget: 0 });
+  const burnProxyRef = useRef({ value: 0 });
   const manifestQueueRef = useRef<string[]>([]);
   const seenUrlsRef = useRef<Set<string>>(new Set());
   const assetsDoneRef = useRef(false);
   const readyInjectedRef = useRef(false);
   const burnStartedRef = useRef(false);
+  const staticExitCompletedRef = useRef(false);
   const handoffCallRef = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    if (!loaderSnapshot.stageReady || staticFallback) return;
+    const raf = requestAnimationFrame(() => {
+      document.getElementById("preloader-mask")?.remove();
+      setLines((current) =>
+        current.includes("> VISUAL STAGE READY [OK]")
+          ? current
+          : [...current, "> VISUAL STAGE READY [OK]"],
+      );
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loaderSnapshot.stageReady, staticFallback]);
 
   /* ── Scroll lock — keyed to isComplete, NOT unmount. The component
         never truly unmounts (page.tsx renders it unconditionally and
@@ -305,8 +351,8 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         and the re-run bails before re-locking. The lock therefore
         survives the 40% hero handoff and releases exactly when the
         burn finishes and the overlay leaves the DOM. Applied in the
-        reduced-motion path too (it completes in ~400ms, but the
-        static overlay shouldn't scroll either).
+        static-fallback path too (mobile fades in ~400ms; reduced
+        motion exits immediately, but neither path should scroll).
 
         Two layers, on purpose:
         - overflow:hidden hides the scrollbar and blocks native scroll
@@ -326,11 +372,6 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   }, [isComplete]);
 
   /* Component is mounted ssr:false, so window exists at first render */
-  const prefersReduced = useMemo(
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    []
-  );
-
   /* ── Gate condition A: assets fully loaded. loaded > 0 guards the
         nothing-ever-registered case (degraded mode per the header
         comment) — there the failsafe ceiling is the only exit. ── */
@@ -343,22 +384,44 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
 
   /* Map real progress onto the shader's churn-violence target */
   useEffect(() => {
-    fxRef.current.speedTarget = Math.min(progress / 100, 1);
+    loaderControls.setSpeedTarget(progress / 100);
   }, [progress]);
 
-  /* ── Reduced motion: no shader, no burn — static overlay, near-
-        immediate handoff and unmount (parity with the old loader) ── */
+  /* Mobile policy, WebGL loss/unavailability, and reduced motion retain the
+     loader's visual identity as a short static surface without another context. */
   useEffect(() => {
-    if (!prefersReduced) return;
-    // Static opaque overlay is already painted this commit — safe to drop the
-    // server-rendered mask immediately (no WebGL first-frame to wait on).
+    if (!staticFallback || isComplete) return;
+    loaderControls.setActive(false);
     document.getElementById("preloader-mask")?.remove();
-    const t = setTimeout(() => {
+
+    const finish = () => {
+      if (staticExitCompletedRef.current) return;
+      staticExitCompletedRef.current = true;
       onCompleteRef.current();
       setIsComplete(true);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [prefersReduced]);
+    };
+
+    if (environment.reducedMotion) {
+      finish();
+      return;
+    }
+
+    const overlay = staticOverlayRef.current;
+    if (!overlay) {
+      finish();
+      return;
+    }
+
+    const fade = gsap.to(overlay, {
+      opacity: 0,
+      duration: 0.4,
+      ease: "power1.out",
+      onComplete: finish,
+    });
+    return () => {
+      fade.kill();
+    };
+  }, [environment.reducedMotion, isComplete, staticFallback]);
 
   /* ── Honest manifest capture: CHAIN onto the global manager's
         onProgress (fired per itemEnd, i.e. per completed asset).
@@ -371,7 +434,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     /* isComplete-keyed (not unmount-keyed): the component renders null
        after completion but never unmounts, so the wrap must be
        restored when the loader finishes, not at fiber teardown. */
-    if (prefersReduced || isComplete) return;
+    if (staticFallback || isComplete) return;
     const manager = THREE.DefaultLoadingManager;
     const prevOnProgress = manager.onProgress;
 
@@ -386,7 +449,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     return () => {
       manager.onProgress = prevOnProgress;
     };
-  }, [prefersReduced, isComplete]);
+  }, [isComplete, staticFallback]);
 
   /* ── The exit. Idempotent: gate and failsafe can both call it. ── */
   const startBurn = useCallback(() => {
@@ -403,11 +466,17 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       setLines((ls) => [...ls, READY_LINE]);
     }
 
-    gsap.to(fxRef.current, {
-      burnProgress: 1,
+    const burnProxy = burnProxyRef.current;
+    gsap.to(burnProxy, {
+      value: 1,
       duration: BURN_DURATION_S,
       ease: "power2.inOut",
-      onComplete: () => setIsComplete(true), // unmount → frees this GL context
+      onUpdate: () => loaderControls.setBurnProgress(burnProxy.value),
+      onComplete: () => {
+        loaderControls.setBurnProgress(1);
+        loaderControls.setActive(false);
+        setIsComplete(true);
+      },
     });
 
     if (terminalRef.current) {
@@ -432,14 +501,14 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         isComplete-keyed so the (already-guarded) ceiling timer is
         cleared once the loader finishes. ── */
   useEffect(() => {
-    if (prefersReduced || isComplete) return;
+    if (staticFallback || isComplete) return;
     const floor = setTimeout(() => setFloorPassed(true), FLOOR_MS);
     const ceiling = setTimeout(() => startBurn(), FAILSAFE_MS);
     return () => {
       clearTimeout(floor);
       clearTimeout(ceiling);
     };
-  }, [prefersReduced, startBurn, isComplete]);
+  }, [isComplete, startBurn, staticFallback]);
 
   /* ── Print queue drain: one line per tick keeps the terminal
         legible even when 50 assets resolve in 50ms. Once drained AND
@@ -448,7 +517,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   useEffect(() => {
     /* isComplete-keyed so the interval stops once the loader is done
        (the component renders null but never unmounts) */
-    if (prefersReduced || isComplete) return;
+    if (staticFallback || isComplete) return;
     const id = setInterval(() => {
       const queue = manifestQueueRef.current;
       if (queue.length > 0) {
@@ -461,34 +530,36 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       }
     }, PRINT_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [prefersReduced, isComplete]);
+  }, [isComplete, staticFallback]);
 
   /* ── The logic gate: A is folded into C (READY only prints once
         assetsDone && queue drained), so burn ⇐ B && C. ── */
   useEffect(() => {
-    if (floorPassed && readyPrinted) startBurn();
-  }, [floorPassed, readyPrinted, startBurn]);
+    if (!staticFallback && floorPassed && readyPrinted) startBurn();
+  }, [floorPassed, readyPrinted, startBurn, staticFallback]);
 
   /* Kill in-flight tweens if we unmount mid-burn */
   useEffect(() => {
-    const fx = fxRef.current;
+    const burnProxy = burnProxyRef.current;
     return () => {
-      gsap.killTweensOf(fx);
+      gsap.killTweensOf(burnProxy);
       handoffCallRef.current?.kill();
     };
   }, []);
 
   if (isComplete) return null;
 
-  if (prefersReduced) {
+  if (staticFallback) {
     return (
       <div
+        ref={staticOverlayRef}
         aria-hidden="true"
         style={{
           position: "fixed",
           inset: 0,
           zIndex: 9999,
-          backgroundColor: "#0D0B09",
+          background:
+            "radial-gradient(circle at 18% 82%, rgba(201,168,82,.12), transparent 42%), radial-gradient(circle at 72% 18%, rgba(143,168,196,.07), transparent 38%), #0D0B09",
           pointerEvents: "none",
         }}
       />
@@ -507,26 +578,6 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
         overflow: "hidden",
       }}
     >
-      {/* ── WebGL layer: alpha canvas + discard reveals the page DOM
-            beneath as the burn opens. Two GL contexts are live during
-            load (this + the main scene); unmounting this component is
-            what reclaims the memory. ── */}
-      <Canvas
-        dpr={[1, 1]}
-        gl={{ alpha: true, antialias: false }}
-        style={{ position: "absolute", inset: 0 }}
-        onCreated={({ gl }) => {
-          gl.setClearAlpha(0);
-          setLines((ls) => [...ls, "> WEBGL CONTEXT ACQUIRED [OK]"]);
-          // Drop the server-rendered hero mask once the obsidian has actually
-          // painted (next rAF, after this first frame composites) — removing it
-          // earlier would expose the transparent canvas for a frame.
-          requestAnimationFrame(() => document.getElementById("preloader-mask")?.remove());
-        }}
-      >
-        <ObsidianPlane fx={fxRef} />
-      </Canvas>
-
       {/* ── DOM terminal manifest — bottom-left, plain mono, capped ── */}
       <div
         ref={terminalRef}
