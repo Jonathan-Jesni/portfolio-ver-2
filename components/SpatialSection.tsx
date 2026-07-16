@@ -87,7 +87,7 @@ export default function SpatialSection({
                 trigger: runway,
                 start: "top top",
                 end: "bottom bottom",
-                scrub: true,
+                scrub: chapter === "building" ? true : 2,
                 invalidateOnRefresh: true,
                 onRefresh: () => refreshScrollTargets([id]),
               },
@@ -153,29 +153,37 @@ export default function SpatialSection({
                 phase.travel - 38,
               );
             } else {
-              gsap.set(heading, { opacity: 0, y: 24, filter: "none" });
-              gsap.set(support, { opacity: 0, y: 18, filter: "none" });
+              gsap.set(content, {
+                opacity: 0,
+                clipPath: "inset(100% 0 0 0)",
+                y: -60,
+              });
+              gsap.set(reveals, {
+                clipPath: "inset(0 0 110% 0)",
+                yPercent: 6,
+              });
 
               timeline.to(
-                heading,
+                content,
                 {
                   opacity: 1,
+                  clipPath: "inset(0% 0 0 0)",
                   y: 0,
                   ease: "power3.out",
-                  duration: 28,
+                  duration: 25,
                 },
                 0,
               );
               timeline.to(
-                support,
+                reveals,
                 {
-                  opacity: 1,
-                  y: 0,
+                  clipPath: "inset(-20% -20% -20% -20%)",
+                  yPercent: 0,
                   ease: "power3.out",
-                  stagger: 4,
-                  duration: 32,
+                  stagger: 5,
+                  duration: 11,
                 },
-                12,
+                15,
               );
               timeline.to(
                 [heading, ...support],
