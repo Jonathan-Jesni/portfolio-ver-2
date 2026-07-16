@@ -1,13 +1,26 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { BuildingItem } from "@/lib/data";
 import { CometCard } from "@/components/ui/comet-card";
 import MotionBorder from "@/components/ui/motion-border";
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "@/lib/mediaQueries";
 
 export default function PipelineGrid({ items }: { items: readonly BuildingItem[] }) {
+  const [showMotionBorder, setShowMotionBorder] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY);
+    const update = () => setShowMotionBorder(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   return (
     <div
       className="pipeline-wrapper"
+      data-building-pipeline=""
       style={{ touchAction: "pan-y", position: "relative" }}
     >
       {/* Dot-grid background texture */}
@@ -20,24 +33,31 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
         <rect width="100%" height="100%" fill="url(#pipeline-dot-grid)" />
       </svg>
 
-      <div className="building-grid" style={{ position: "relative" }}>
+      <div
+        className="building-grid"
+        data-building-cards=""
+        data-building-circuit-host=""
+        style={{ position: "relative" }}
+      >
         {/*
           MotionBorder — "H" circuit that connects both cards.
           Sits directly INSIDE .building-grid so its 100% height
           tightly hugs the cards and ignores the wrapper's 32px padding.
         */}
-        <MotionBorder
-          cardGapPx={64}
-          borderRadius={18}
-          borderPadding={12}
-          bridgePosition={0.38}
-          bridgeCurveRadius={10}
-          duration={12}
-          dotColor="rgba(143, 168, 196, 0.95)"
-          dotSize={5}
-          trackColor="rgba(143, 168, 196, 0.14)"
-          trackWidth={1}
-        />
+        {showMotionBorder && (
+          <MotionBorder
+            cardGapPx={64}
+            borderRadius={18}
+            borderPadding={12}
+            bridgePosition={0.38}
+            bridgeCurveRadius={10}
+            duration={12}
+            dotColor="rgba(143, 168, 196, 0.95)"
+            dotSize={5}
+            trackColor="rgba(143, 168, 196, 0.14)"
+            trackWidth={1}
+          />
+        )}
 
         {items.map((item, idx) => (
           <CometCard
@@ -48,6 +68,7 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
             <div
               id={item.id}
               className="building-card pipeline-card sp-reveal"
+              data-building-card=""
               data-pipeline-index={idx}
               style={{ height: "100%" }}
             >
@@ -63,7 +84,9 @@ export default function PipelineGrid({ items }: { items: readonly BuildingItem[]
                   </span>
                 </div>
 
-                <h3 className="pipeline-title">{item.title}</h3>
+                <h3 className="pipeline-title" data-building-card-heading="">
+                  {item.title}
+                </h3>
 
                 <div className="pipe-steps-row" aria-label="Pipeline steps">
                   {item.steps.map((step, si) => (
