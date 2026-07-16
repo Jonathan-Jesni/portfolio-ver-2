@@ -28,20 +28,14 @@ const phaseFor = (chapter: SpatialChapter) =>
 function exposeCompleteContent(
   content: HTMLElement,
   targets: HTMLElement[],
-  circuit: SVGElement[],
 ) {
-  gsap.killTweensOf([content, ...targets, ...circuit]);
+  gsap.killTweensOf([content, ...targets]);
   gsap.set([content, ...targets], {
     opacity: 1,
     y: 0,
     yPercent: 0,
     filter: "none",
     clipPath: "none",
-  });
-  gsap.set(circuit, {
-    opacity: 1,
-    strokeDasharray: 1,
-    strokeDashoffset: 0,
   });
 }
 
@@ -74,11 +68,6 @@ export default function SpatialSection({
           "[data-building-card], [data-chapter-card], .pipeline-card",
         ),
       );
-      const circuit = Array.from(
-        content.querySelectorAll<SVGElement>(
-          "[data-circuit-draw], [data-circuit-glow], [data-circuit-runner]",
-        ),
-      );
       const support = reveals.filter(
         (element) => element !== heading && !cards.includes(element),
       );
@@ -86,7 +75,7 @@ export default function SpatialSection({
         new Set<HTMLElement>([heading, ...reveals, ...cards, ...support]),
       );
 
-      exposeCompleteContent(content, completeTargets, circuit);
+      exposeCompleteContent(content, completeTargets);
       const mm = gsap.matchMedia();
 
       try {
@@ -105,24 +94,10 @@ export default function SpatialSection({
             });
 
             if (chapter === "building") {
-              gsap.set(circuit, {
-                opacity: 0,
-                strokeDasharray: 1,
-                strokeDashoffset: 1,
-              });
               gsap.set(heading, { opacity: 0, y: 28, filter: "blur(4px)" });
               gsap.set(support, { opacity: 0, y: 18, filter: "blur(3px)" });
               gsap.set(cards, { opacity: 0, y: 34, filter: "blur(4px)" });
 
-              timeline.to(
-                circuit,
-                {
-                  opacity: 1,
-                  strokeDashoffset: 0,
-                  duration: 24,
-                },
-                0,
-              );
               timeline.to(
                 heading,
                 {
@@ -159,16 +134,6 @@ export default function SpatialSection({
                 24,
               );
 
-              /* Circuit drains first, then cards, then heading. */
-              timeline.to(
-                circuit,
-                {
-                  strokeDashoffset: -1,
-                  opacity: 0.15,
-                  duration: 32,
-                },
-                phase.hold,
-              );
               timeline.to(
                 [...cards, ...support],
                 {
@@ -236,10 +201,10 @@ export default function SpatialSection({
             return () => {
               timeline.scrollTrigger?.kill();
               timeline.kill();
-              exposeCompleteContent(content, completeTargets, circuit);
+              exposeCompleteContent(content, completeTargets);
             };
           } catch {
-            exposeCompleteContent(content, completeTargets, circuit);
+            exposeCompleteContent(content, completeTargets);
             window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
           }
         });
@@ -248,35 +213,17 @@ export default function SpatialSection({
           TOUCH_MEDIA_QUERY,
           () => {
             if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-              exposeCompleteContent(content, completeTargets, circuit);
+              exposeCompleteContent(content, completeTargets);
               return;
             }
 
             const targets =
               chapter === "building"
-                ? [heading, ...support, ...cards, ...circuit]
+                ? [heading, ...support, ...cards]
                 : [heading, ...support];
             gsap.set(targets, { opacity: 0, y: 12, filter: "blur(3px)" });
-            gsap.set(circuit, {
-              strokeDasharray: 1,
-              strokeDashoffset: 1,
-            });
 
             const finite = gsap.timeline({ paused: true });
-            if (circuit.length) {
-              finite.to(
-                circuit,
-                {
-                  opacity: 1,
-                  y: 0,
-                  filter: "blur(0px)",
-                  strokeDashoffset: 0,
-                  duration: phase.touchDuration * 0.45,
-                  ease: "power2.out",
-                },
-                0,
-              );
-            }
             finite.to(
               [heading, ...support, ...cards],
               {
@@ -303,12 +250,12 @@ export default function SpatialSection({
             return () => {
               trigger.kill();
               finite.kill();
-              exposeCompleteContent(content, completeTargets, circuit);
+              exposeCompleteContent(content, completeTargets);
             };
           },
         );
       } catch {
-        exposeCompleteContent(content, completeTargets, circuit);
+        exposeCompleteContent(content, completeTargets);
         window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
       }
 
