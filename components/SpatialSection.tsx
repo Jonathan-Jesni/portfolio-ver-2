@@ -94,16 +94,15 @@ export default function SpatialSection({
             });
 
             if (chapter === "building") {
-              gsap.set(heading, { opacity: 0, y: 28, filter: "blur(4px)" });
-              gsap.set(support, { opacity: 0, y: 18, filter: "blur(3px)" });
-              gsap.set(cards, { opacity: 0, y: 34, filter: "blur(4px)" });
+              gsap.set(heading, { opacity: 0, y: 28, filter: "none" });
+              gsap.set(support, { opacity: 0, y: 18, filter: "none" });
+              gsap.set(cards, { opacity: 0, y: 34, filter: "none" });
 
               timeline.to(
                 heading,
                 {
                   opacity: 1,
                   y: 0,
-                  filter: "blur(0px)",
                   ease: "power3.out",
                   duration: 24,
                 },
@@ -114,7 +113,6 @@ export default function SpatialSection({
                 {
                   opacity: 1,
                   y: 0,
-                  filter: "blur(0px)",
                   ease: "power3.out",
                   stagger: 3,
                   duration: 22,
@@ -126,7 +124,6 @@ export default function SpatialSection({
                 {
                   opacity: 1,
                   y: 0,
-                  filter: "blur(0px)",
                   ease: "power3.out",
                   stagger: 5,
                   duration: 30,
@@ -139,7 +136,6 @@ export default function SpatialSection({
                 {
                   opacity: 0,
                   y: -18,
-                  filter: "blur(3px)",
                   ease: "power2.in",
                   stagger: 5,
                   duration: 48,
@@ -151,22 +147,20 @@ export default function SpatialSection({
                 {
                   opacity: 0,
                   y: -12,
-                  filter: "blur(3px)",
                   ease: "power2.in",
                   duration: 38,
                 },
                 phase.travel - 38,
               );
             } else {
-              gsap.set(heading, { opacity: 0, y: 24, filter: "blur(4px)" });
-              gsap.set(support, { opacity: 0, y: 18, filter: "blur(3px)" });
+              gsap.set(heading, { opacity: 0, y: 24, filter: "none" });
+              gsap.set(support, { opacity: 0, y: 18, filter: "none" });
 
               timeline.to(
                 heading,
                 {
                   opacity: 1,
                   y: 0,
-                  filter: "blur(0px)",
                   ease: "power3.out",
                   duration: 28,
                 },
@@ -177,7 +171,6 @@ export default function SpatialSection({
                 {
                   opacity: 1,
                   y: 0,
-                  filter: "blur(0px)",
                   ease: "power3.out",
                   stagger: 4,
                   duration: 32,
@@ -189,7 +182,6 @@ export default function SpatialSection({
                 {
                   opacity: 0,
                   y: -14,
-                  filter: "blur(2px)",
                   ease: "power2.in",
                   stagger: 5,
                   duration: 70,

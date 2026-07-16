@@ -594,7 +594,16 @@ html[data-motion-ready="failed"] .cs-slide {
   }
 
   html[data-motion-ready="true"] .sp-runway.skills-spatial {
+    --skills-pit-height: clamp(320px, 50svh, 420px);
     height: var(--runway-skills);
+  }
+
+  .skills-spatial .gravity-pit {
+    height: var(--skills-pit-height);
+  }
+
+  .skills-spatial [data-chapter-body] > div {
+    min-height: var(--skills-pit-height) !important;
   }
 
   html[data-motion-ready="true"] .about-runway {
