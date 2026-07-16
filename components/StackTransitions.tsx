@@ -56,6 +56,63 @@ const BOUNDARIES: BoundaryConfig[] = [
   { scale: 0.92, y: -2, veil: 0.40, inset: 4, radius: 52 }, /* Skills   → About     (deep)  */
 ];
 
+interface CrtSequenceValues {
+  voidIn: gsap.TweenVars;
+  voidOut: gsap.TweenVars;
+  bladeIn: gsap.TweenVars;
+  bladeCollapseFrom: gsap.TweenVars;
+  bladeCollapseTo: gsap.TweenVars;
+  bladePinch: gsap.TweenVars;
+  bladeOut: gsap.TweenVars;
+  residualFrom: gsap.TweenVars;
+  residualIn: gsap.TweenVars;
+  residualInAt: number;
+  residualOut: gsap.TweenVars;
+  residualOutAt: number;
+}
+
+function buildCrtSequence(
+  timeline: gsap.core.Timeline,
+  {
+    voidEl,
+    blade,
+    residual,
+    values,
+  }: {
+    voidEl: HTMLElement | null;
+    blade: HTMLElement | null;
+    residual: HTMLElement | null;
+    values: CrtSequenceValues;
+  },
+) {
+  if (voidEl) {
+    timeline.fromTo(voidEl, { opacity: 0 }, values.voidIn, 0);
+    timeline.to(voidEl, values.voidOut, 0.74);
+  }
+
+  if (blade) {
+    timeline.fromTo(blade, { opacity: 0 }, values.bladeIn, 0.04);
+    timeline.fromTo(
+      blade,
+      values.bladeCollapseFrom,
+      values.bladeCollapseTo,
+      0.06,
+    );
+    timeline.to(blade, values.bladePinch, 0.6);
+    timeline.to(blade, values.bladeOut, 0.9);
+  }
+
+  if (residual) {
+    timeline.fromTo(
+      residual,
+      values.residualFrom,
+      values.residualIn,
+      values.residualInAt,
+    );
+    timeline.to(residual, values.residualOut, values.residualOutAt);
+  }
+}
+
 export default function StackTransitions() {
   useGSAP(() => {
     const sections = gsap.utils.toArray<HTMLElement>("[data-stack]");
@@ -256,71 +313,63 @@ export default function StackTransitions() {
           const blade = fx.querySelector<HTMLElement>(".crt-fx__blade");
           const residual = fx.querySelector<HTMLElement>(".crt-fx__residual");
 
-          /* the dark void establishes over the pinned deck … */
-          if (voidEl) {
-            tl.fromTo(
-              voidEl,
-              { opacity: 0 },
-              { opacity: 1, ease: "power2.out", duration: 0.22 },
-              0
-            );
-            /* … then clears right at the end to reveal Building underneath */
-            tl.to(voidEl, { opacity: 0, ease: "power2.in", duration: 0.2 }, 0.74);
-          }
-
-          if (blade) {
-            /* champagne field flicks on … */
-            tl.fromTo(
-              blade,
-              { opacity: 0 },
-              { opacity: 0.95, ease: "power1.out", duration: 0.12 },
-              0.04
-            );
-            /* … then SQUASHES into a blade while brightness goes sky-high */
-            tl.fromTo(
-              blade,
-              { scaleY: 1, scaleX: 1, transformOrigin: "center center", filter: "brightness(1)" },
-              { scaleY: 0.005, filter: "brightness(3.4)", ease: "power3.in", duration: 0.5 },
-              0.06
-            );
-            /* PINCH — the blade winks inward from left + right, then gone */
-            tl.to(blade, { scaleX: 0, ease: "power2.in", duration: 0.3 }, 0.6);
-            tl.to(blade, { opacity: 0, ease: "none", duration: 0.05 }, 0.9);
-          }
-
-          if (residual) {
-            const residualTl = gsap.timeline({
-              scrollTrigger: {
-                trigger: next,
-                start: "top bottom",
-                end: "top top",
-                scrub: true,
+          buildCrtSequence(tl, {
+            voidEl,
+            blade,
+            residual,
+            values: {
+              voidIn: { opacity: 1, ease: "power2.out", duration: 0.22 },
+              voidOut: { opacity: 0, ease: "power2.in", duration: 0.2 },
+              bladeIn: {
+                opacity: 0.95,
+                ease: "power1.out",
+                duration: 0.12,
               },
-            });
-            residualTl.fromTo(
-              residual,
-              { opacity: 0, scaleX: 0, filter: "brightness(3)" },
-              {
+              bladeCollapseFrom: {
+                scaleY: 1,
+                scaleX: 1,
+                transformOrigin: "center center",
+                filter: "brightness(1)",
+              },
+              bladeCollapseTo: {
+                scaleY: 0.005,
+                filter: "brightness(3.4)",
+                ease: "power3.in",
+                duration: 0.5,
+              },
+              bladePinch: {
+                scaleX: 0,
+                ease: "power2.in",
+                duration: 0.3,
+              },
+              bladeOut: {
+                opacity: 0,
+                ease: "none",
+                duration: 0.05,
+              },
+              residualFrom: {
+                opacity: 0,
+                scaleX: 0,
+                filter: "brightness(3)",
+              },
+              residualIn: {
                 opacity: 0.92,
                 scaleX: 0.22,
                 filter: "brightness(2.2)",
-                duration: 0.05,
+                duration: 0.0475,
                 ease: "power2.out",
               },
-              0.92,
-            );
-            residualTl.to(
-              residual,
-              {
+              residualInAt: 0.874,
+              residualOut: {
                 opacity: 0,
                 scaleX: 0.48,
                 filter: "brightness(1)",
-                duration: 0.03,
+                duration: 0.0285,
                 ease: "power1.out",
               },
-              0.97,
-            );
-          }
+              residualOutAt: 0.9215,
+            },
+          });
         } else if (veil) {
           /* Depth drift: as a sheet is buried it darkens through the warm
              obsidian ramp (surface-1 #161310 toward the deeper surface-0
@@ -402,25 +451,54 @@ export default function StackTransitions() {
             )
             .to(residual, { opacity: 0, duration: 0.22, ease: "power1.out" });
         } else {
-          crtTimeline
-            .fromTo(voidEl, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0)
-            .fromTo(blade, { opacity: 0 }, { opacity: 0.95, duration: 0.12 }, 0.04)
-            .fromTo(
-              blade,
-              { scaleY: 1, scaleX: 1, filter: "brightness(1)" },
-              { scaleY: 0.005, filter: "brightness(3.4)", duration: 0.5, ease: "power3.in" },
-              0.06,
-            )
-            .to(blade, { scaleX: 0, duration: 0.3, ease: "power2.in" }, 0.6)
-            .to(voidEl, { opacity: 0, duration: 0.2, ease: "power2.in" }, 0.74)
-            .to(blade, { opacity: 0, duration: 0.05 }, 0.9)
-            .fromTo(
-              residual,
-              { opacity: 0, scaleX: 0 },
-              { opacity: 0.85, scaleX: 0.28, duration: 0.05 },
-              0.92,
-            )
-            .to(residual, { opacity: 0, scaleX: 0.48, duration: 0.03 }, 0.97);
+          buildCrtSequence(crtTimeline, {
+            voidEl,
+            blade,
+            residual,
+            values: {
+              voidIn: {
+                opacity: 1,
+                duration: 0.2,
+                ease: "power2.out",
+              },
+              voidOut: {
+                opacity: 0,
+                duration: 0.2,
+                ease: "power2.in",
+              },
+              bladeIn: { opacity: 0.95, duration: 0.12 },
+              bladeCollapseFrom: {
+                scaleY: 1,
+                scaleX: 1,
+                filter: "brightness(1)",
+              },
+              bladeCollapseTo: {
+                scaleY: 0.005,
+                filter: "brightness(3.4)",
+                duration: 0.5,
+                ease: "power3.in",
+              },
+              bladePinch: {
+                scaleX: 0,
+                duration: 0.3,
+                ease: "power2.in",
+              },
+              bladeOut: { opacity: 0, duration: 0.05 },
+              residualFrom: { opacity: 0, scaleX: 0 },
+              residualIn: {
+                opacity: 0.85,
+                scaleX: 0.28,
+                duration: 0.05,
+              },
+              residualInAt: 0.92,
+              residualOut: {
+                opacity: 0,
+                scaleX: 0.48,
+                duration: 0.03,
+              },
+              residualOutAt: 0.97,
+            },
+          });
         }
 
         const crtTrigger = ScrollTrigger.create({
