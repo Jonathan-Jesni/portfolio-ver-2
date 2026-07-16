@@ -1,29 +1,45 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import dynamic from "next/dynamic";
-import AboutSection from "../components/AboutSection";
-import Footer from "../components/Footer";
-import HeroSection from "../components/HeroSection";
-import StickyDeckSection from "../components/StickyDeckSection";
-import PipelineGrid from "../components/PipelineGrid";
-import SpatialSection from "../components/SpatialSection";
-import ContactSection from "../components/ContactSection";
-import StackTransitions from "../components/StackTransitions";
-import HeadlineReveal from "../components/HeadlineReveal";
-import ScrollVelocitySkew from "../components/ScrollVelocitySkew";
-import InViewMount from "../components/InViewMount";
-
-import { BUILDING } from "../lib/data";
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import AboutSection from "../components/AboutSection";
+import ContactSection from "../components/ContactSection";
+import Footer from "../components/Footer";
+import HeadlineReveal from "../components/HeadlineReveal";
+import HeroSection from "../components/HeroSection";
+import InViewMount from "../components/InViewMount";
+import PipelineGrid from "../components/PipelineGrid";
+import ScrollVelocitySkew from "../components/ScrollVelocitySkew";
+import SpatialSection from "../components/SpatialSection";
+import StackTransitions from "../components/StackTransitions";
+import StickyDeckSection from "../components/StickyDeckSection";
 import { HoverScrambleText } from "../components/ui/HoverScrambleText";
+import { BUILDING } from "../lib/data";
+import { burnControls } from "../lib/burnControls";
 import { getLenis } from "../lib/lenisInstance";
-import { power4InOut, absoluteTop } from "../lib/scrollTarget";
+import {
+  resolveMotionEnvironment,
+  type MotionEnvironment,
+} from "../lib/motionEnvironment";
+import {
+  getScrollTargetY,
+  measureNavClearance,
+  observeScrollTargets,
+  power4InOut,
+  refreshScrollTargets,
+} from "../lib/scrollTarget";
+
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
-/* Nav sections in document order (top → bottom of scroll). */
 const NAV_ITEMS = [
   { id: "projects", label: "Projects" },
   { id: "skills", label: "Skills" },
@@ -31,119 +47,458 @@ const NAV_ITEMS = [
   { id: "contact", label: "Contact" },
 ] as const;
 
-/* Land at the exact section top. The sections frame their own content (the
-   Projects header is a full-screen vertically-centered title; Skills/Building
-   are sticky with internal padding), so no extra nav clearance is needed — a
-   positive offset just pushed the centered Projects title down too far. */
-const NAV_OFFSET = 0;
+const CHAPTER_TARGETS = [
+  "projects",
+  "currently-building",
+  "skills",
+  "about",
+  "contact",
+] as const;
 
-const GravityPit = dynamic(() => import("../components/GravityPit"), { ssr: false });
-const PreLoader = dynamic(() => import("../components/PreLoader"), { ssr: false });
-const BurnTransition = dynamic(() => import("../components/BurnTransition"), { ssr: false });
+const FAILURE_CLEAR_TARGETS = [
+  ".stack-section",
+  ".cs-viewport",
+  ".cs-slide",
+  ".sp-content",
+  ".sp-reveal",
+  "[data-chapter-heading]",
+  "[data-chapter-body]",
+  "[data-building-card]",
+  "[data-circuit-draw]",
+  "[data-circuit-glow]",
+  ".about-sticky",
+  ".about-split-container",
+  ".about-terminal-wrap",
+  ".contact-sticky",
+  ".contact-links",
+  ".contact-mask",
+  ".stack-veil",
+  ".reveal-word",
+  ".name-part-1",
+  ".name-part-2",
+  ".hero-tagline",
+  ".hero-sub",
+  ".hero-buttons",
+].join(",");
+
+const GravityPit = dynamic(() => import("../components/GravityPit"), {
+  ssr: false,
+});
+const PreLoader = dynamic(() => import("../components/PreLoader"), {
+  ssr: false,
+});
 
 export default function Home() {
+  const [environment, setEnvironment] = useState<MotionEnvironment | null>(null);
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string>("");
+  const [activeId, setActiveId] = useState("");
   const portfolioSectionRef = useRef<HTMLElement>(null);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const navigationActiveRef = useRef(false);
+  const motionFailedRef = useRef(false);
+  const desktopScrub = environment?.desktopScrub ?? false;
 
-  useEffect(() => {
-    if (preloaderDone) {
-      // Refresh ScrollTrigger calculations after preloader finishes and layout settles
-      ScrollTrigger.refresh();
+  const failOpen = useCallback(() => {
+    if (motionFailedRef.current) return;
+    motionFailedRef.current = true;
+    const root = document.documentElement;
+    root.dataset.motionReady = "failed";
+    delete root.dataset.burnActive;
+
+    try {
+      burnControls.setActive(false);
+      burnControls.setProgress(0);
+      burnControls.invalidate();
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      gsap.killTweensOf(FAILURE_CLEAR_TARGETS);
+      gsap.set(FAILURE_CLEAR_TARGETS, {
+        clearProps:
+          "opacity,transform,filter,clipPath,visibility,pointerEvents,willChange,strokeDasharray,strokeDashoffset",
+      });
+    } catch {
+      // The CSS failure contract still exposes the complete natural-flow page.
     }
-  }, [preloaderDone]);
-
-  function closeMobileMenu() {
-    setIsMenuOpen(false);
-  }
-
-  /* Contact is special-cased: it's revealed at the END of the burn (where its
-     sticky still fills the viewport), i.e. footerTop − innerHeight. */
-  const sectionTargetY = useCallback((id: string): number | null => {
-    if (id === "contact") {
-      const footer = document.getElementById("footer");
-      if (footer) return absoluteTop(footer) - window.innerHeight;
-      return document.documentElement.scrollHeight - window.innerHeight;
-    }
-    const el = document.getElementById(id);
-    if (!el) return null;
-    return Math.max(0, absoluteTop(el) - NAV_OFFSET);
   }, []);
 
-  /* Route nav clicks through Lenis (the {J} logo's mechanism) so they inherit
-     the site's eased momentum. force+lock keep the tween from being
-     interrupted mid-flight — the About→Contact burn activating partway used to
-     stall the scroll at the runway top (showing About instead of Contact). */
-  const goToSection = useCallback((e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    setIsMenuOpen(false);
-    const y = sectionTargetY(id);
-    if (y == null) return;
-    const lenis = getLenis();
-    if (lenis) lenis.scrollTo(y, { duration: 1.3, easing: power4InOut, force: true, lock: true });
-    else window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-  }, [sectionTargetY]);
-
-  /* Scroll-spy — active link from canonical thresholds, so it stays correct
-     through the pinned/sticky sections and flags Contact at the very bottom. */
   useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const y = window.scrollY + NAV_OFFSET + 1;
-        let current = "";
-        for (const item of NAV_ITEMS) {
-          const t = sectionTargetY(item.id);
-          if (t != null && y >= t) current = item.id;
+    const root = document.documentElement;
+    root.dataset.motionReady = "false";
+
+    const onMotionFailure = () => failOpen();
+    window.addEventListener("portfolio:motion-failed", onMotionFailure);
+
+    let frame = 0;
+    const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const fineQuery = window.matchMedia("(pointer: fine)");
+    const hoverQuery = window.matchMedia("(hover: hover)");
+
+    const updateEnvironment = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setEnvironment(resolveMotionEnvironment());
+      });
+    };
+
+    updateEnvironment();
+    reducedQuery.addEventListener("change", updateEnvironment);
+    fineQuery.addEventListener("change", updateEnvironment);
+    hoverQuery.addEventListener("change", updateEnvironment);
+    window.addEventListener("resize", updateEnvironment, { passive: true });
+    window.addEventListener("orientationchange", updateEnvironment);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("portfolio:motion-failed", onMotionFailure);
+      reducedQuery.removeEventListener("change", updateEnvironment);
+      fineQuery.removeEventListener("change", updateEnvironment);
+      hoverQuery.removeEventListener("change", updateEnvironment);
+      window.removeEventListener("resize", updateEnvironment);
+      window.removeEventListener("orientationchange", updateEnvironment);
+      delete root.dataset.motionReady;
+      root.style.removeProperty("--nav-clearance");
+    };
+  }, [failOpen]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const nav = document.getElementById("navbar");
+    let frame = 0;
+
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        root.style.setProperty(
+          "--nav-clearance",
+          `${measureNavClearance(nav)}px`,
+        );
+      });
+    };
+
+    const observer =
+      nav && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : null;
+    if (nav) observer?.observe(nav);
+    window.addEventListener("resize", measure, { passive: true });
+    void document.fonts?.ready.then(measure).catch(() => undefined);
+    measure();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshTargets = () => {
+      getLenis()?.resize();
+      refreshScrollTargets(CHAPTER_TARGETS);
+    };
+    const stopObserving = observeScrollTargets();
+
+    ScrollTrigger.addEventListener("refresh", refreshTargets);
+    window.addEventListener("load", refreshTargets);
+    window.addEventListener("orientationchange", refreshTargets);
+    refreshTargets();
+
+    return () => {
+      ScrollTrigger.removeEventListener("refresh", refreshTargets);
+      window.removeEventListener("load", refreshTargets);
+      window.removeEventListener("orientationchange", refreshTargets);
+      stopObserving();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!environment || !preloaderDone || motionFailedRef.current) return;
+
+    let firstFrame = 0;
+
+    try {
+      firstFrame = requestAnimationFrame(() => {
+        if (motionFailedRef.current) return;
+        document.documentElement.dataset.motionReady = "true";
+        /* Force the named runway styles to resolve before either Lenis or
+           ScrollTrigger snapshots the new document height. */
+        void document.documentElement.scrollHeight;
+        getLenis()?.resize();
+        ScrollTrigger.refresh();
+        refreshScrollTargets(CHAPTER_TARGETS);
+      });
+    } catch {
+      failOpen();
+    }
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+    };
+  }, [environment, failOpen, preloaderDone]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const menu = mobileMenuRef.current;
+    const toggle = mobileToggleRef.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const lenis = getLenis();
+    const previousRootOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    lenis?.stop();
+
+    const focusMenuEntry = () => {
+      if (menu?.getAttribute("aria-hidden") === "false") {
+        mobileMenuCloseRef.current?.focus({ preventScroll: true });
+      }
+    };
+
+    focusMenuEntry();
+    let focusFrame = requestAnimationFrame(() => {
+      focusFrame = requestAnimationFrame(() => {
+        focusMenuEntry();
+      });
+    });
+    const focusTimer = window.setTimeout(focusMenuEntry, 450);
+    const onMenuTransitionEnd = (event: TransitionEvent) => {
+      if (event.target === menu && (event.propertyName === "opacity" || event.propertyName === "transform")) {
+        focusMenuEntry();
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !menu) return;
+
+      const focusable = Array.from(
+        menu.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        ),
+      ).filter((element) => !element.hasAttribute("disabled"));
+
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (!focusable.includes(active as HTMLElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    menu?.addEventListener("transitionend", onMenuTransitionEnd);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      window.clearTimeout(focusTimer);
+      menu?.removeEventListener("transitionend", onMenuTransitionEnd);
+      document.removeEventListener("keydown", onKeyDown);
+      document.documentElement.style.overflow = previousRootOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      lenis?.start();
+      (previousFocus ?? toggle)?.focus({ preventScroll: true });
+    };
+  }, [isMenuOpen]);
+
+  const cancelNavigation = useCallback(() => {
+    if (!navigationActiveRef.current) return;
+    navigationActiveRef.current = false;
+    const lenis = getLenis();
+    lenis?.scrollTo(window.scrollY, {
+      immediate: true,
+      force: true,
+      lock: false,
+    });
+    gsap.killTweensOf(window);
+  }, []);
+
+  useEffect(() => {
+    const pointerOptions: AddEventListenerOptions = {
+      capture: true,
+      passive: true,
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        [
+          "ArrowDown",
+          "ArrowUp",
+          "PageDown",
+          "PageUp",
+          "Home",
+          "End",
+          " ",
+        ].includes(event.key)
+      ) {
+        cancelNavigation();
+      }
+    };
+
+    window.addEventListener("wheel", cancelNavigation, pointerOptions);
+    window.addEventListener("touchstart", cancelNavigation, pointerOptions);
+    window.addEventListener("pointerdown", cancelNavigation, pointerOptions);
+    window.addEventListener("keydown", onKeyDown, true);
+
+    return () => {
+      window.removeEventListener("wheel", cancelNavigation, true);
+      window.removeEventListener("touchstart", cancelNavigation, true);
+      window.removeEventListener("pointerdown", cancelNavigation, true);
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [cancelNavigation]);
+
+  const sectionTargetY = useCallback((id: string): number | null => {
+    getLenis()?.resize();
+    const snapshot = refreshScrollTargets([id]);
+    return snapshot.targets.get(id)?.landingY ?? getScrollTargetY(id, "landing");
+  }, []);
+
+  const travelTo = useCallback(
+    (targetY: number, immediate: boolean) => {
+      cancelNavigation();
+      const y = Math.max(0, targetY);
+      const lenis = getLenis();
+      lenis?.resize();
+
+      if (immediate || environment?.reducedMotion) {
+        if (lenis) {
+          lenis.scrollTo(y, { immediate: true, force: true, lock: false });
+        } else {
+          window.scrollTo({ top: y, behavior: "auto" });
         }
-        if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
+        return;
+      }
+
+      navigationActiveRef.current = true;
+      if (lenis) {
+        lenis.scrollTo(y, {
+          duration: 1.3,
+          easing: power4InOut,
+          force: true,
+          lock: false,
+          onComplete: () => {
+            navigationActiveRef.current = false;
+          },
+        });
+      } else {
+        window.scrollTo({ top: y, behavior: "smooth" });
+        window.setTimeout(() => {
+          navigationActiveRef.current = false;
+        }, 1400);
+      }
+    },
+    [cancelNavigation, environment?.reducedMotion],
+  );
+
+  const goToSection = useCallback(
+    (event: ReactMouseEvent<HTMLElement>, id: string) => {
+      event.preventDefault();
+      const target = sectionTargetY(id);
+      if (target == null) return;
+      const immediate = event.detail === 0;
+      const execute = () => travelTo(target, immediate);
+
+      if (isMenuOpen) {
+        setIsMenuOpen(false);
+        requestAnimationFrame(() => requestAnimationFrame(execute));
+      } else {
+        execute();
+      }
+    },
+    [isMenuOpen, sectionTargetY, travelTo],
+  );
+
+  useEffect(() => {
+    let frame = 0;
+    const updateActiveSection = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const y = window.scrollY + 1;
+        let current = "";
+
+        for (const item of NAV_ITEMS) {
+          const threshold = getScrollTargetY(item.id, "spy");
+          if (threshold != null && y >= threshold) current = item.id;
+        }
+
+        if (
+          window.innerHeight + window.scrollY >=
+          document.documentElement.scrollHeight - 4
+        ) {
           current = "contact";
         }
         setActiveId(current);
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    onScroll();
+
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection, { passive: true });
+    updateActiveSection();
+
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
     };
-  }, [sectionTargetY]);
+  }, [environment]);
 
   return (
     <>
       <PreLoader onComplete={() => setPreloaderDone(true)} />
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
 
-      <nav className="nav" id="navbar">
+      <nav
+        className="nav"
+        id="navbar"
+        aria-label="Primary navigation"
+        inert={isMenuOpen}
+      >
         <div className="nav-inner">
-          <a href="#hero" className="nav-logo" id="nav-logo" onClick={(e) => {
-            e.preventDefault();
-            // Route through Lenis so Lenis emits scroll events → ScrollTrigger
-            // stays in sync and crossfade callbacks (onLeaveBack etc.) fire
-            // correctly on the way back to the top.
-            const lenis = getLenis();
-            if (lenis) lenis.scrollTo(0, { duration: 1.3, easing: power4InOut, force: true, lock: true });
-            else gsap.to(window, { scrollTo: { y: 0 }, duration: 1.5, ease: 'power4.inOut' });
-          }}>
-            <span className="bracket">&#123;</span>J<span className="bracket">&#125;</span>
+          <a
+            href="#hero"
+            className="nav-logo"
+            id="nav-logo"
+            onClick={(event) => {
+              event.preventDefault();
+              travelTo(0, event.detail === 0);
+            }}
+          >
+            <span className="bracket">&#123;</span>J
+            <span className="bracket">&#125;</span>
           </a>
+
           <ul className="nav-links">
             {NAV_ITEMS.map((item) => (
               <li key={item.id}>
                 <a
                   href={`#${item.id}`}
                   className={activeId === item.id ? "is-active" : ""}
-                  onClick={(e) => goToSection(e, item.id)}
+                  aria-current={activeId === item.id ? "page" : undefined}
+                  onClick={(event) => goToSection(event, item.id)}
                 >
                   <HoverScrambleText text={item.label} />
                 </a>
               </li>
             ))}
           </ul>
+
           <a
             href="/assets/Jonathan_Resume.pdf"
             target="_blank"
@@ -152,121 +507,194 @@ export default function Home() {
             id="nav-resume-btn"
           >
             <HoverScrambleText text="Resume" />
-            <span className="nav-resume-arrow" aria-hidden="true">↗</span>
+            <span className="nav-resume-arrow" aria-hidden="true">
+              ↗
+            </span>
           </a>
+
           <button
+            ref={mobileToggleRef}
             className="mobile-toggle"
             id="mobile-toggle"
-            aria-label="Toggle menu"
+            type="button"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-menu"
             onClick={() => setIsMenuOpen((open) => !open)}
           >
-            <span></span>
-            <span></span>
+            <span />
+            <span />
           </button>
         </div>
-
       </nav>
 
-      <div className={`mobile-menu${isMenuOpen ? " open" : ""}`} id="mobile-menu">
+      <div
+        ref={mobileMenuRef}
+        className={`mobile-menu${isMenuOpen ? " open" : ""}`}
+        id="mobile-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        aria-hidden={!isMenuOpen}
+        inert={!isMenuOpen}
+      >
+        <button
+          ref={mobileMenuCloseRef}
+          className="mobile-menu-close"
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setIsMenuOpen(false)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+
         {NAV_ITEMS.map((item) => (
           <a
             key={item.id}
             href={`#${item.id}`}
             className={activeId === item.id ? "is-active" : ""}
-            onClick={(e) => goToSection(e, item.id)}
+            aria-current={activeId === item.id ? "page" : undefined}
+            onClick={(event) => goToSection(event, item.id)}
           >
             {item.label}
           </a>
         ))}
-        <a href="/assets/Jonathan_Resume.pdf" target="_blank" rel="noopener noreferrer" onClick={closeMobileMenu}>Resume ↗</a>
+
+        <a
+          href="/assets/Jonathan_Resume.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setIsMenuOpen(false)}
+        >
+          Resume ↗
+        </a>
       </div>
 
-      <HeroSection animate={preloaderDone} portfolioSectionRef={portfolioSectionRef} />
+      <main id="main-content" tabIndex={-1} inert={isMenuOpen}>
+        <HeroSection
+          animate={preloaderDone}
+          environment={environment ?? undefined}
+          motionEnabled={desktopScrub}
+          portfolioSectionRef={portfolioSectionRef}
+        />
 
-      {/* ── Linen stack: every section below the hero is a sheet in the
-             Editorial Financial deck. StackTransitions choreographs the
-             scrub-tied boundary transitions (pinned slide-overs, the CRT
-             collapse, and the About → Contact WebGL burn). ── */}
-
-      <div className="stack-section" data-stack style={{ zIndex: 1 }}>
-        <StickyDeckSection portfolioSectionRef={portfolioSectionRef} />
-        <div className="stack-veil" aria-hidden="true" />
-      </div>
-
-      <div className="stack-section stack-section--building" data-stack style={{ zIndex: 2 }}>
-        <SpatialSection id="currently-building">
-          <div className="container">
-            <header className="ed-header" style={{ marginBottom: "56px" }}>
-              <div className="ed-header-row sp-reveal">
-                <span className="ed-eyebrow">02 / In Progress</span>
-                <span className="ed-meta mono">live pipelines</span>
-              </div>
-              <h2 className="ed-heading ed-heading--md sp-reveal">
-                Currently <em>building</em>
-              </h2>
-            </header>
-
-            <PipelineGrid items={BUILDING} />
-          </div>
-        </SpatialSection>
-        <div className="stack-veil" aria-hidden="true" />
-      </div>
-
-      <div className="stack-section stack-section--skills" data-stack style={{ zIndex: 3 }}>
-        {/* anchorPercent=40: Skills' 360vh runway + About's -100vh overlap
-            margin means About starts entering the viewport at 44.4% down
-            the runway ((360-100-100)/360) — 40% keeps the nav landing point
-            (and scroll-spy "active" threshold) safely before that, per
-            SpatialSection's anchorPercent doc. */}
-        <SpatialSection id="skills" className="skills-spatial" anchorPercent={40}>
-          <div className="container">
-            <header className="ed-header" style={{ marginBottom: "20px" }}>
-              <div className="ed-header-row sp-reveal">
-                <span className="ed-eyebrow">03 / Skills</span>
-                <span className="ed-meta mono">drag to interact</span>
-              </div>
-              <h2 className="ed-heading ed-heading--md sp-reveal">
-                The <em>stack</em>
-              </h2>
-            </header>
-            <p className="sp-reveal" style={{ color: "var(--ink-2)", marginBottom: "20px", fontFamily: "var(--font-jakarta)", fontSize: "15px", letterSpacing: "-0.01em" }}>
-              Technologies and frameworks I use to engineer robust, scalable systems.
-            </p>
-            <InViewMount minHeight={420}>
-              <GravityPit />
-            </InViewMount>
-          </div>
-        </SpatialSection>
-        <div className="stack-veil" aria-hidden="true" />
-      </div>
-
-      {/* About sits ABOVE Contact (z6 vs z5): during the burn overlap the
-          fire + clip wipe eat About away to reveal Contact beneath it.
-          Its surface paint lives on .about-sticky (wrapper is transparent)
-          so only the viewport-locked sticky occludes Contact, never the
-          full-height runway box. */}
-      <div className="stack-section stack-section--about" data-stack style={{ zIndex: 6 }}>
-        <AboutSection />
-        <div className="stack-veil" aria-hidden="true" />
-      </div>
-
-      {/* Contact runway — a 200vh scroll track whose inner content is
-          position:sticky (desktop only), holding Contact dead-still at
-          top:0 for the 100vh the burn scrubs across. Sticky instead of a
-          ScrollTrigger pin: a pin engaging under Lenis momentum at the
-          page bottom hard-freezes the tab; sticky is pure CSS and can't. */}
-      <div className="stack-section contact-runway" data-stack style={{ zIndex: 5 }}>
-        <div className="contact-sticky">
-          <ContactSection animate={preloaderDone} />
+        <div className="stack-section" data-stack>
+          <StickyDeckSection
+            portfolioSectionRef={portfolioSectionRef}
+            motionEnabled={desktopScrub}
+          />
         </div>
-        <div className="stack-veil" aria-hidden="true" />
-      </div>
+
+        <div
+          className="stack-section stack-section--building"
+          data-stack
+          style={{ zIndex: 2 }}
+        >
+          <SpatialSection id="currently-building" chapter="building">
+            <div className="container">
+              <header
+                className="ed-header"
+                data-chapter-heading
+                style={{ marginBottom: "56px" }}
+              >
+                <div className="ed-header-row sp-reveal">
+                  <span className="ed-eyebrow">02 / In Progress</span>
+                  <span className="ed-meta mono">live pipelines</span>
+                </div>
+                <h2 className="ed-heading ed-heading--md sp-reveal">
+                  Currently <em>building</em>
+                </h2>
+              </header>
+              <PipelineGrid items={BUILDING} />
+            </div>
+          </SpatialSection>
+          <div className="stack-veil" aria-hidden="true" />
+        </div>
+
+        <div
+          className="stack-section stack-section--skills"
+          data-stack
+          style={{ zIndex: 3 }}
+        >
+          <SpatialSection
+            id="skills"
+            chapter="skills"
+            className="skills-spatial"
+          >
+            <div className="container">
+              <header
+                className="ed-header"
+                data-chapter-heading
+                style={{ marginBottom: "20px" }}
+              >
+                <div className="ed-header-row sp-reveal">
+                  <span className="ed-eyebrow">03 / Skills</span>
+                  <span className="ed-meta mono">drag to interact</span>
+                </div>
+                <h2 className="ed-heading ed-heading--md sp-reveal">
+                  The <em>stack</em>
+                </h2>
+              </header>
+
+              <p
+                className="sp-reveal"
+                style={{
+                  color: "var(--ink-2)",
+                  marginBottom: "20px",
+                  fontFamily: "var(--font-jakarta)",
+                  fontSize: "15px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Technologies and frameworks I use to engineer robust, scalable
+                systems.
+              </p>
+
+              <div className="sp-reveal" data-chapter-body>
+                <InViewMount minHeight={420}>
+                  <GravityPit />
+                </InViewMount>
+              </div>
+            </div>
+          </SpatialSection>
+          <div className="stack-veil" aria-hidden="true" />
+        </div>
+
+        <div
+          className="stack-section stack-section--about"
+          data-stack
+          style={{ zIndex: 6 }}
+        >
+          <AboutSection />
+          <div className="stack-veil" aria-hidden="true" />
+        </div>
+
+        <div
+          className="stack-section contact-runway"
+          data-stack
+          style={{ zIndex: 5 }}
+        >
+          <div
+            className="chapter-marker chapter-marker--contact-spy"
+            data-scroll-spy="contact"
+            data-scroll-spy-clearance="none"
+            aria-hidden="true"
+          />
+          <div
+            className="chapter-marker chapter-marker--contact-landing"
+            data-scroll-landing="contact"
+            data-scroll-landing-clearance="none"
+            aria-hidden="true"
+          />
+          <div className="contact-sticky">
+            <ContactSection animate={preloaderDone} />
+          </div>
+          <div className="stack-veil" aria-hidden="true" />
+        </div>
+      </main>
 
       <Footer />
-
-      <BurnTransition />
       <StackTransitions />
       <HeadlineReveal />
       <ScrollVelocitySkew />

@@ -1,15 +1,27 @@
 "use client";
 
-import { useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
-import { power4InOut, absoluteTop } from "../lib/scrollTarget";
+import { getScrollTargetY, power4InOut, refreshScrollTargets } from "../lib/scrollTarget";
+import {
+  resolveMotionEnvironment,
+  type MotionEnvironment,
+} from "../lib/motionEnvironment";
+import { loaderControls } from "../lib/loaderControls";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -21,16 +33,81 @@ const InteractiveModel = dynamic(() => import("./InteractiveModel"), { ssr: fals
 const FIRST_NAME = ["J", "o", "n", "a", "t", "h", "a", "n"];
 const LAST_NAME = ["J", "e", "s", "n", "i"];
 
-export default function HeroSection({ animate = false, portfolioSectionRef }: { animate?: boolean, portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
+interface HeroSectionProps {
+  animate?: boolean;
+  environment?: MotionEnvironment;
+  motionEnabled?: boolean;
+  portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+}
+
+export default function HeroSection({
+  animate = false,
+  environment: environmentOverride,
+  motionEnabled: motionOverride,
+  portfolioSectionRef,
+}: HeroSectionProps) {
   const runwayRef = useRef<HTMLDivElement>(null);
   const topGroupRef = useRef<HTMLSpanElement>(null);
   const bottomGroupRef = useRef<HTMLSpanElement>(null);
   const topCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const botCharRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const subContentRef = useRef<HTMLDivElement>(null);
+  const [detectedEnvironment, setDetectedEnvironment] =
+    useState<MotionEnvironment | null>(null);
+  const [stageFailed, setStageFailed] = useState(false);
+  const loaderSnapshot = useSyncExternalStore(
+    loaderControls.subscribe,
+    loaderControls.getSnapshot,
+    loaderControls.getServerSnapshot,
+  );
+  const environment = environmentOverride ?? detectedEnvironment;
+  const motionEnabled =
+    motionOverride ?? environment?.desktopScrub ?? false;
+  const webglAvailable = environment?.webglAvailable ?? true;
+  const renderLaptop =
+    motionEnabled &&
+    webglAvailable &&
+    !environment?.coarsePointer &&
+    !environment?.reducedMotion;
+  const mountVisualStage =
+    webglAvailable && !environment?.reducedMotion && !stageFailed;
+  const showPoster =
+    stageFailed ||
+    (environment !== undefined &&
+      environment !== null &&
+      (!renderLaptop || !webglAvailable));
+
+  useEffect(() => {
+    if (environmentOverride) return;
+
+    let resizeFrame = 0;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const pointer = window.matchMedia("(pointer: fine)");
+    const hover = window.matchMedia("(hover: hover)");
+    const update = () => setDetectedEnvironment(resolveMotionEnvironment());
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(update);
+    };
+
+    update();
+    reduced.addEventListener("change", update);
+    pointer.addEventListener("change", update);
+    hover.addEventListener("change", update);
+    window.addEventListener("resize", scheduleUpdate, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(resizeFrame);
+      reduced.removeEventListener("change", update);
+      pointer.removeEventListener("change", update);
+      hover.removeEventListener("change", update);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [environmentOverride]);
 
   /* ── Magnetic character repulsion (pointer interaction) ── */
   useGSAP(() => {
+    if (!motionEnabled) return;
     const runway = runwayRef.current;
     if (!runway) return;
 
@@ -132,7 +209,6 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
       }
 
       function stopInteraction() {
-        if (!isActive) return;
         isActive = false;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("scroll", onScrollOrResize);
@@ -171,74 +247,122 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     });
 
     return () => mm.revert();
-  }, { scope: runwayRef });
+  }, {
+    scope: runwayRef,
+    dependencies: [motionEnabled],
+    revertOnUpdate: true,
+  });
 
   /* ── Initial hidden state for entrance animation ──
      The name lines hide by offset inside their overflow-hidden masks
      (no opacity): Jonathan waits below its mask, Jesni above its own,
      so the entrance is a pure opposing mask-reveal. */
   useGSAP(() => {
-    gsap.set(".name-part-1", { yPercent: 100 });
-    gsap.set(".name-part-2", { yPercent: -100 });
-    gsap.set(
-      [".hero-tagline", ".hero-sub", ".hero-buttons"],
-      { opacity: 0, y: -80 }
-    );
-  }, { scope: runwayRef });
+    try {
+      if (!motionEnabled) {
+        const allChars = [
+          ...topCharRefs.current,
+          ...botCharRefs.current,
+        ].filter(Boolean);
+        gsap.set(allChars, { clearProps: "transform" });
+        gsap.set([".name-part-1", ".name-part-2"], { yPercent: 0 });
+        gsap.set(".hero-name-mask", { overflow: "visible" });
+        gsap.set([".hero-tagline", ".hero-sub", ".hero-buttons"], { opacity: 1, y: 0 });
+        return;
+      }
 
-  /* ── Entrance animation (fires after preloader) ── */
-  useGSAP(() => {
-    if (!animate) return;
-
-    const mm = gsap.matchMedia();
-
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      /* Opposing mask-reveal: Jonathan rises UP into view while Jesni
-         drops DOWN, simultaneously. Once the lines have landed, the
-         masks release (overflow: visible) so the magnetic char
-         repulsion and the scroll-out fly-apart are never clipped. */
-      gsap.to(".name-part-1", {
-        yPercent: 0,
-        ease: "power3.out",
-        duration: 1.35,
-      });
-      gsap.to(".name-part-2", {
-        yPercent: 0,
-        ease: "power3.out",
-        duration: 1.35,
-        onComplete: () => {
-          gsap.set(".hero-name-mask", { overflow: "visible" });
-        },
-      });
-
-      /* Supporting copy follows the name in */
-      gsap.to([".hero-tagline", ".hero-sub", ".hero-buttons"], {
-        y: 0,
-        opacity: 1,
-        ease: "power3.out",
-        duration: 1.1,
-        stagger: 0.08,
-        delay: 0.25,
-      });
-    });
-
-    mm.add("(prefers-reduced-motion: reduce)", () => {
-      /* Instant reveal — no transforms */
+      gsap.set(".name-part-1", { yPercent: 100 });
+      gsap.set(".name-part-2", { yPercent: -100 });
+      gsap.set(
+        [".hero-tagline", ".hero-sub", ".hero-buttons"],
+        { opacity: 0, y: -80 }
+      );
+    } catch {
       gsap.set([".name-part-1", ".name-part-2"], { yPercent: 0 });
       gsap.set(".hero-name-mask", { overflow: "visible" });
       gsap.set(
         [".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
-    });
+      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+    }
+  }, {
+    scope: runwayRef,
+    dependencies: [motionEnabled],
+    revertOnUpdate: true,
+  });
 
-    return () => mm.revert();
-  }, { scope: runwayRef, dependencies: [animate] });
+  /* ── Entrance animation (fires after preloader) ── */
+  useGSAP(() => {
+    if (!animate) return;
+
+    if (!motionEnabled) return;
+    let mm: ReturnType<typeof gsap.matchMedia> | null = null;
+
+    try {
+      mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        /* Opposing mask-reveal: Jonathan rises UP into view while Jesni
+           drops DOWN, simultaneously. Once the lines have landed, the
+           masks release (overflow: visible) so the magnetic char
+           repulsion and the scroll-out fly-apart are never clipped. */
+        gsap.to(".name-part-1", {
+          yPercent: 0,
+          ease: "power3.out",
+          duration: 1.35,
+        });
+        gsap.to(".name-part-2", {
+          yPercent: 0,
+          ease: "power3.out",
+          duration: 1.35,
+          onComplete: () => {
+            gsap.set(".hero-name-mask", { overflow: "visible" });
+          },
+        });
+
+        /* Supporting copy follows the name in */
+        gsap.to([".hero-tagline", ".hero-sub", ".hero-buttons"], {
+          y: 0,
+          opacity: 1,
+          ease: "power3.out",
+          duration: 1.1,
+          stagger: 0.08,
+          delay: 0.25,
+        });
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        /* Instant reveal — no transforms */
+        gsap.set([".name-part-1", ".name-part-2"], { yPercent: 0 });
+        gsap.set(".hero-name-mask", { overflow: "visible" });
+        gsap.set(
+          [".hero-tagline", ".hero-sub", ".hero-buttons"],
+          { opacity: 1, y: 0 }
+        );
+      });
+    } catch {
+      mm?.revert();
+      gsap.set([".name-part-1", ".name-part-2"], { yPercent: 0 });
+      gsap.set(".hero-name-mask", { overflow: "visible" });
+      gsap.set(
+        [".hero-tagline", ".hero-sub", ".hero-buttons"],
+        { opacity: 1, y: 0 }
+      );
+      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+    }
+
+    return () => mm?.revert();
+  }, {
+    scope: runwayRef,
+    dependencies: [animate, motionEnabled],
+    revertOnUpdate: true,
+  });
 
   /* ── Scroll-out parallax (name flies apart, sub-content fades) ── */
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
+    if (!motionEnabled) return;
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -257,18 +381,58 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
     });
 
     return () => mm.revert();
-  }, { scope: runwayRef });
+  }, {
+    scope: runwayRef,
+    dependencies: [motionEnabled],
+    revertOnUpdate: true,
+  });
+
+  /*
+   * useGSAP contexts revert in hook order when the immersive media query
+   * changes. This final layout effect runs after those contexts and resolves
+   * the complete static composition in the same frame, preventing an old
+   * entrance or pointer transform from surviving a resize/orientation change.
+   */
+  useLayoutEffect(() => {
+    if (motionEnabled) return;
+
+    const chars = [
+      ...topCharRefs.current,
+      ...botCharRefs.current,
+    ].filter(Boolean);
+    const groups = [topGroupRef.current, bottomGroupRef.current].filter(Boolean);
+
+    gsap.killTweensOf([...chars, ...groups, subContentRef.current]);
+    gsap.set(chars, { clearProps: "transform" });
+    gsap.set(groups, { x: 0, y: 0, yPercent: 0 });
+    gsap.set(".hero-name-mask", { overflow: "visible" });
+    gsap.set(subContentRef.current, { opacity: 1, y: 0 });
+  }, [motionEnabled]);
 
   return (
-    <div ref={runwayRef} className="hero-runway" id="hero">
+    <div ref={runwayRef} className={`hero-runway${motionEnabled ? "" : " hero-runway--static"}`} id="hero">
       {/*
         The full-screen Canvas sits here as an absolute background layer.
         It covers the entire hero sticky area so shards can fly across
         the whole viewport without being clipped by any CSS column.
       */}
-      <div className="hero-3d-layer" aria-hidden="true">
-        <InteractiveModel portfolioSectionRef={portfolioSectionRef} />
-      </div>
+      {mountVisualStage && (
+        <div
+          className="hero-3d-layer"
+          aria-hidden="true"
+          style={{
+            display: "block",
+            zIndex: loaderSnapshot.active ? 9998 : undefined,
+            opacity: loaderSnapshot.active ? 1 : undefined,
+          }}
+        >
+          <InteractiveModel
+            portfolioSectionRef={portfolioSectionRef}
+            renderLaptop={renderLaptop}
+            onFail={() => setStageFailed(true)}
+          />
+        </div>
+      )}
 
       <div className="hero-sticky" style={{ pointerEvents: "none" }}>
         <div className="container">
@@ -324,11 +488,11 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
 
               <div ref={subContentRef} className="hero-sub-content">
                 <h2 className="hero-tagline">
-                  I build and deploy <TerminalHighlight delay={1.2} color="#C9A852" animate={animate}>computer vision and multi-agent systems</TerminalHighlight> — <em>from Blender-generated training data to live inference endpoints</em>.
+                  I engineer <TerminalHighlight delay={1.2} color="#C9A852" animate={animate && motionEnabled}>self-modifying models, computer vision pipelines, and multi-agent infrastructure</TerminalHighlight> from training through deployment.
                 </h2>
 
                 <p className="hero-sub">
-                  Final-year CS @ IIIT Pune (Class of 2027) · open to Junior AI/ML roles &amp; internships.
+                  Final-year CS at IIIT Pune, Class of 2027. Open to junior AI/ML roles and internships.
                 </p>
 
                 <div className="hero-buttons">
@@ -338,15 +502,23 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     id="hero-projects-btn"
                     onClick={(e) => {
                       e.preventDefault();
-                      const el = document.getElementById("projects");
-                      if (!el) return;
-                      const y = Math.max(0, absoluteTop(el));
+                      refreshScrollTargets(["projects"]);
+                      const y = getScrollTargetY("projects", "landing");
+                      if (y == null) return;
                       const lenis = getLenis();
-                      if (lenis) lenis.scrollTo(y, { duration: 1.3, easing: power4InOut, force: true, lock: true });
+                      if (lenis) {
+                        lenis.resize();
+                        lenis.scrollTo(y, {
+                          duration: 1.3,
+                          easing: power4InOut,
+                          force: true,
+                          lock: false,
+                        });
+                      }
                       else window.scrollTo({ top: y, behavior: "smooth" });
                     }}
                   >
-                    <HoverScrambleText text="View My Work" />
+                    <HoverScrambleText text="Explore featured work" />
                   </a>
                   <a
                     href="https://www.linkedin.com/in/jonathan-jesni/"
@@ -356,7 +528,7 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     id="hero-linkedin-btn"
                   >
                     <LinkedInIcon size={16} />
-                    <HoverScrambleText text="Connect" />
+                    <HoverScrambleText text="Connect on LinkedIn" />
                   </a>
                   <a
                     href="/assets/Jonathan_Resume.pdf"
@@ -365,12 +537,27 @@ export default function HeroSection({ animate = false, portfolioSectionRef }: { 
                     className="btn btn-outline"
                     id="hero-resume-btn"
                   >
-                    <HoverScrambleText text="Resume" />
+                    <HoverScrambleText text="View resume" />
                     <span className="btn-arrow" aria-hidden="true">↗</span>
                   </a>
                 </div>
               </div>
             </div>
+            {showPoster && (
+              <div className="hero-laptop-poster" aria-hidden="true">
+                <div className="hero-laptop-poster__lid">
+                  <div className="hero-laptop-poster__screen">
+                    <Image
+                      src="/assets/Neuro-genesis/title-card.jpg"
+                      alt=""
+                      fill
+                      sizes="(min-width: 900px) 42vw, 82vw"
+                    />
+                  </div>
+                </div>
+                <div className="hero-laptop-poster__base" />
+              </div>
+            )}
           </div>
         </div>
       </div>

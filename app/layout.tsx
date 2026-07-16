@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { preload } from "react-dom";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
@@ -7,6 +8,7 @@ import MemProbe from "../components/MemProbe";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import "./evolution.css";
 
 // Absolute-URL base for canonical links, OG/Twitter images, and the sitemap.
 // Env var wins on Vercel previews; falls back to the production domain.
@@ -94,6 +96,10 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
     >
       <body>
+        <Script id="scroll-restoration" strategy="beforeInteractive">
+          {`history.scrollRestoration = "manual";
+if (!location.hash) window.scrollTo(0, 0);`}
+        </Script>
         {/* Server-rendered preloader mask — present in the raw HTML from the
             first byte so it covers the hero BEFORE any JS runs (PreLoader is
             dynamic/ssr:false and mounts only after hydration). PreLoader removes
