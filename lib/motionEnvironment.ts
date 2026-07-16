@@ -1,4 +1,5 @@
 import { probeWebGLSupport } from "./detectGPU";
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "./mediaQueries";
 
 export interface MotionEnvironment {
   desktopScrub: boolean;
@@ -14,9 +15,6 @@ export interface AdaptiveQualityState {
   shaderDetailScale: number;
   parallaxScale: number;
 }
-
-export const DESKTOP_SCRUB_MEDIA_QUERY =
-  "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
 
 const PIXEL_BUDGET = 2_500_000;
 
@@ -37,7 +35,7 @@ export function resolveMotionEnvironment(): MotionEnvironment {
   const graphics = probeWebGLSupport();
 
   return {
-    desktopScrub: window.matchMedia(DESKTOP_SCRUB_MEDIA_QUERY).matches,
+    desktopScrub: window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY).matches,
     coarsePointer,
     reducedMotion,
     webglAvailable: graphics.available,
@@ -84,6 +82,6 @@ export function resolveAdaptiveQuality(
 export function shouldUseSmoothScroll(): boolean {
   return (
     typeof window !== "undefined" &&
-    window.matchMedia(DESKTOP_SCRUB_MEDIA_QUERY).matches
+    window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY).matches
   );
 }

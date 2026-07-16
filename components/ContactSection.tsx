@@ -8,7 +8,10 @@ import { RollingHeadline } from "./ui/RollingHeadline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "./ui/icons";
 import { burnControls } from "../lib/burnControls";
-import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/scrollTarget";
+import {
+  IMMERSIVE_SCROLL_MEDIA_QUERY,
+  TOUCH_MEDIA_QUERY,
+} from "../lib/mediaQueries";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -67,7 +70,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
       // ── Mobile full-motion branch — atmospheric lift (unchanged) ──────────
       // No pinning/burn on mobile, so keep the original shroud-lift reveal.
         mm.add(
-          "(max-width: 1023px), (hover: none), (pointer: coarse)",
+          TOUCH_MEDIA_QUERY,
           () => {
             if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
               return;

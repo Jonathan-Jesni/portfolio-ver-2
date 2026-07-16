@@ -37,6 +37,7 @@ import {
   power4InOut,
   refreshScrollTargets,
 } from "../lib/scrollTarget";
+import { trapFocus } from "../lib/trapFocus";
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
@@ -275,33 +276,10 @@ export default function Home() {
       if (event.key === "Escape") {
         event.preventDefault();
         setIsMenuOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !menu) return;
-
-      const focusable = Array.from(
-        menu.querySelectorAll<HTMLElement>(
-          "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])",
-        ),
-      ).filter((element) => !element.hasAttribute("disabled"));
-
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-
-      if (!focusable.includes(active as HTMLElement)) {
-        event.preventDefault();
-        (event.shiftKey ? last : first).focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
       }
     };
 
+    const releaseFocusTrap = menu ? trapFocus(menu) : () => undefined;
     menu?.addEventListener("transitionend", onMenuTransitionEnd);
     document.addEventListener("keydown", onKeyDown);
     return () => {
@@ -309,6 +287,7 @@ export default function Home() {
       window.clearTimeout(focusTimer);
       menu?.removeEventListener("transitionend", onMenuTransitionEnd);
       document.removeEventListener("keydown", onKeyDown);
+      releaseFocusTrap();
       document.documentElement.style.overflow = previousRootOverflow;
       document.body.style.overflow = previousBodyOverflow;
       lenis?.start();

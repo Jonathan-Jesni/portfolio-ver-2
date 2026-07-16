@@ -4,6 +4,10 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { burnControls } from "../lib/burnControls";
+import {
+  IMMERSIVE_SCROLL_MEDIA_QUERY,
+  TOUCH_OR_REDUCED_MEDIA_QUERY,
+} from "../lib/mediaQueries";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -61,9 +65,12 @@ export default function StackTransitions() {
 
     /* Desktop + full motion only — on mobile and reduced-motion the
        sections flow natively with no pinning */
-    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+    try {
+      mm.add(IMMERSIVE_SCROLL_MEDIA_QUERY, () => {
       /* Overlay nodes we inject (e.g. the CRT bezel-iris) — torn down on revert */
       const createdEls: HTMLElement[] = [];
+
+
 
       sections.forEach((section, i) => {
         const next = sections[i + 1];
@@ -110,8 +117,11 @@ export default function StackTransitions() {
               trigger: next,
               start: "top top",
               end: "bottom bottom",
-              scrub: 1,
-              onToggle: (self) => burnControls.setActive(self.isActive),
+              scrub: true,
+              onToggle: (self) => {
+                burnControls.setActive(self.isActive);
+                document.documentElement.dataset.burnActive = String(self.isActive);
+              },
             },
           });
 
@@ -203,7 +213,7 @@ export default function StackTransitions() {
             trigger: next,
             start: "top bottom",
             end: "top top",
-            scrub: 1,
+            scrub: true,
           },
         });
 
@@ -237,12 +247,14 @@ export default function StackTransitions() {
           fx.setAttribute("aria-hidden", "true");
           fx.innerHTML =
             '<div class="crt-fx__void"></div>' +
-            '<div class="crt-fx__blade"></div>';
+            '<div class="crt-fx__blade"></div>' +
+            '<div class="crt-fx__residual"></div>';
           document.body.appendChild(fx);
           createdEls.push(fx);
 
           const voidEl = fx.querySelector<HTMLElement>(".crt-fx__void");
           const blade = fx.querySelector<HTMLElement>(".crt-fx__blade");
+          const residual = fx.querySelector<HTMLElement>(".crt-fx__residual");
 
           /* the dark void establishes over the pinned deck … */
           if (voidEl) {
@@ -275,6 +287,40 @@ export default function StackTransitions() {
             tl.to(blade, { scaleX: 0, ease: "power2.in", duration: 0.3 }, 0.6);
             tl.to(blade, { opacity: 0, ease: "none", duration: 0.05 }, 0.9);
           }
+
+          if (residual) {
+            const residualTl = gsap.timeline({
+              scrollTrigger: {
+                trigger: next,
+                start: "top bottom",
+                end: "top top",
+                scrub: true,
+              },
+            });
+            residualTl.fromTo(
+              residual,
+              { opacity: 0, scaleX: 0, filter: "brightness(3)" },
+              {
+                opacity: 0.92,
+                scaleX: 0.22,
+                filter: "brightness(2.2)",
+                duration: 0.05,
+                ease: "power2.out",
+              },
+              0.92,
+            );
+            residualTl.to(
+              residual,
+              {
+                opacity: 0,
+                scaleX: 0.48,
+                filter: "brightness(1)",
+                duration: 0.03,
+                ease: "power1.out",
+              },
+              0.97,
+            );
+          }
         } else if (veil) {
           /* Depth drift: as a sheet is buried it darkens through the warm
              obsidian ramp (surface-1 #161310 toward the deeper surface-0
@@ -303,13 +349,168 @@ export default function StackTransitions() {
 
       return () => {
         createdEls.forEach((el) => el.remove());
+        delete document.documentElement.dataset.burnActive;
         // Park the burn overlay (transparent + idle) when the desktop
         // context reverts — e.g. resize below 768px or unmount.
         burnControls.setActive(false);
         burnControls.setProgress(0);
         burnControls.invalidate();
+        sections.forEach((section) => {
+          const inner =
+            section.querySelector<HTMLElement>(
+              ".cs-viewport, .sp-sticky, .about-sticky",
+            ) ?? section;
+          gsap.set([section, inner], {
+            clearProps: "transform,clipPath,pointerEvents",
+          });
+        });
       };
     });
+
+    /* Touch/coarse-pointer story: the same signatures play as finite,
+       interruptible boundary cues in natural document flow. */
+      mm.add(
+      TOUCH_OR_REDUCED_MEDIA_QUERY,
+      () => {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const building = sections[1];
+        const contact = sections[4];
+        if (!building || !contact) return;
+
+        const finiteNodes: HTMLElement[] = [];
+        const crt = document.createElement("div");
+        crt.className = "crt-fx crt-fx--finite";
+        crt.setAttribute("aria-hidden", "true");
+        crt.innerHTML =
+          '<div class="crt-fx__void"></div>' +
+          '<div class="crt-fx__blade"></div>' +
+          '<div class="crt-fx__residual"></div>';
+        document.body.appendChild(crt);
+        finiteNodes.push(crt);
+
+        const voidEl = crt.querySelector<HTMLElement>(".crt-fx__void");
+        const blade = crt.querySelector<HTMLElement>(".crt-fx__blade");
+        const residual = crt.querySelector<HTMLElement>(".crt-fx__residual");
+        const crtTimeline = gsap.timeline({ paused: true });
+
+        if (reduced) {
+          crtTimeline
+            .fromTo(
+              residual,
+              { opacity: 0, scaleX: 0.08 },
+              { opacity: 0.72, scaleX: 0.42, duration: 0.12, ease: "power1.out" },
+            )
+            .to(residual, { opacity: 0, duration: 0.22, ease: "power1.out" });
+        } else {
+          crtTimeline
+            .fromTo(voidEl, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0)
+            .fromTo(blade, { opacity: 0 }, { opacity: 0.95, duration: 0.12 }, 0.04)
+            .fromTo(
+              blade,
+              { scaleY: 1, scaleX: 1, filter: "brightness(1)" },
+              { scaleY: 0.005, filter: "brightness(3.4)", duration: 0.5, ease: "power3.in" },
+              0.06,
+            )
+            .to(blade, { scaleX: 0, duration: 0.3, ease: "power2.in" }, 0.6)
+            .to(voidEl, { opacity: 0, duration: 0.2, ease: "power2.in" }, 0.74)
+            .to(blade, { opacity: 0, duration: 0.05 }, 0.9)
+            .fromTo(
+              residual,
+              { opacity: 0, scaleX: 0 },
+              { opacity: 0.85, scaleX: 0.28, duration: 0.05 },
+              0.92,
+            )
+            .to(residual, { opacity: 0, scaleX: 0.48, duration: 0.03 }, 0.97);
+        }
+
+        const crtTrigger = ScrollTrigger.create({
+          trigger: building,
+          start: "top 82%",
+          end: "top 18%",
+          onEnter: () => crtTimeline.restart(),
+          onLeave: () => crtTimeline.progress(1).pause(),
+          onEnterBack: () => crtTimeline.progress(1).pause(),
+          onLeaveBack: () => crtTimeline.reverse(),
+        });
+
+        let burnTimeline: gsap.core.Timeline;
+        if (reduced) {
+          const fallback = document.createElement("div");
+          fallback.className = "burn-finite-fallback";
+          fallback.setAttribute("aria-hidden", "true");
+          document.body.appendChild(fallback);
+          finiteNodes.push(fallback);
+          burnTimeline = gsap
+            .timeline({ paused: true })
+            .fromTo(fallback, { opacity: 0 }, { opacity: 0.42, duration: 0.2 })
+            .to(fallback, { opacity: 0, duration: 0.8, ease: "power2.out" });
+        } else {
+          const burnProxy = { value: 0 };
+          burnTimeline = gsap.timeline({
+            paused: true,
+            onStart: () => {
+              document.documentElement.dataset.burnActive = "true";
+              burnControls.setActive(true);
+            },
+            onUpdate: () => {
+              burnControls.setProgress(burnProxy.value);
+              burnControls.invalidate();
+            },
+            onComplete: () => {
+              burnControls.setActive(false);
+              delete document.documentElement.dataset.burnActive;
+            },
+            onReverseComplete: () => {
+              burnControls.setProgress(0);
+              burnControls.setActive(false);
+              burnControls.invalidate();
+              delete document.documentElement.dataset.burnActive;
+            },
+          });
+          burnTimeline.to(burnProxy, {
+            value: 1,
+            duration: 1,
+            ease: "power1.inOut",
+          });
+        }
+
+        const burnTrigger = ScrollTrigger.create({
+          trigger: contact,
+          start: "top 82%",
+          end: "top 18%",
+          onEnter: () => burnTimeline.restart(),
+          onLeave: () => burnTimeline.progress(1).pause(),
+          onEnterBack: () => burnTimeline.progress(1).pause(),
+          onLeaveBack: () => {
+            if (!reduced) {
+              document.documentElement.dataset.burnActive = "true";
+              burnControls.setActive(true);
+            }
+            burnTimeline.reverse();
+          },
+        });
+
+        return () => {
+          crtTrigger.kill();
+          burnTrigger.kill();
+          crtTimeline.kill();
+          burnTimeline.kill();
+          finiteNodes.forEach((node) => node.remove());
+          burnControls.setProgress(0);
+          burnControls.setActive(false);
+          burnControls.invalidate();
+          delete document.documentElement.dataset.burnActive;
+        };
+      },
+    );
+
+    } catch {
+      burnControls.setProgress(0);
+      burnControls.setActive(false);
+      burnControls.invalidate();
+      delete document.documentElement.dataset.burnActive;
+      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+    }
 
     return () => mm.revert();
   });

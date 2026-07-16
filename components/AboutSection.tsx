@@ -6,6 +6,10 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import TerminalBlock from "./TerminalBlock";
 import ScrollScrambleText from "./ScrollScrambleText";
+import {
+  IMMERSIVE_SCROLL_MEDIA_QUERY,
+  TOUCH_MEDIA_QUERY,
+} from "../lib/mediaQueries";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -39,7 +43,8 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
-    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+    try {
+      mm.add(IMMERSIVE_SCROLL_MEDIA_QUERY, () => {
       const words = textColRef.current
         ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
         : [];
@@ -51,8 +56,9 @@ export default function AboutSection() {
         scrollTrigger: {
           trigger: runway,
           start: "top top",
-          end: "+=150%",
-          scrub: 1,
+          end: () => `+=${Math.round(window.innerHeight * 0.8)}`,
+          scrub: true,
+          invalidateOnRefresh: true,
         },
       });
 
@@ -80,26 +86,54 @@ export default function AboutSection() {
           0
         );
       }
-    });
+      });
 
-    mm.add("(max-width: 767px), (prefers-reduced-motion: reduce)", () => {
-      /* Words are immediately visible; terminal fades in once */
-      if (textColRef.current) {
-        const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        const words = textColRef.current
+          ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
+          : [];
         gsap.set(words, { color: "rgba(228, 222, 207, 1)" });
-      }
-      if (terminalRef.current) {
-        gsap.set(terminalRef.current, { opacity: 0 });
-        ScrollTrigger.create({
-          trigger: runway,
-          start: "top 75%",
-          once: true,
-          onEnter: () => {
-            gsap.to(terminalRef.current, { opacity: 1, duration: 0.4, ease: "power1.out" });
-          },
-        });
-      }
-    });
+        gsap.set(terminalRef.current, { opacity: 1, y: 0, clearProps: "filter" });
+      });
+
+      mm.add(TOUCH_MEDIA_QUERY, () => {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        if (textColRef.current) {
+          const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
+          gsap.set(words, { color: "rgba(228, 222, 207, 1)" });
+        }
+        if (terminalRef.current) {
+          gsap.set(terminalRef.current, { opacity: 0, y: 12 });
+          const reveal = gsap.to(terminalRef.current, {
+            paused: true,
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power3.out",
+          });
+          const trigger = ScrollTrigger.create({
+            trigger: runway,
+            start: "top 75%",
+            onEnter: () => reveal.play(),
+            onEnterBack: () => reveal.play(),
+            onLeaveBack: () => reveal.reverse(),
+          });
+          return () => {
+            trigger.kill();
+            reveal.kill();
+            gsap.set(terminalRef.current, { opacity: 1, y: 0 });
+          };
+        }
+      });
+    } catch {
+      const words = textColRef.current
+        ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
+        : [];
+      gsap.set(words, { color: "rgba(228, 222, 207, 1)" });
+      gsap.set(terminalRef.current, { opacity: 1, y: 0, clearProps: "filter" });
+      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+    }
 
     return () => mm.revert();
   }, { scope: runwayRef });
@@ -111,7 +145,19 @@ export default function AboutSection() {
       style={{ position: "relative" }}
     >
       {/* Anchor target placed halfway down the runway so text is mostly revealed */}
-      <div id="about" style={{ position: "absolute", top: "45%", width: "100%", pointerEvents: "none" }} aria-hidden="true" />
+      <div
+        className="chapter-marker chapter-marker--spy"
+        data-scroll-spy="about"
+        data-scroll-spy-clearance="none"
+        aria-hidden="true"
+      />
+      <div
+        id="about"
+        className="chapter-marker chapter-marker--about-landing"
+        data-scroll-landing="about"
+        data-scroll-landing-clearance="none"
+        aria-hidden="true"
+      />
       <div className="about-sticky">
         {/* ---- Inner layout: two columns on desktop ---- */}
         <div className="about-split-container">

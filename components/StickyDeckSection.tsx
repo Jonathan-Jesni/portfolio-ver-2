@@ -12,6 +12,8 @@ import { CometCard } from "@/components/ui/comet-card";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
 import { PROJECT_PHASES } from "../lib/chapterPhases";
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/mediaQueries";
+import { trapFocus } from "../lib/trapFocus";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -95,13 +97,10 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
     document.body.style.overflow = "hidden";
     lenis?.stop();
     closeButtonRef.current?.focus();
-
-    const focusableElements = () =>
-      Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-        ) ?? []
-      ).filter((element) => !element.hasAttribute("hidden"));
+    const dialog = dialogRef.current;
+    const releaseFocusTrap = dialog
+      ? trapFocus(dialog, { fallbackFocus: dialog })
+      : () => undefined;
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -117,32 +116,13 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
       if (event.key === "ArrowRight" && multi) {
         event.preventDefault();
         next();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = focusableElements();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        dialogRef.current?.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (active === last || !dialogRef.current?.contains(active))) {
-        event.preventDefault();
-        first.focus();
       }
     };
 
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("keydown", onKey);
+      releaseFocusTrap();
       document.body.style.overflow = previousBodyOverflow;
       lenis?.start();
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
@@ -629,7 +609,7 @@ export default function StickyDeckSection({
 
     try {
       mm.add(
-        "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
+        IMMERSIVE_SCROLL_MEDIA_QUERY,
         () => {
           /* The data attribute turns on sticky/absolute enhancement CSS.
              Static document flow is the baseline if setup fails. */

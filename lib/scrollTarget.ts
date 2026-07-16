@@ -1,3 +1,5 @@
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "./mediaQueries";
+
 /* power4.inOut — matches the {J} logo's scroll-to feel. */
 export const power4InOut = (t: number) =>
   t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
@@ -10,8 +12,6 @@ export const absoluteTop = (el: HTMLElement) => {
   return rect.top + window.scrollY;
 };
 
-export const IMMERSIVE_SCROLL_MEDIA_QUERY =
-  "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
 export const NAV_CLEARANCE_GAP = 24;
 export type ScrollTargetKind = "landing" | "spy";
 

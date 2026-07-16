@@ -815,6 +815,7 @@ html[data-motion-ready="failed"] .cs-slide {
   }
 }
 
+/* Mirrors TOUCH_OR_REDUCED_MEDIA_QUERY in lib/mediaQueries.ts. */
 /* Natural-flow story on touch/coarse pointer and reduced motion. */
 @media (max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .hero-runway,
