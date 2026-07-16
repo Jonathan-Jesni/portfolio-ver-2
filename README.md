@@ -1,25 +1,25 @@
-# Jonathan Jesni — Portfolio
+# Jonathan Jesni - Portfolio
 
 An interactive 3D developer portfolio. The hero is a scroll-driven WebGL laptop that "boots"
-as you scroll and then dissolves — pixel-for-pixel — into the live Projects section, backed by
+as you scroll and then dissolves - pixel-for-pixel - into the live Projects section, backed by
 cinematic shader transitions and physics-based interactions.
 
 🌐 **Live:** [jonathanjesni.com](https://jonathanjesni.com)
 
 ## Highlights
 
-- **Scroll-driven 3D hero** — a Draco-compressed GLB laptop (React Three Fiber) opens, the
+- **Scroll-driven 3D hero** - a Draco-compressed GLB laptop (React Three Fiber) opens, the
   screen boots, and the camera plunges into a cover-fit frame that crossfades seamlessly into
   the real `#projects` DOM.
-- **WebGL transitions** — a liquid-obsidian preloader and an ember "burn" wipe between sections,
+- **WebGL transitions** - a liquid-obsidian preloader and an ember "burn" wipe between sections,
   authored as custom GLSL shaders.
-- **Physics & motion** — a Matter.js "gravity pit" skills cloud, Lenis smooth scrolling, and a
+- **Physics & motion** - a Matter.js "gravity pit" skills cloud, Lenis smooth scrolling, and a
   GSAP + ScrollTrigger timeline choreographing every section boundary.
-- **Detection-reticle cursor** — a custom object-detection-style cursor (nodding to the CV work
+- **Detection-reticle cursor** - a custom object-detection-style cursor (nodding to the CV work
   in the projects): corner brackets that snap to frame interactive targets with a scrambling
   `[ LABEL · 0.9X ]` confidence readout and a live pointer dot. Fine-pointer only, and disabled
   entirely under `prefers-reduced-motion`.
-- **Built to behave** — adaptive DPR, `prefers-reduced-motion` fallbacks, a WebGL-unsupported
+- **Built to behave** - adaptive DPR, `prefers-reduced-motion` fallbacks, a WebGL-unsupported
   boundary, full SEO (Open Graph / Twitter cards, `robots`, `sitemap`, `theme-color`), and a
   keyboard-visible focus system.
 
@@ -30,7 +30,7 @@ cinematic shader transitions and physics-based interactions.
 - **Motion:** GSAP + ScrollTrigger · Lenis (smooth scroll) · Matter.js (physics)
 - **Fonts:** Plus Jakarta Sans, JetBrains Mono, Instrument Serif (via `next/font`)
 
-> Styling is hand-written in `app/globals.css` — there is no Tailwind layer (the dependency is
+> Styling is hand-written in `app/globals.css` - there is no Tailwind layer (the dependency is
 > present but never imported, so utility classes are inert; edit the CSS directly).
 
 ## Getting Started

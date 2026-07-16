@@ -13,60 +13,48 @@ interface TerminalHighlightProps {
 
 export function TerminalHighlight({
   children,
-  color = "#C9A852", // default antique gold
+  color = "#C9A852",
   delay = 0,
   animate = true,
 }: TerminalHighlightProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
-  const sweepRef = useRef<HTMLSpanElement>(null);
-  const textRef = useRef<HTMLSpanElement>(null);
 
   useGSAP(() => {
-    if (!sweepRef.current || !containerRef.current || !textRef.current || !animate) return;
+    const highlight = containerRef.current;
+    if (!highlight) return;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 85%", // Triggers when slightly into view
-      },
-      delay: delay,
+    if (!animate) {
+      gsap.set(highlight, { backgroundSize: "100% 100%", color: "#0D0B09" });
+      return;
+    }
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      /* A cloned inline background gives every wrapped line its own gold
+         plate, so the long statement can wrap without crossing the laptop. */
+      const tl = gsap.timeline({ delay });
+      tl.fromTo(
+        highlight,
+        { backgroundSize: "0% 100%", color: "inherit" },
+        { backgroundSize: "100% 100%", ease: "power4.inOut", duration: 0.5 }
+      ).to(highlight, { color: "#0D0B09", duration: 0.15 }, "-=0.25");
     });
 
-    tl.fromTo(
-      sweepRef.current,
-      { scaleX: 0, transformOrigin: "left center" },
-      { scaleX: 1, ease: "power4.inOut", duration: 0.5 }
-    ).to(
-      textRef.current,
-      { color: "#0D0B09", duration: 0.15 },
-      "-=0.25"
-    );
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(highlight, { backgroundSize: "100% 100%", color: "#0D0B09" });
+    });
+
+    return () => mm.revert();
   }, { scope: containerRef, dependencies: [animate, delay] });
 
   return (
     <span
       ref={containerRef}
-      style={{
-        position: "relative",
-        display: "inline-block",
-        padding: "0 4px",
-        margin: "0 2px",
-        whiteSpace: "nowrap",
-      }}
+      className="terminal-highlight"
+      style={{ "--terminal-highlight-color": color } as React.CSSProperties}
     >
-      <span
-        ref={sweepRef}
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: color,
-          zIndex: 0,
-        }}
-      />
-      <span ref={textRef} style={{ position: "relative", zIndex: 1 }}>
-        {children}
-      </span>
+      {children}
     </span>
   );
 }

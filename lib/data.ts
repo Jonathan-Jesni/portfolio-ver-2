@@ -4,7 +4,12 @@ export const PROJECTS = [
     title: "Neuro-Genesis Engine",
     subtitle: "Self-Modifying Mixture-of-Experts",
     description:
-      "Engineered a self-modifying Mixture-of-Experts architecture that autonomously expands its capacity during training. Upon detecting loss plateaus, a local Gemma-2-2b-it model generates PyTorch source code for new expert modules. These are rigorously validated through AST screening, sandboxed execution, and smoke testing before being dynamically hot-swapped into the live MoE. Optimized for AMD ROCm hardware, the system ensures zero downtime with automatic rollbacks on failure.",
+      "Built a self-modifying Mixture-of-Experts system that detects training plateaus, asks a local Gemma model to generate new PyTorch expert modules, and hot-swaps validated code into the live network. An AST screen, sandboxed execution, smoke tests, and automatic rollback protect the training run while the model expands from four to eleven experts on AMD ROCm hardware.",
+    proofPoints: [
+      "Detected loss plateaus and expanded from 4 to 11 experts",
+      "Generated new PyTorch modules with local Gemma-2-2b-it",
+      "Validated code through AST screening, sandboxing, and rollback",
+    ],
     tech: "PyTorch, ROCm, Gemma-2-2b-it, Mixture-of-Experts, AST Validation",
     tags: ["Agentic AI", "Mixture-of-Experts", "AMD/ROCm"],
     github: "https://github.com/Jonathan-Jesni/neuro-genesis-engine",
@@ -16,7 +21,7 @@ export const PROJECTS = [
       "/assets/Neuro-genesis/title-card.jpg",
     ],
     imageAlts: [
-      "Neuro-Genesis Engine title card — self-expanding Mixture-of-Experts, AMD Developer Hackathon Act II",
+      "Neuro-Genesis Engine title card - self-expanding Mixture-of-Experts, AMD Developer Hackathon Act II",
     ],
     metric: "300-step self-expanding MoE · 4 → 11 experts · ROCm 7.2",
   },
@@ -25,7 +30,12 @@ export const PROJECTS = [
     title: "Modified Double U-Net",
     subtitle: "Medical Image Segmentation",
     description:
-      "Dual-stacked U-Net for 3-class medical image segmentation (Background, Benign, Malignant). Uses an Ensemble Encoder fusing VGG-19, DenseNet-121, and Xception backbones with Softmax-based Attention Gates to route spatial cues. Optimized via AMP and a combined Cross-Entropy & Dice loss to handle class imbalance, achieving a ~0.85 Validation F1-Score and accelerating training by ~25%.",
+      "Built a dual-stacked U-Net for three-class breast ultrasound segmentation, combining VGG-19, DenseNet-121, and Xception encoders with attention-gated feature fusion. Mixed-precision training and a combined cross-entropy and Dice objective improved training efficiency while handling class imbalance, reaching a validation F1 of roughly 0.85 on the BUSI dataset.",
+    proofPoints: [
+      "Fused three pretrained encoders through attention gates",
+      "Handled background, benign, and malignant classes",
+      "Cut training time by roughly 25% with AMP",
+    ],
     tech: "PyTorch, VGG-19, DenseNet-121, Xception, Deep Learning",
     tags: ["Deep Learning", "Medical Imaging", "Computer Vision"],
     github: "https://github.com/Jonathan-Jesni/Modified_DoubleUNet_Implementation",
@@ -52,7 +62,12 @@ export const PROJECTS = [
     title: "BandWidth",
     subtitle: "Autonomous Multi-Agent CI/CD Pipeline",
     description:
-      "Orchestrated a 5-agent cross-model pipeline (GPT-4o + DeepSeek-V4-Pro) across 6 containerized microservices to autonomously review, test, fix, and document GitHub PRs via the Band collaboration platform. Built a Flask webhook engine intercepting PR events, executing sandboxed pytest validations, and pushing autonomous fix commits via the GitHub REST API. Deployed on Google Cloud with zero dropped handoffs across 30+ autonomous PR cycles and deterministic state-routing.",
+      "Built a five-agent, cross-model pipeline that autonomously reviews, tests, fixes, and documents GitHub pull requests across six containerized services. A Flask webhook engine routes PR events through sandboxed pytest validation and the GitHub API, while deterministic handoffs keep the workflow recoverable. The system completed more than 30 autonomous review cycles on Google Cloud without dropping an agent handoff.",
+    proofPoints: [
+      "Orchestrated 5 agents across 6 containerized services",
+      "Executed sandboxed tests and pushed autonomous fix commits",
+      "Completed 30+ review cycles with zero dropped handoffs",
+    ],
     tech: "Python, Flask, Docker, Google Cloud, GitHub API, GPT-4o, DeepSeek-V4-Pro, Band AI, CI/CD, Agentic AI",
     tags: ["Agentic AI", "Multi-Agent", "CI/CD"],
     github: "https://github.com/Jonathan-Jesni/BandWidth",
@@ -151,6 +166,9 @@ export const PROJECTS = [
   },
 ] as const;
 
+export const FEATURED_PROJECTS = PROJECTS.slice(0, 3);
+export const SECONDARY_PROJECTS = PROJECTS.slice(3);
+
 
 export const BUILDING = [
   {
@@ -158,7 +176,7 @@ export const BUILDING = [
     status: "Active",
     title: "Agent Observability & RAG Tooling",
     description:
-      "Instrumenting BandWidth's multi-agent runs — trace capture, handoff timelines, and RAG pipeline tooling.",
+      "Instrumenting BandWidth's multi-agent runs - trace capture, handoff timelines, and RAG pipeline tooling.",
     tags: ["Agentic AI", "RAG", "LLMOps"],
     steps: ["RESEARCH", "PROTOTYPE", "EVALUATE", "REFINE", "DEPLOY"],
   },

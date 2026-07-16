@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Projects Header — Texture Render",
+  title: "Projects Header - Texture Render",
   robots: { index: false, follow: false },
 };
 
