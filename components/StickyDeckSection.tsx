@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { PROJECTS } from "../lib/data";
+import { FEATURED_PROJECTS, SECONDARY_PROJECTS } from "../lib/data";
 import { ArrowUpRightIcon } from "./ui/icons";
 import { CometCard } from "@/components/ui/comet-card";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
+import { PROJECT_PHASES } from "../lib/chapterPhases";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -23,15 +24,35 @@ const CARD_HUES: Record<string, string> = {
   ludex:            "214, 30%, 62%",  /* blue  (05) */
 };
 
-const N = PROJECTS.length;
+const N = FEATURED_PROJECTS.length;
 const pad = (n: number) => String(n).padStart(2, "0");
 const hueOf = (id: string) => CARD_HUES[id] ?? "188, 45%, 52%";
+
+/* Each project gets an intentional reading beat. The two narrow ranges are
+   the only places where slides crossfade; rail jumps target the centre of a
+   hold, never the sticky track's release boundary. */
+const PROJECT_HOLDS = PROJECT_PHASES.holds;
+
+const projectPositionAt = (progress: number) => {
+  const p = Math.max(0, Math.min(1, progress));
+  if (p <= PROJECT_HOLDS[0].end) return 0;
+  if (p < PROJECT_HOLDS[1].start) {
+    return (p - PROJECT_HOLDS[0].end) /
+      (PROJECT_HOLDS[1].start - PROJECT_HOLDS[0].end);
+  }
+  if (p <= PROJECT_HOLDS[1].end) return 1;
+  if (p < PROJECT_HOLDS[2].start) {
+    return 1 + (p - PROJECT_HOLDS[1].end) /
+      (PROJECT_HOLDS[2].start - PROJECT_HOLDS[1].end);
+  }
+  return 2;
+};
 
 /* power4.inOut — mirrors the {J} logo's scroll-to feel for click jumps */
 const power4InOut = (t: number) =>
   t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 
-type Project = (typeof PROJECTS)[number];
+type Project = (typeof FEATURED_PROJECTS)[number];
 
 interface LightboxState {
   images: string[];
@@ -51,40 +72,76 @@ interface LightboxState {
 function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & { onClose: () => void }) {
   const [i, setI] = useState(start);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const multi = images.length > 1;
 
-  const prev = () => setI((v) => (v - 1 + images.length) % images.length);
-  const next = () => setI((v) => (v + 1) % images.length);
+  const prev = useCallback(
+    () => setI((v) => (v - 1 + images.length) % images.length),
+    [images.length]
+  );
+  const next = useCallback(() => setI((v) => (v + 1) % images.length), [images.length]);
+
 
   useEffect(() => {
     const lenis = getLenis();
-    lenis?.stop();
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    lenis?.stop();
+    closeButtonRef.current?.focus();
 
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") prev();
-      else if (e.key === "ArrowRight") next();
-      else if (e.key === "Tab") {
-        /* minimal focus trap */
-        const f = dialogRef.current?.querySelectorAll<HTMLElement>("button");
-        if (!f || f.length === 0) return;
-        const first = f[0];
-        const last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    const focusableElements = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((element) => !element.hasAttribute("hidden"));
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === "ArrowLeft" && multi) {
+        event.preventDefault();
+        prev();
+        return;
+      }
+      if (event.key === "ArrowRight" && multi) {
+        event.preventDefault();
+        next();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = focusableElements();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !dialogRef.current?.contains(active))) {
+        event.preventDefault();
+        first.focus();
       }
     };
+
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousBodyOverflow;
       lenis?.start();
-      previouslyFocused?.focus?.();
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-    // prev/next only call setI (functional) so a mount-time closure is safe
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images.length, onClose]);
+  }, [multi, next, onClose, prev]);
 
   if (typeof document === "undefined") return null;
 
@@ -98,7 +155,16 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
       tabIndex={-1}
       onClick={onClose}
     >
-      <button className="cs-lightbox-close" aria-label="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+      <button
+        ref={closeButtonRef}
+        type="button"
+        className="cs-lightbox-close"
+        aria-label="Close"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+      >
         ✕
       </button>
       <div className="cs-lightbox-stage" style={{ "--card-hue": hue } as React.CSSProperties} onClick={(e) => e.stopPropagation()}>
@@ -152,10 +218,9 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
    the lightbox; arrows/dots are siblings (not nested in the clickable)
    and stopPropagation so they never trigger it.
    ═══════════════════════════════════════════════════════════════════ */
-function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
+function ProjectVisual({ project, hue, priority, eager, onOpen }: {
   project: Project;
   hue: string;
-  metric: string;
   priority: boolean;
   eager: boolean;
   onOpen: (start: number) => void;
@@ -164,7 +229,6 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
   const alts = (project.imageAlts ?? []) as readonly string[];
   const [cur, setCur] = useState(0);
   const multi = images.length > 1;
-
 
   /* Once an image has been shown, keep it mounted — prevents unmount/
      refetch flashes when navigating back after the ±1 window moves on.
@@ -222,7 +286,11 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
                 (eager && Math.abs(idx - cur) <= 1) ||
                 shown.has(idx);
               return (
-                <div key={src} className={`cs-img-slide${idx === cur ? " is-cur" : ""}`} aria-hidden={idx !== cur}>
+                <div
+                  key={src}
+                  className={`cs-img-slide${idx === cur ? " is-cur" : ""}`}
+                  aria-hidden={idx !== cur}
+                >
                   {show && (
                     <Image
                       src={src}
@@ -260,11 +328,10 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
         </div>
       </CometCard>
 
-      {/* Caption lives UNDER the image (not overlaid): current image's
-          caption, then the project's metric in a dimmer line. */}
+      {/* The descriptive caption stays with the current image. The lead
+          outcome metric belongs in the copy hierarchy beside the visual. */}
       <div className="cs-caption mono">
         <span className="cs-caption-alt">{alts[cur] ?? project.title}</span>
-        <span className="cs-caption-metric">{metric}</span>
       </div>
     </div>
   );
@@ -273,11 +340,13 @@ function ProjectVisual({ project, hue, metric, priority, eager, onOpen }: {
 /* ═══════════════════════════════════════════════════════════════════
    PROJECT SLIDE — one case-study card (visual column + copy column)
    ═══════════════════════════════════════════════════════════════════ */
-function ProjectSlide({ project, index, hue, eager, onOpen }: {
+function ProjectSlide({ project, index, hue, eager, active, scrubActive, onOpen }: {
   project: Project;
   index: number;
   hue: string;
   eager: boolean;
+  active: boolean;
+  scrubActive: boolean;
   onOpen: (start: number) => void;
 }) {
   const tags = project.tags as readonly string[];
@@ -307,15 +376,18 @@ function ProjectSlide({ project, index, hue, eager, onOpen }: {
 
   return (
     <article
+      id={`project-${project.id}`}
       className="cs-slide"
       data-project-id={project.id}
       data-cursor-label={project.title}
       style={{ "--card-hue": hue } as React.CSSProperties}
       aria-label={`Project: ${project.title}`}
+      aria-hidden={scrubActive && !active}
+      inert={scrubActive && !active ? true : undefined}
     >
       {/* LEFT — visual column */}
       {hasImage ? (
-        <ProjectVisual project={project} hue={hue} metric={metric} priority={index === 0} eager={eager} onOpen={onOpen} />
+        <ProjectVisual project={project} hue={hue} priority={index === 0} eager={eager} onOpen={onOpen} />
       ) : (
         <div className="cs-visual-col">
           <CometCard rotateDepth={10} translateDepth={6}>
@@ -351,9 +423,6 @@ function ProjectSlide({ project, index, hue, eager, onOpen }: {
               )}
             </div>
           </CometCard>
-          <div className="cs-caption mono">
-            <span className="cs-caption-metric">{metric}</span>
-          </div>
         </div>
       )}
 
@@ -363,7 +432,14 @@ function ProjectSlide({ project, index, hue, eager, onOpen }: {
         <span className="cs-subtitle" style={{ color: `hsl(${hue})` }}>
           {project.subtitle}
         </span>
+        <p className="cs-metric mono">{metric}</p>
         <p className="cs-desc">{project.description}</p>
+        <ul className="cs-proof" aria-label={`${project.title} technical highlights`}>
+          {((project as { proofPoints?: readonly string[] }).proofPoints ?? []).map((point) => (
+            <li key={point}>{point}</li>
+          ))}
+        </ul>
+
         {note && <p className="cs-note mono">{note}</p>}
         <ul className="sd-card-tags" aria-label="Technologies">
           {tags.map((tag, ti) => (
@@ -410,13 +486,23 @@ function ProjectSlide({ project, index, hue, eager, onOpen }: {
   );
 }
 
-export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSectionRef?: React.RefObject<HTMLElement | null> }) {
+export default function StickyDeckSection({
+  portfolioSectionRef,
+  motionEnabled = true,
+}: {
+  portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+  motionEnabled?: boolean;
+}) {
   const fallbackRef = useRef<HTMLElement>(null);
   const sectionRef = portfolioSectionRef || fallbackRef;
   const trackRef = useRef<HTMLDivElement>(null);
+  const railButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   /* the active scrub trigger — read by the rail's click-to-jump handler */
   const stRef = useRef<ScrollTrigger | null>(null);
+  const snapSuspendedRef = useRef(false);
+  const snapResumeTimerRef = useRef<number | null>(null);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
   /* Active slide index, mirrored from render()'s imperative scrub so the
      image-gating logic below (a plain render decision, not layout/paint)
      can read it without touching the opacity/transform writes themselves. */
@@ -427,126 +513,258 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
      eager. */
   const [scrubActive, setScrubActive] = useState(false);
 
+  const suspendSnap = useCallback((fallbackMs: number) => {
+    snapSuspendedRef.current = true;
+    if (snapResumeTimerRef.current !== null) {
+      window.clearTimeout(snapResumeTimerRef.current);
+    }
+    snapResumeTimerRef.current = window.setTimeout(() => {
+      snapSuspendedRef.current = false;
+      snapResumeTimerRef.current = null;
+    }, fallbackMs);
+  }, []);
+
+  useEffect(() => () => {
+    if (snapResumeTimerRef.current !== null) {
+      window.clearTimeout(snapResumeTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const exposeStaticDeck = () => {
+      stRef.current?.kill();
+      stRef.current = null;
+      const section = sectionRef.current;
+      if (section) {
+        gsap.set(section, { clearProps: "opacity,pointerEvents" });
+      }
+      const track = trackRef.current;
+      if (track) {
+        track.dataset.scrubReady = "false";
+        gsap.set(track.querySelectorAll(".cs-slide, .cs-text"), {
+          clearProps: "opacity,transform,pointerEvents,visibility,willChange",
+        });
+      }
+      setScrubActive(false);
+      setActiveSlide(0);
+      activeIdxRef.current = 0;
+    };
+
+    window.addEventListener("portfolio:motion-failed", exposeStaticDeck);
+    return () =>
+      window.removeEventListener("portfolio:motion-failed", exposeStaticDeck);
+  }, [sectionRef]);
+
   useGSAP(() => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!track || !motionEnabled) return;
 
     const slides = gsap.utils.toArray<HTMLElement>(".cs-slide", track);
-    const texts  = slides.map((s) => s.querySelector<HTMLElement>(".cs-text"));
-    const thumbs = gsap.utils.toArray<HTMLElement>(".cs-thumb", track);
-    const fill   = track.querySelector<HTMLElement>(".cs-progress-fill");
-    const knob   = track.querySelector<HTMLElement>(".cs-progress-knob");
-    const curEl  = track.querySelector<HTMLElement>(".cs-counter-cur");
-    const ghost  = track.querySelector<HTMLElement>(".cs-ghost");
-    if (slides.length < 1) return;
+    const texts = slides.map((slide) => slide.querySelector<HTMLElement>(".cs-text"));
+    const progress = track.querySelector<HTMLElement>(".cs-progress");
+    const fill = track.querySelector<HTMLElement>(".cs-progress-fill");
+    const knob = track.querySelector<HTMLElement>(".cs-progress-knob");
+    if (slides.length !== N) return;
 
-    /* Per-slide cache of the last applied nearness — skips redundant style
-       writes for far slides whose `a` hasn't meaningfully changed between
-       scroll updates (only 1-2 slides actually move per frame). */
     const lastA = slides.map(() => -1);
+    let progressWidth = 0;
+    const measureProgress = () => {
+      progressWidth = progress?.getBoundingClientRect().width ?? 0;
+    };
+    const resetPresentation = () => {
+      track.dataset.scrubReady = "false";
+      stRef.current = null;
+      setScrubActive(false);
+      gsap.set(slides, { clearProps: "opacity,pointerEvents" });
+      texts.forEach((text) => {
+        if (text) text.style.transform = "";
+      });
+      fill?.style.removeProperty("width");
+      fill?.style.removeProperty("transform-origin");
+      fill?.style.removeProperty("transform");
+      knob?.style.removeProperty("transform");
+      lastA.fill(-1);
+    };
 
-    /* Single render pass — every readout derives from the SAME progress
-       value (p ∈ [0, N-1]) so the visual, text, counter, rail and ghost
-       can never drift out of sync. */
-    const render = (p: number) => {
-      slides.forEach((slide, i) => {
-        const a = Math.max(0, 1 - Math.abs(i - p)); /* nearness 0→1 */
-        if (Math.abs(a - lastA[i]) < 0.001) return;
-        lastA[i] = a;
-        slide.style.opacity = a.toFixed(3);
-        slide.style.pointerEvents = a > 0.5 ? "auto" : "none";
-        const t = texts[i];
-        if (t) {
-          /* text rise LAGS the visual crossfade: it only starts lifting
-             once the slide is already ~25% faded in, so the picture
-             leads and the copy settles in behind it. */
-          const tE = Math.max(0, Math.min(1, (a - 0.25) / 0.75));
-          t.style.transform = `translate3d(0, ${((1 - tE) * 26).toFixed(1)}px, 0)`;
+    /* p is the project position (0→2); scrollProgress remains the exact
+       track phase (0→1), including the three reading holds. */
+    const render = (p: number, scrollProgress: number) => {
+      slides.forEach((slide, index) => {
+        const nearness = Math.max(0, 1 - Math.abs(index - p));
+        if (Math.abs(nearness - lastA[index]) < 0.001) return;
+        lastA[index] = nearness;
+        slide.style.opacity = nearness.toFixed(3);
+        slide.style.pointerEvents = nearness > 0.5 ? "auto" : "none";
+
+        const text = texts[index];
+        if (text) {
+          const textProgress = Math.max(0, Math.min(1, (nearness - 0.25) / 0.75));
+          text.style.transform =
+            `translate3d(0, ${((1 - textProgress) * 26).toFixed(1)}px, 0)`;
         }
       });
 
-      const idx = Math.round(p);
-      if (idx !== activeIdxRef.current) {
-        activeIdxRef.current = idx;
-        setActiveSlide(idx);
+      const index = Math.round(p);
+      if (index !== activeIdxRef.current) {
+        activeIdxRef.current = index;
+        setActiveSlide(index);
       }
-      if (curEl) curEl.textContent = pad(idx + 1);
-      if (ghost) ghost.textContent = pad(idx + 1);
-      const pct = (p / Math.max(1, N - 1)) * 100;
-      if (fill) fill.style.width = `${pct}%`;
-      if (knob) knob.style.left = `${pct}%`;
-      thumbs.forEach((th, i) => th.classList.toggle("is-active", i === idx));
+
+      const percent = scrollProgress * 100;
+      if (fill) fill.style.transform = `scaleX(${(percent / 100).toFixed(4)})`;
+      if (knob) {
+        knob.style.transform =
+          `translate3d(${(progressWidth * scrollProgress).toFixed(2)}px, 0, 0) translateX(-50%)`;
+      }
     };
 
     const mm = gsap.matchMedia();
+    let cancelled = false;
 
-    /* ── Desktop full-motion: scrub the projects via a CSS-sticky viewport ──
-       NO ScrollTrigger pin. The stage is held in place by position:sticky
-       (see .cs-viewport in globals.css) and this trigger only READS scroll
-       to scrub the crossfade. A GSAP pin would use position:fixed, which is
-       broken by .stack-section's transform (StackTransitions scales it) and
-       can freeze the tab under Lenis — the exact reasons this codebase pins
-       nothing and uses sticky everywhere (see StackTransitions / Contact). */
-    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-      const st = ScrollTrigger.create({
-        trigger: track,
-        start: "top top",
-        end: "bottom bottom",
-        invalidateOnRefresh: true,
-        /* Snap each project to its own scroll beat — no parked half-states */
-        snap: {
-          snapTo: 1 / (N - 1),
-          duration: { min: 0.15, max: 0.35 },
-          ease: "power2.inOut",
-        },
-        onUpdate: (self) => render(self.progress * (N - 1)),
-        onRefresh: (self) => render(self.progress * (N - 1)),
+    try {
+      mm.add(
+        "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
+        () => {
+          /* The data attribute turns on sticky/absolute enhancement CSS.
+             Static document flow is the baseline if setup fails. */
+          track.dataset.scrubReady = "true";
+          setScrubActive(true);
+
+          try {
+            if (fill) {
+              fill.style.width = "100%";
+              fill.style.transformOrigin = "left center";
+            }
+            measureProgress();
+            const renderProgress = (progress: number) =>
+              render(projectPositionAt(progress), progress);
+            const st = ScrollTrigger.create({
+              trigger: track,
+              start: "top top",
+              end: "bottom bottom",
+              invalidateOnRefresh: true,
+              snap: {
+                snapTo: (value) =>
+                  snapSuspendedRef.current
+                    ? value
+                    : gsap.utils.snap(PROJECT_HOLDS.map((hold) => hold.midpoint), value),
+                delay: 0.12,
+                duration: { min: 0.15, max: 0.35 },
+                ease: "power2.inOut",
+              },
+              onUpdate: (self) => renderProgress(self.progress),
+              onRefresh: (self) => {
+                measureProgress();
+                renderProgress(self.progress);
+              },
+            });
+            stRef.current = st;
+            renderProgress(st.progress);
+
+            return () => {
+              st.kill();
+              resetPresentation();
+            };
+          } catch {
+            resetPresentation();
+          }
+        }
+      );
+
+      document.fonts?.ready.then(() => {
+        if (!cancelled) ScrollTrigger.refresh();
       });
-      stRef.current = st;
-      setScrubActive(true);
+    } catch {
+      resetPresentation();
+    }
 
-      render(0); /* first project fully formed at entry — no dead lead-in */
-
-      return () => {
-        stRef.current = null;
-        setScrubActive(false);
-        gsap.set(slides, { clearProps: "opacity,pointerEvents" });
-        texts.forEach((t) => t && (t.style.transform = ""));
-        lastA.fill(-1);
-      };
-    });
-
-    document.fonts?.ready.then(() => ScrollTrigger.refresh());
-  }, { scope: sectionRef });
+    return () => {
+      cancelled = true;
+      mm.revert();
+      resetPresentation();
+    };
+  }, {
+    scope: sectionRef,
+    dependencies: [motionEnabled],
+    revertOnUpdate: true,
+  });
 
   /* Jump to a project by scrolling to its position within the sticky track.
      Routed through the shared Lenis instance so it inherits the site's eased
      momentum (matching the {J} logo's power4.inOut feel). */
-  const jumpTo = (i: number) => {
+  const jumpTo = (requestedIndex: number, immediate = false) => {
+    const index = Math.max(0, Math.min(N - 1, requestedIndex));
     const st = stRef.current;
     const lenis = getLenis();
+    const t = st?.getTween(true);
+    if (t && typeof t !== "number") t.kill();
+    suspendSnap(immediate ? 240 : 1_800);
+    const finishProgrammaticScroll = () => suspendSnap(180);
+
     if (!st) {
-      /* mobile / reduced-motion: slides are stacked in normal flow.
-         Move the active "glow" to the tapped box (the scrub-driven
-         render() that normally does this never runs on mobile), then
-         scroll to the i-th card directly (clear of the floating nav). */
-      const thumbs = trackRef.current?.querySelectorAll<HTMLElement>(".cs-thumb");
-      thumbs?.forEach((th, ti) => th.classList.toggle("is-active", ti === i));
-      const el = trackRef.current?.querySelectorAll<HTMLElement>(".cs-slide")[i];
-      if (!el) return;
+      setActiveSlide(index);
+      activeIdxRef.current = index;
+      const slide = trackRef.current?.querySelectorAll<HTMLElement>(".cs-slide")[index];
+      if (!slide) return;
+
       if (lenis) {
-        lenis.scrollTo(el, { duration: 1.0, easing: power4InOut, offset: -96 });
+        if (immediate) {
+          lenis.scrollTo(slide, {
+            immediate: true,
+            force: true,
+            offset: -96,
+            onComplete: finishProgrammaticScroll,
+          });
+        } else {
+          lenis.scrollTo(slide, {
+            duration: 1,
+            easing: power4InOut,
+            offset: -96,
+            onComplete: finishProgrammaticScroll,
+          });
+        }
       } else {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        slide.scrollIntoView({
+          behavior: immediate ? "auto" : "smooth",
+          block: "start",
+        });
       }
       return;
     }
-    const target = st.start + (i / (N - 1)) * (st.end - st.start);
+
+    const midpoint = PROJECT_HOLDS[index].midpoint;
+    const target = st.start + midpoint * (st.end - st.start);
     if (lenis) {
-      lenis.scrollTo(target, { duration: 1.3, easing: power4InOut });
+      if (immediate) {
+        lenis.scrollTo(target, {
+          immediate: true,
+          force: true,
+          onComplete: finishProgrammaticScroll,
+        });
+      } else {
+        lenis.scrollTo(target, {
+          duration: 1.3,
+          easing: power4InOut,
+          onComplete: finishProgrammaticScroll,
+        });
+      }
     } else {
-      window.scrollTo({ top: target, behavior: "smooth" });
+      window.scrollTo({ top: target, behavior: immediate ? "auto" : "smooth" });
     }
+  };
+
+  const onRailKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = index - 1;
+    else if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = index + 1;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = N - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const clamped = Math.max(0, Math.min(N - 1, nextIndex));
+    railButtonRefs.current[clamped]?.focus();
+    jumpTo(clamped, true);
   };
 
   return (
@@ -578,21 +796,35 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
              fall back to a plain vertical stack (CSS), no scrub. ── */}
       <div
         ref={trackRef}
+        id="projects-first-case-study"
         className="cs-track"
+        data-scrub-ready={scrubActive ? "true" : "false"}
         style={{ "--cs-count": N } as React.CSSProperties}
       >
+        <div
+          className="chapter-marker chapter-marker--projects-landing"
+          data-scroll-landing="projects"
+          data-scroll-landing-clearance="none"
+          aria-hidden="true"
+        />
+        <div
+          className="chapter-marker chapter-marker--projects-spy"
+          data-scroll-spy="projects"
+          data-scroll-spy-clearance="none"
+          aria-hidden="true"
+        />
         <div className="cs-viewport">
-          <span className="cs-ghost" aria-hidden="true">01</span>
+          <span className="cs-ghost" aria-hidden="true">{pad(activeSlide + 1)}</span>
 
           <div className="cs-topbar">
             <span className="cs-eyebrow">Selected Work</span>
             <span className="cs-counter">
-              <span className="cs-counter-cur">01</span> / {pad(N)}
+              <span className="cs-counter-cur">{pad(activeSlide + 1)}</span> / {pad(N)}
             </span>
           </div>
 
           <div className="cs-stagebox">
-            {PROJECTS.map((project, i) => {
+            {FEATURED_PROJECTS.map((project, i) => {
               const hue = hueOf(project.id);
               const eager = !scrubActive || Math.abs(i - activeSlide) <= 1;
               return (
@@ -602,6 +834,8 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
                   index={i}
                   hue={hue}
                   eager={eager}
+                  active={i === activeSlide}
+                  scrubActive={scrubActive}
                   onOpen={(start) =>
                     setLightbox({
                       images: [...((project.images ?? []) as readonly string[])],
@@ -623,19 +857,54 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
           </div>
 
           <nav className="cs-rail" aria-label="Jump to project">
-            {PROJECTS.map((project, i) => (
+            {FEATURED_PROJECTS.map((project, i) => (
               <button
                 key={project.id}
+                ref={(node) => {
+                  railButtonRefs.current[i] = node;
+                }}
                 type="button"
-                className={`cs-thumb${i === 0 ? " is-active" : ""}`}
-                onClick={() => jumpTo(i)}
+                className={`cs-thumb${i === activeSlide ? " is-active" : ""}`}
+                onClick={(event) => jumpTo(i, event.detail === 0)}
+                onKeyDown={(event) => onRailKeyDown(event, i)}
                 aria-label={`Go to ${project.title}`}
+                aria-controls={`project-${project.id}`}
+                aria-current={i === activeSlide ? "true" : undefined}
               >
                 <span className="cs-thumb-num mono">{pad(i + 1)}</span>
                 <span className="cs-thumb-name">{project.title}</span>
               </button>
             ))}
           </nav>
+        </div>
+      </div>
+
+      <div className="more-work">
+        <div className="container">
+          <header className="more-work-header">
+            <span className="ed-eyebrow">More work</span>
+            <h3>Additional systems</h3>
+          </header>
+          <div className="more-work-list">
+            {SECONDARY_PROJECTS.map((project, index) => {
+              const links = (project as { links?: readonly { label: string; href: string }[] }).links;
+              const link = links?.[0] ?? { label: "View source", href: project.github };
+              return (
+                <article className="more-work-item" key={project.id}>
+                  <span className="more-work-index mono">{pad(index + 4)}</span>
+                  <div>
+                    <h4>{project.title}</h4>
+                    <p>{project.subtitle}</p>
+                  </div>
+                  <strong>{project.metric}</strong>
+                  <a href={link.href} target="_blank" rel="noopener noreferrer">
+                    <span>{link.label}</span>
+                    <ArrowUpRightIcon />
+                  </a>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -658,7 +927,7 @@ export default function StickyDeckSection({ portfolioSectionRef }: { portfolioSe
         </div>
       </div>
 
-      {lightbox && <Lightbox {...lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <Lightbox {...lightbox} onClose={closeLightbox} />}
     </section>
   );
 }

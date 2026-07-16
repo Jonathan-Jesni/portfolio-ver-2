@@ -8,6 +8,7 @@ import { RollingHeadline } from "./ui/RollingHeadline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "./ui/icons";
 import { burnControls } from "../lib/burnControls";
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/scrollTarget";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -40,98 +41,117 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
       const buttons = buttonsRef.current;
 
       if (!section || !mask || !buttons) return;
-
       const mm = gsap.matchMedia();
 
-      // Reduced motion: reveal everything instantly on scroll entry.
-
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(mask, { display: "none" });
-        gsap.set(buttons, { opacity: 1, y: 0 });
-
-        ScrollTrigger.create({
-          trigger: section,
-          start: "top 80%",
-          once: true,
-          onEnter: () => {
-            setHeadlineReady(true);
-            gsap.to(buttons, {
-              opacity: 1,
-              y: 0,
-              duration: 0.4,
-              ease: "power1.out",
-            });
-          },
+      try {
+        // Reduced motion keeps the complete chapter and burn palette without
+        // a sweeping mask or displacement.
+        mm.add("(prefers-reduced-motion: reduce)", () => {
+          gsap.set(mask, { display: "none", clearProps: "transform,willChange" });
+          gsap.set(buttons, { opacity: 1, y: 0, clearProps: "willChange" });
+          setHeadlineReady(true);
         });
-      });
 
       // Desktop: the burn IS the entrance. Contact sits fully formed beneath
       // the burning About sheet, so clearProps strips the JSX pre-paint state
       // (opacity 0 / translateY) and the ember front uncovers finished UI.
       // Only RollingHeadline keeps a cue, fired by the burn's midpoint signal.
-      mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-        gsap.set(mask, { display: "none" });
-        gsap.set(buttons, { clearProps: "opacity,transform,willChange" });
+        mm.add(IMMERSIVE_SCROLL_MEDIA_QUERY, () => {
+          gsap.set(mask, { display: "none", clearProps: "transform,willChange" });
+          gsap.set(buttons, { clearProps: "opacity,transform,willChange" });
 
-        const unsub = burnControls.onHeadline((forward) => setHeadlineReady(forward));
-        return () => unsub();
-      });
+          const unsub = burnControls.onHeadline((forward) => setHeadlineReady(forward));
+          return () => unsub();
+        });
 
       // ── Mobile full-motion branch — atmospheric lift (unchanged) ──────────
       // No pinning/burn on mobile, so keep the original shroud-lift reveal.
-      mm.add("(max-width: 767px) and (prefers-reduced-motion: no-preference)", () => {
-        // Initial state: mask is fully covering content, buttons are hidden
-        gsap.set(mask, { yPercent: 0 });
-        gsap.set(buttons, { opacity: 0, y: 30 });
+        mm.add(
+          "(max-width: 1023px), (hover: none), (pointer: coarse)",
+          () => {
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              return;
+            }
+            gsap.set(mask, {
+              display: "block",
+              yPercent: 0,
+              willChange: "transform",
+            });
+            gsap.set(buttons, { opacity: 0, y: 24 });
 
-        // Build the master timeline scrubbed by scroll
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top bottom-=200px",
-            end: "bottom bottom",
-            scrub: 1,
-          },
-        });
+            const tl = gsap.timeline({
+              paused: true,
+              onComplete: () => {
+                gsap.set(mask, { clearProps: "willChange" });
+              },
+              onReverseComplete: () => {
+                setHeadlineReady(false);
+                gsap.set(mask, { willChange: "transform" });
+              },
+            });
 
         // Phase 1 (progress 0 → 0.65): Atmospheric shroud lifts upward.
         // yPercent: 0 → -100 moves the mask completely off-screen above,
         // physically revealing the contact grid beneath it.
-        tl.to(
-          mask,
-          {
-            yPercent: -100,
-            ease: "power2.inOut",
-            duration: 0.65,
-          },
-          0
-        );
+            tl.to(
+              mask,
+              {
+                yPercent: -100,
+                ease: "power2.inOut",
+                duration: 1,
+              },
+              0,
+            );
 
         // Trigger the rolling headline when the sweep passes over the title
-        tl.call(
-          () => {
-            const isForward = tl.scrollTrigger ? tl.scrollTrigger.direction === 1 : true;
-            setHeadlineReady(isForward);
-          },
-          undefined,
-          0.4
-        );
+            tl.call(() => setHeadlineReady(true), undefined, 0.38);
 
         // Phase 2 (progress 0.45 → 1.0): Buttons float up and become visible.
         // Delayed so they start appearing after the mask has lifted halfway,
         // giving the tactile sensation that the content is "lifting away from
         // the shroud" into focus.
-        tl.to(
-          buttons,
-          {
-            opacity: 1,
-            y: 0,
-            ease: "power3.out",
-            duration: 0.55,
+            tl.to(
+              buttons,
+              {
+                opacity: 1,
+                y: 0,
+                ease: "power3.out",
+                duration: 0.55,
+              },
+              0.32,
+            );
+
+            const trigger = ScrollTrigger.create({
+              trigger: section,
+              start: "top 82%",
+              end: "bottom 18%",
+              onEnter: () => tl.play(),
+              onLeave: () => tl.progress(1).pause(),
+              onEnterBack: () => tl.progress(1).pause(),
+              onLeaveBack: () => tl.reverse(),
+            });
+
+            return () => {
+              trigger.kill();
+              tl.kill();
+              gsap.set(mask, {
+                display: "none",
+                clearProps: "transform,willChange",
+              });
+              gsap.set(buttons, {
+                opacity: 1,
+                y: 0,
+                clearProps: "willChange",
+              });
+            };
           },
-          0.45
         );
-      });
+      } catch {
+        gsap.set(mask, { display: "none", clearProps: "transform,willChange" });
+        gsap.set(buttons, { opacity: 1, y: 0, clearProps: "willChange" });
+        setHeadlineReady(true);
+        window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+      }
 
       return () => mm.revert();
     },
@@ -181,8 +201,8 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             style={{
               // Ensure initial paint state matches GSAP set() — prevents flash
               opacity: 0,
-              transform: "translateY(30px)",
-              willChange: "transform, opacity",
+              transform: "none",
+              willChange: "auto",
             }}
           >
             <a
@@ -239,15 +259,16 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
       ─────────────────────────────────────────────────────────────────────── */}
       <div
         ref={maskRef}
+        className="contact-mask"
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
           zIndex: 10,
           backgroundColor: "var(--surface-0)",
-          willChange: "transform",
           top: "-2px",
           bottom: "-2px",
+          display: "none",
           borderBottom: "1px solid var(--border-subtle)",
           boxShadow: "0 20px 50px rgba(13, 11, 9, 0.5)",
         }}

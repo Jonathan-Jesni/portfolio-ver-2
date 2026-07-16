@@ -15,8 +15,11 @@ import * as THREE from "three";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { detectGPU } from "../lib/detectGPU";
+import { BurnPlane } from "./BurnTransition";
+import { ObsidianPlane } from "./PreLoader";
 import { GlProbe } from "./MemProbe";
+import { loaderControls } from "../lib/loaderControls";
+import { resolveAdaptiveQuality } from "../lib/motionEnvironment";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -51,6 +54,9 @@ const BOOT_P3 = 0.62;
 const COVER_OVERSHOOT = 0.90;
 
 // Length (in vh of scroll) of the velocity-matched, pixel-locked dissolve
+function cappedDpr(): number {
+  return resolveAdaptiveQuality().dpr;
+}
 // at the end of the hero trigger — see the timeline header comment below.
 const MATCH_WINDOW_VH = 10;
 
@@ -142,10 +148,14 @@ function LaptopScene({
   canvasWrapperDOMRef,
   portfolioSectionRef,
   lowPerf = false,
+  parallaxScale = 1,
+  onReady,
 }: {
   canvasWrapperDOMRef: React.RefObject<HTMLDivElement | null>;
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
   lowPerf?: boolean;
+  parallaxScale?: number;
+  onReady: () => void;
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { nodes, materials } = useGLTF("/assets/hardware_laptop.glb", DRACO_DECODER_PATH) as any;
@@ -169,6 +179,7 @@ function LaptopScene({
      DPR flip changed its identity and re-ran the setup, stacking scrub
      ScrollTriggers (measured 45 on #hero) until the tab OOM'd. */
   const sizeRef = useRef(size);
+  // eslint-disable-next-line react-hooks/refs -- Intentional: cross-root ScrollTrigger.refresh() can read coverZ before effects flush.
   sizeRef.current = size;
 
   const bootProgressRef     = useRef(0);
@@ -286,6 +297,7 @@ function LaptopScene({
         start: "top top",
         end: "bottom top",
         // Lenis is the single smoothing layer; a numeric scrub double-smooths
+
         // only the pre-swap side and breaks the velocity match under fast
         // scroll during the matched window above.
         scrub: true,
@@ -321,7 +333,6 @@ function LaptopScene({
       { x: 0.1577, y: 0, z: 0, duration: 0.267, ease: "power2.inOut" },
       0
     );
-
     const FACE_CY      = 0.6879;
     const FACE_FRONT_Z = -0.8689;
     const FACE_HALF_W  = 1.4766;
@@ -394,17 +405,19 @@ function LaptopScene({
          identical, identically-moving images — the screen capture and the
          real projects header are pixel-aligned and co-moving throughout. */
       tl.to(layerEl, { opacity: 0, ease: "none", duration: 0.0333 }, 0.9667);
-      /* Once the dissolve completes the fixed layer leaves hit-testing and
-         compositing entirely; this .set() reverts automatically when
-         scrolling back up into the transition. */
-      tl.set(layerEl, { display: "none" }, 1.0);
+      /* Keep the shared Canvas mounted after the handoff. The laptop group is
+         parked below, while the same renderer remains available for the
+         About → Contact burn without allocating a second context. */
     }
+    tl.set(globalContainerRef.current, { visible: false }, 1.0);
+
+    onReady();
 
   }, {
     /* revertOnUpdate kills the previous timelines/ScrollTriggers before any
        re-run — @gsap/react's default (revert on unmount only) leaks them in
        this never-unmounting component. */
-    dependencies: [camera, canvasWrapperDOMRef, portfolioSectionRef, invalidate],
+    dependencies: [camera, canvasWrapperDOMRef, portfolioSectionRef, invalidate, onReady],
     revertOnUpdate: true,
   });
 
@@ -471,15 +484,15 @@ function LaptopScene({
      attached, saving per-event work entirely. ── */
   useFrame(() => {
     const g = parallaxGroupRef.current;
-    if (!g || prefersReduced || lowPerf) return;
+    if (!g || prefersReduced || lowPerf || parallaxScale <= 0) return;
     const fade = 1 - Math.max(0, Math.min(1, (bootProgressRef.current - 0.37) / 0.13));
     // Lerp the UNFADED pointer target in a persistent accumulator, then apply
     // fade to the resulting rotation. Fading the applied value (not the target)
     // forces the tilt to exactly 0 the instant fade hits 0 at bootProgress 0.37
     // — so the cover shot lands dead-center regardless of where the mouse was,
     // instead of a residual lerp still decaying into the framing.
-    const targetX = pointerRef.current.y * 0.10;
-    const targetY = pointerRef.current.x * 0.16;
+    const targetX = pointerRef.current.y * 0.10 * parallaxScale;
+    const targetY = pointerRef.current.x * 0.16 * parallaxScale;
     const c = parallaxCur.current;
     const dx = targetX - c.x;
     const dy = targetY - c.y;
@@ -494,7 +507,7 @@ function LaptopScene({
   });
 
   useEffect(() => {
-    if (prefersReduced || lowPerf) return;
+    if (prefersReduced || lowPerf || parallaxScale <= 0) return;
     // Canvas + wrapper are pointer-events:none (see InteractiveModel), so the
     // listener lives on window instead of the wrapper DOM element.
     // Invalidate on every move (no throttle): the parallax useFrame self-limits
@@ -509,7 +522,7 @@ function LaptopScene({
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => window.removeEventListener("pointermove", onMove);
-  }, [prefersReduced, lowPerf, invalidate]);
+  }, [prefersReduced, lowPerf, parallaxScale, invalidate]);
 
   return (
     <group ref={parallaxGroupRef}>
@@ -553,24 +566,25 @@ class WebGLBoundary extends Component<
 
 export interface InteractiveModelProps {
   portfolioSectionRef?: React.RefObject<HTMLElement | null>;
+  renderLaptop?: boolean;
+  onFail?: () => void;
 }
 
-export default function InteractiveModel({ portfolioSectionRef }: InteractiveModelProps) {
+export default function InteractiveModel({
+  portfolioSectionRef,
+  renderLaptop = true,
+  onFail,
+}: InteractiveModelProps) {
   const canvasWrapperDOMRef = useRef<HTMLDivElement>(null);
-
-  // GPU tier — detected once before Canvas mounts so antialias (a context-
-  // creation flag) can be set correctly. "low" = Intel/Mesa iGPU or software
-  // renderer. (No hardwareConcurrency fallback: ≤8 cores mislabels most capable
-  // laptops as low-end, needlessly disabling antialias + defaulting degraded.)
-  const [isLowGPU] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return detectGPU() === "low";
-  });
-
-  const [dpr, setDpr] = useState(1);
-  const [degraded, setDegraded] = useState(isLowGPU);
+  const [quality] = useState(() => resolveAdaptiveQuality());
+  const [dpr, setDpr] = useState(quality.dpr);
+  const [degraded, setDegraded] = useState(
+    () => quality.shaderDetailScale < 0.7,
+  );
   const degradedRef = useRef(degraded);
-  degradedRef.current = degraded;
+  useEffect(() => {
+    degradedRef.current = degraded;
+  }, [degraded]);
 
   // GL context creation signal + fallback-reveal guards. The scrub timeline
   // that normally reveals #projects lives inside <Canvas>; if WebGL throws
@@ -578,27 +592,49 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
   // never exists and everything below the hero stays permanently hidden.
   const createdRef = useRef(false);
   const revealedRef = useRef(false);
+  const contextCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const contextLostRef = useRef<((event: Event) => void) | null>(null);
 
+  const sceneReadyRef = useRef(false);
   const revealFallback = useCallback(() => {
     if (revealedRef.current) return; // idempotent — boundary + timeout can both fire
     revealedRef.current = true;
+    loaderControls.fail();
     const layerEl = canvasWrapperDOMRef.current?.closest(".hero-3d-layer") as HTMLElement | null;
-    if (layerEl) layerEl.style.display = "none";
+    if (layerEl) layerEl.style.opacity = "0";
     const projectsEl = portfolioSectionRef?.current;
     if (projectsEl) {
       projectsEl.style.opacity = "1";
       projectsEl.style.pointerEvents = "auto";
     }
-  }, [portfolioSectionRef]);
+    onFail?.();
+  }, [onFail, portfolioSectionRef]);
+
+  const markSceneReady = useCallback(() => {
+    sceneReadyRef.current = true;
+  }, []);
 
   useEffect(() => {
     // Cover the case where the context never fires onCreated at all (no
     // thrown error for WebGLBoundary to catch, just a silent stall).
     const timeoutId = window.setTimeout(() => {
-      if (!createdRef.current) revealFallback();
-    }, 4000);
+      if (
+        !createdRef.current ||
+        (renderLaptop && !sceneReadyRef.current)
+      ) {
+        revealFallback();
+      }
+    }, 10000);
     return () => window.clearTimeout(timeoutId);
-  }, [revealFallback]);
+  }, [renderLaptop, revealFallback]);
+
+  useEffect(() => () => {
+    const canvas = contextCanvasRef.current;
+    const handler = contextLostRef.current;
+    if (canvas && handler) canvas.removeEventListener("webglcontextlost", handler);
+    contextCanvasRef.current = null;
+    contextLostRef.current = null;
+  }, []);
 
   return (
     <div
@@ -616,10 +652,8 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
         frameloop="demand"
         dpr={dpr}
         gl={{
-          antialias: true,
+          antialias: quality.antialias,
           alpha: true,
-          // "high-performance" routes to the dGPU on hybrid systems.
-          // On a pure iGPU machine it has no effect but doesn't hurt.
           powerPreference: "high-performance",
         }}
         style={{
@@ -628,43 +662,76 @@ export default function InteractiveModel({ portfolioSectionRef }: InteractiveMod
           display: "block",
           pointerEvents: "none",
         }}
-        onCreated={() => { createdRef.current = true; }}
+        onCreated={({ gl }) => {
+          createdRef.current = true;
+          gl.setClearAlpha(0);
+          if (!renderLaptop) sceneReadyRef.current = true;
+          loaderControls.markStageReady();
+          const previousCanvas = contextCanvasRef.current;
+          const previousHandler = contextLostRef.current;
+          if (previousCanvas && previousHandler) {
+            previousCanvas.removeEventListener("webglcontextlost", previousHandler);
+          }
+          const canvas = gl.domElement;
+          const handleContextLoss = (event: Event) => {
+            event.preventDefault();
+            revealFallback();
+          };
+          canvas.addEventListener("webglcontextlost", handleContextLoss, false);
+          contextCanvasRef.current = canvas;
+          contextLostRef.current = handleContextLoss;
+        }}
       >
-        <PerformanceMonitor
-          flipflops={3}
-          onIncline={() => { if (!degradedRef.current) setDpr(Math.min(window.devicePixelRatio, 1.5)); }}
-          onDecline={() => { setDpr(1); setDegraded(true); }}
-        />
+        {renderLaptop && (
+          <PerformanceMonitor
+            flipflops={3}
+            onIncline={() => {
+              if (!degradedRef.current) setDpr(cappedDpr());
+            }}
+            onDecline={() => {
+              setDpr(Math.max(0.75, cappedDpr() * 0.78));
+              setDegraded(true);
+            }}
+          />
+        )}
 
         {/* temporary OOM-investigation probe — inert without ?memprobe */}
-        <GlProbe name="hero" />
+        <GlProbe name="visual-stage" />
 
         {/* FrameloopGate removed: frameloop="demand" already renders zero
             frames when nobody calls invalidate(). When hero is offscreen the
             ScrollTrigger stops firing onUpdate → no invalidate → no frames. */}
 
-        <ambientLight intensity={degraded ? 2.2 : 1.5} />
-        <directionalLight position={[8, 12, 6]} intensity={2.2} />
-        <directionalLight position={[-8, 6, -6]} intensity={0.6} />
-        <pointLight position={[0, 4, 3]} intensity={1.0} />
+        {renderLaptop && (
+          <>
+            <ambientLight intensity={degraded ? 2.2 : 1.5} />
+            <directionalLight position={[8, 12, 6]} intensity={2.2} />
+            <directionalLight position={[-8, 6, -6]} intensity={0.6} />
+            <pointLight position={[0, 4, 3]} intensity={1.0} />
+          </>
+        )}
 
-        {/* Skip Environment IBL on degraded/iGPU — the extra ambient light
-            above compensates so the model doesn't go flat. */}
-        {!degraded && (
-          <Environment resolution={64} background={false}>
+        {renderLaptop && !degraded && (
+          <Environment resolution={quality.environmentResolution} background={false}>
             <Lightformer intensity={0.8} position={[3, 3, 4]} scale={[6, 6, 1]} color="#eef2f4" />
             <Lightformer intensity={0.4} position={[-4, 2, -3]} scale={[5, 5, 1]} color="#9fb4d8" />
             <Lightformer form="ring" intensity={0.3} position={[0, 5, 2]} scale={[3, 3, 1]} color="#ffffff" />
           </Environment>
         )}
 
-        <Suspense fallback={null}>
-          <LaptopScene
-            canvasWrapperDOMRef={canvasWrapperDOMRef}
-            portfolioSectionRef={portfolioSectionRef}
-            lowPerf={degraded}
-          />
-        </Suspense>
+        {renderLaptop && (
+          <Suspense fallback={null}>
+            <LaptopScene
+              canvasWrapperDOMRef={canvasWrapperDOMRef}
+              portfolioSectionRef={portfolioSectionRef}
+              lowPerf={degraded}
+              parallaxScale={degraded ? 0 : quality.parallaxScale}
+              onReady={markSceneReady}
+            />
+          </Suspense>
+        )}
+        <ObsidianPlane />
+        <BurnPlane />
       </Canvas>
       </WebGLBoundary>
     </div>
