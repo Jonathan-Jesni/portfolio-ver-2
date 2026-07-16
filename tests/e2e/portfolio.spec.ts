@@ -469,3 +469,47 @@ test("an enhancement failure exposes complete content without stale sticky or hi
   );
   expect(stickyPositions).not.toContain("sticky");
 });
+
+test("desktop Projects-to-Building CRT wipe reveals building content through a positive scroll window", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-1440");
+  await openPortfolio(page);
+
+  const buildingSection = page.locator('[data-chapter="building"]');
+  const buildingContent = page.locator('[data-chapter="building"] .sp-content');
+
+  // Scroll well past the Projects -> Building boundary (the CRT collapse)
+  // via real wheel input — Lenis (lib/lenisInstance.ts) intercepts wheel
+  // events to smooth-scroll and would fight a direct window.scrollTo.
+  let reachedBoundary = false;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const top = await buildingSection.evaluate((element) => element.getBoundingClientRect().top);
+    if (top <= 0) {
+      reachedBoundary = true;
+      break;
+    }
+    await page.mouse.wheel(0, 800);
+    await page.waitForTimeout(50);
+  }
+  expect(reachedBoundary, "Could not scroll past the Projects -> Building boundary").toBe(true);
+  await waitForScrollToSettle(page);
+
+  await expectExposed(buildingContent);
+
+  // The boundary-0 ScrollTrigger (trigger: outro CTA "bottom center",
+  // endTrigger: Building "top top") must resolve to a positive window —
+  // a degenerate end <= start silently keeps Building's autoAlpha gate
+  // (now removed; SpatialSection owns the reveal) or, more generally,
+  // any future scrub bound to it, from ever completing.
+  const degenerateTriggers = await page.evaluate(() => {
+    const st = (window as unknown as {
+      ScrollTrigger?: { getAll: () => { start: number; end: number }[] };
+    }).ScrollTrigger;
+    if (!st) return null;
+    return st
+      .getAll()
+      .filter((instance) => instance.end <= instance.start)
+      .map((instance) => ({ start: instance.start, end: instance.end }));
+  });
+  expect(degenerateTriggers, "window.ScrollTrigger was not exposed for verification").not.toBeNull();
+  expect(degenerateTriggers).toEqual([]);
+});

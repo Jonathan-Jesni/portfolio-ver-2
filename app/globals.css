@@ -3255,8 +3255,9 @@ canvas.glass-image-canvas {
 }
 
 /* -- Outro - centers the CTA and supplies the runway for boundary 0.
-   The CRT wipe begins when the outro paragraph crosses viewport center,
-   then completes as the Building chapter reaches the viewport top. */
+   The CRT wipe begins when the outro CTA block's bottom edge crosses
+   viewport center, then completes as the Building chapter reaches the
+   viewport top. */
 .sd-outro {
   position: relative;
   z-index: 1;

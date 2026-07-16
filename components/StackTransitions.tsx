@@ -11,6 +11,14 @@ import {
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
+/* Expose for runtime/e2e verification only (e.g. asserting boundary
+   ScrollTrigger start/end windows in tests/e2e/portfolio.spec.ts) — gsap's
+   ESM build doesn't self-attach to window the way its UMD/CDN build does. */
+if (typeof window !== "undefined") {
+  (window as unknown as { ScrollTrigger?: typeof ScrollTrigger }).ScrollTrigger =
+    ScrollTrigger;
+}
+
 /* ─────────────────────────────────────────────────────────────
    StackTransitions — "String-Tune" boundary choreography
 
@@ -65,11 +73,6 @@ interface CrtSequenceValues {
   bladeCollapseTo: gsap.TweenVars;
   bladePinch: gsap.TweenVars;
   bladeOut: gsap.TweenVars;
-  residualFrom: gsap.TweenVars;
-  residualIn: gsap.TweenVars;
-  residualInAt: number;
-  residualOut: gsap.TweenVars;
-  residualOutAt: number;
 }
 
 function buildCrtSequence(
@@ -77,12 +80,10 @@ function buildCrtSequence(
   {
     voidEl,
     blade,
-    residual,
     values,
   }: {
     voidEl: HTMLElement | null;
     blade: HTMLElement | null;
-    residual: HTMLElement | null;
     values: CrtSequenceValues;
   },
 ) {
@@ -102,16 +103,6 @@ function buildCrtSequence(
     timeline.to(blade, values.bladePinch, 0.6);
     timeline.to(blade, values.bladeOut, 0.9);
   }
-
-  if (residual) {
-    timeline.fromTo(
-      residual,
-      values.residualFrom,
-      values.residualIn,
-      values.residualInAt,
-    );
-    timeline.to(residual, values.residualOut, values.residualOutAt);
-  }
 }
 
 export default function StackTransitions() {
@@ -127,11 +118,9 @@ export default function StackTransitions() {
       mm.add(IMMERSIVE_SCROLL_MEDIA_QUERY, () => {
       /* Overlay nodes we inject (e.g. the CRT bezel-iris) — torn down on revert */
       const createdEls: HTMLElement[] = [];
-      const outroLine =
-        sections[0]?.querySelector<HTMLElement>(".sd-outro .sd-cta p");
-      const buildingContent =
-        sections[1]?.querySelector<HTMLElement>(".sp-content");
-      if (!outroLine || !buildingContent) {
+      const outroBlock =
+        sections[0]?.querySelector<HTMLElement>(".sd-outro .sd-cta");
+      if (!outroBlock) {
         throw new Error("CRT boundary targets are missing");
       }
       sections.forEach((section, i) => {
@@ -274,11 +263,11 @@ export default function StackTransitions() {
           scrollTrigger:
             i === 0
               ? {
-                  trigger: outroLine,
-                  start: "center center",
+                  trigger: outroBlock,
+                  start: "bottom center",
                   endTrigger: next,
                   end: "top top",
-                  scrub: true,
+                  scrub: 1,
                 }
               : {
                   trigger: next,
@@ -318,30 +307,16 @@ export default function StackTransitions() {
           fx.setAttribute("aria-hidden", "true");
           fx.innerHTML =
             '<div class="crt-fx__void"></div>' +
-            '<div class="crt-fx__blade"></div>' +
-            '<div class="crt-fx__residual"></div>';
+            '<div class="crt-fx__blade"></div>';
           document.body.appendChild(fx);
           createdEls.push(fx);
 
           const voidEl = fx.querySelector<HTMLElement>(".crt-fx__void");
           const blade = fx.querySelector<HTMLElement>(".crt-fx__blade");
-          const residual = fx.querySelector<HTMLElement>(".crt-fx__residual");
-
-          tl.fromTo(
-            buildingContent,
-            { autoAlpha: 0 },
-            {
-              autoAlpha: 1,
-              duration: 0.5,
-              ease: "power1.out",
-            },
-            0.22,
-          );
 
           buildCrtSequence(tl, {
             voidEl,
             blade,
-            residual,
             values: {
               voidIn: { opacity: 1, ease: "power2.out", duration: 0.22 },
               voidOut: { opacity: 0, ease: "power2.in", duration: 0.2 },
@@ -373,27 +348,6 @@ export default function StackTransitions() {
                 ease: "none",
                 duration: 0.05,
               },
-              residualFrom: {
-                autoAlpha: 0,
-                scaleX: 0,
-                filter: "brightness(3)",
-              },
-              residualIn: {
-                autoAlpha: 0.92,
-                scaleX: 0.22,
-                filter: "brightness(2.2)",
-                duration: 0.0475,
-                ease: "power2.out",
-              },
-              residualInAt: 0.874,
-              residualOut: {
-                autoAlpha: 0,
-                scaleX: 0.48,
-                filter: "brightness(1)",
-                duration: 0.0285,
-                ease: "power1.out",
-              },
-              residualOutAt: 0.9215,
             },
           });
         } else if (veil) {
@@ -438,9 +392,6 @@ export default function StackTransitions() {
           gsap.set([section, inner], {
             clearProps: "transform,clipPath,pointerEvents",
           });
-        });
-        gsap.set(buildingContent, {
-          clearProps: "opacity,visibility",
         });
       };
     });

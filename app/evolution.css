@@ -15,6 +15,9 @@
   --runway-contact: 200svh;
   --overlap-chapter: -100svh;
   --overlap-contact: -200svh;
+  /* Boundary 0 only — see the .stack-section--building override below for
+     the arithmetic behind this value. */
+  --overlap-building: -55svh;
   --nav-clearance: 112px;
   --chapter-bottom-safe: 24px;
 }
@@ -166,22 +169,6 @@ html[data-burn-active="true"] .hero-3d-layer {
 html[data-burn-active="true"] .hero-3d-layer::before {
   opacity: 0 !important;
   animation: none !important;
-}
-
-.crt-fx__residual {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  opacity: 0;
-  transform: translateY(-50%) scaleX(0);
-  transform-origin: center;
-  background: #faf5ee;
-  box-shadow:
-    0 0 12px rgba(var(--accent-rgb), 0.9),
-    0 0 34px rgba(var(--accent-rgb), 0.55);
-  will-change: transform, opacity, filter;
 }
 
 /* Featured proof and metric hierarchy. */
@@ -627,10 +614,16 @@ html[data-motion-ready="failed"] .cs-slide {
     margin-top: var(--overlap-chapter);
   }
 
-  /* Projects owns a complete CRT closing beat. Building starts only after
-     that viewport-long collapse; later sheets keep the paired overlaps. */
+  /* Boundary 0's scrub window runs from the outro CTA's "bottom center"
+     to Building's "top top" (StackTransitions.tsx). With zero overlap that
+     window measures ~147-148vh at every desktop test viewport (1440x900,
+     1024x768, 1536x639, 1150x631 — verified via getBoundingClientRect at
+     each), well past the ~80-100vh a CRT wipe needs. Pulling Building up
+     by 55svh trims it to ~90-92vh at all four, comfortably positive and
+     inside range without the degenerate (end <= start) window a full
+     -100svh overlap would reintroduce. */
   html[data-motion-ready="true"] .stack-section--building {
-    margin-top: 0;
+    margin-top: var(--overlap-building);
   }
 
   html[data-motion-ready="true"] .sp-sticky,

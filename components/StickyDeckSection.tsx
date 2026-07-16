@@ -894,11 +894,12 @@ export default function StickyDeckSection({
         </div>
       </div>
 
-      {/* ── Outro / CTA — boundary 0 starts when this paragraph crosses the
-             viewport center. The remaining outro runway carries the CRT wipe
-             through to completion by the time Building reaches the top. ── */}
+      {/* ── Outro / CTA — boundary 0 starts when this block's bottom edge
+             crosses the viewport center. The remaining outro runway carries
+             the CRT wipe through to completion by the time Building reaches
+             the top. ── */}
       <div className="sd-outro">
-        <div className="container sd-cta" data-skew>
+        <div className="container sd-cta">
           <p>There&apos;s more on GitHub.</p>
           <a
             href="https://github.com/Jonathan-Jesni?tab=repositories"
