@@ -894,10 +894,9 @@ export default function StickyDeckSection({
         </div>
       </div>
 
-      {/* ── Outro / CTA — a centered closing beat. Its trailing height
-             pushes the section bottom (where StackTransitions boundary 0
-             fires the CRT collapse) past the CTA, so the fold happens
-             AFTER the CTA has settled, not over it. ── */}
+      {/* ── Outro / CTA — boundary 0 starts when this paragraph crosses the
+             viewport center. The remaining outro runway carries the CRT wipe
+             through to completion by the time Building reaches the top. ── */}
       <div className="sd-outro">
         <div className="container sd-cta" data-skew>
           <p>There&apos;s more on GitHub.</p>

@@ -59,6 +59,7 @@ const BOUNDARIES: BoundaryConfig[] = [
 interface CrtSequenceValues {
   voidIn: gsap.TweenVars;
   voidOut: gsap.TweenVars;
+  bladeFrom: gsap.TweenVars;
   bladeIn: gsap.TweenVars;
   bladeCollapseFrom: gsap.TweenVars;
   bladeCollapseTo: gsap.TweenVars;
@@ -91,7 +92,7 @@ function buildCrtSequence(
   }
 
   if (blade) {
-    timeline.fromTo(blade, { opacity: 0 }, values.bladeIn, 0.04);
+    timeline.fromTo(blade, values.bladeFrom, values.bladeIn, 0.04);
     timeline.fromTo(
       blade,
       values.bladeCollapseFrom,
@@ -126,9 +127,13 @@ export default function StackTransitions() {
       mm.add(IMMERSIVE_SCROLL_MEDIA_QUERY, () => {
       /* Overlay nodes we inject (e.g. the CRT bezel-iris) — torn down on revert */
       const createdEls: HTMLElement[] = [];
-
-
-
+      const outroLine =
+        sections[0]?.querySelector<HTMLElement>(".sd-outro .sd-cta p");
+      const buildingContent =
+        sections[1]?.querySelector<HTMLElement>(".sp-content");
+      if (!outroLine || !buildingContent) {
+        throw new Error("CRT boundary targets are missing");
+      }
       sections.forEach((section, i) => {
         const next = sections[i + 1];
         if (!next) return;
@@ -266,12 +271,21 @@ export default function StackTransitions() {
           next.querySelector<HTMLElement>(".cs-viewport, .sp-sticky") ?? next;
 
         const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: next,
-            start: "top bottom",
-            end: "top top",
-            scrub: true,
-          },
+          scrollTrigger:
+            i === 0
+              ? {
+                  trigger: outroLine,
+                  start: "center center",
+                  endTrigger: next,
+                  end: "top top",
+                  scrub: true,
+                }
+              : {
+                  trigger: next,
+                  start: "top bottom",
+                  end: "top top",
+                  scrub: true,
+                },
         });
 
         tl.to(
@@ -313,6 +327,17 @@ export default function StackTransitions() {
           const blade = fx.querySelector<HTMLElement>(".crt-fx__blade");
           const residual = fx.querySelector<HTMLElement>(".crt-fx__residual");
 
+          tl.fromTo(
+            buildingContent,
+            { autoAlpha: 0 },
+            {
+              autoAlpha: 1,
+              duration: 0.5,
+              ease: "power1.out",
+            },
+            0.22,
+          );
+
           buildCrtSequence(tl, {
             voidEl,
             blade,
@@ -320,8 +345,9 @@ export default function StackTransitions() {
             values: {
               voidIn: { opacity: 1, ease: "power2.out", duration: 0.22 },
               voidOut: { opacity: 0, ease: "power2.in", duration: 0.2 },
+              bladeFrom: { autoAlpha: 0 },
               bladeIn: {
-                opacity: 0.95,
+                autoAlpha: 0.95,
                 ease: "power1.out",
                 duration: 0.12,
               },
@@ -343,17 +369,17 @@ export default function StackTransitions() {
                 duration: 0.3,
               },
               bladeOut: {
-                opacity: 0,
+                autoAlpha: 0,
                 ease: "none",
                 duration: 0.05,
               },
               residualFrom: {
-                opacity: 0,
+                autoAlpha: 0,
                 scaleX: 0,
                 filter: "brightness(3)",
               },
               residualIn: {
-                opacity: 0.92,
+                autoAlpha: 0.92,
                 scaleX: 0.22,
                 filter: "brightness(2.2)",
                 duration: 0.0475,
@@ -361,7 +387,7 @@ export default function StackTransitions() {
               },
               residualInAt: 0.874,
               residualOut: {
-                opacity: 0,
+                autoAlpha: 0,
                 scaleX: 0.48,
                 filter: "brightness(1)",
                 duration: 0.0285,
@@ -412,6 +438,9 @@ export default function StackTransitions() {
           gsap.set([section, inner], {
             clearProps: "transform,clipPath,pointerEvents",
           });
+        });
+        gsap.set(buildingContent, {
+          clearProps: "opacity,visibility",
         });
       };
     });
@@ -466,6 +495,7 @@ export default function StackTransitions() {
                 duration: 0.2,
                 ease: "power2.in",
               },
+              bladeFrom: { opacity: 0 },
               bladeIn: { opacity: 0.95, duration: 0.12 },
               bladeCollapseFrom: {
                 scaleY: 1,

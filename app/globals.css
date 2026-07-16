@@ -3254,10 +3254,9 @@ canvas.glass-image-canvas {
   }
 }
 
-/* -- Outro - centers the CTA as a closing beat and supplies the
-   trailing scroll length that delays the CRT collapse until after it.
-   .stack-section's "bottom bottom" (the CRT trigger) only arrives once
-   this block has fully scrolled past, so the fold happens after the CTA. */
+/* -- Outro - centers the CTA and supplies the runway for boundary 0.
+   The CRT wipe begins when the outro paragraph crosses viewport center,
+   then completes as the Building chapter reaches the viewport top. */
 .sd-outro {
   position: relative;
   z-index: 1;
