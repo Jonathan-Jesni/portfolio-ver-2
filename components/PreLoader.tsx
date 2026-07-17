@@ -311,6 +311,10 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const staticFallback =
     environment.reducedMotion ||
     environment.coarsePointer ||
+    /* Must mirror HeroSection's mountVisualStage: when the stage doesn't
+       mount (e.g. 900-1023px fine-pointer band), the full pipeline's asset
+       gate has nothing to wait on and would hang to FAILSAFE_MS. */
+    !environment.desktopScrub ||
     !environment.webglAvailable ||
     loaderSnapshot.failed;
 

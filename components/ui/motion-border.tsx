@@ -200,6 +200,23 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
 
       const tl = gsap.timeline({ repeat: -1, ease: 'none' });
 
+      /* Idle guard: the trail loop writes to ~400 circles every frame. Pause
+         it whenever the border is offscreen so a visitor parked at Contact
+         isn't paying for an animation they can't see. Resuming keeps phase
+         (progress is time-based), so nothing visibly jumps on re-entry. */
+      const host = svgRef.current?.parentElement;
+      let io: IntersectionObserver | null = null;
+      if (host && typeof IntersectionObserver !== 'undefined') {
+        io = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) tl.play();
+            else tl.pause();
+          },
+          { rootMargin: '25% 0px' }
+        );
+        io.observe(host);
+      }
+
       tl.to(
         {},
         {
@@ -236,6 +253,8 @@ const MotionBorder: React.FC<MotionBorderProps> = ({
           },
         }
       );
+
+      return () => io?.disconnect();
     },
     /* revertOnUpdate: pathD changes on every resize; without it each change
        stacked another infinite (repeat: -1) timeline that ran forever. */

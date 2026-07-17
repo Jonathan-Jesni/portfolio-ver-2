@@ -87,8 +87,13 @@ export default function RootLayout({
   // waiting for client JS to evaluate useGLTF.preload — parallel with the
   // JS download, shortens the preloader's wall time on cold loads.
   preload("/assets/hardware_laptop.glb", { as: "fetch", crossOrigin: "anonymous" });
-  preload("/assets/textures/bg.jpg", { as: "image" });
-  preload("/assets/textures/Mac Keyboard.jpg", { as: "image" });
+  // crossOrigin must match THREE's loaders (anonymous) or the preloaded
+  // response has a different credentials mode and both textures download twice.
+  preload("/assets/textures/bg.jpg", { as: "image", crossOrigin: "anonymous" });
+  preload("/assets/textures/Mac Keyboard.jpg", {
+    as: "image",
+    crossOrigin: "anonymous",
+  });
 
   return (
     <html

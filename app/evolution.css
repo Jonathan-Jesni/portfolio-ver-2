@@ -808,6 +808,15 @@ html[data-motion-ready="failed"] .cs-slide {
     gap: clamp(72px, 14vw, 112px);
   }
 
+  /* The section wrapper ships with inline opacity:0/pointer-events:none for
+     the desktop scrub handoff. Every non-immersive environment must clear it
+     here — the only JS that clears it lives in the laptop scrub, which never
+     runs outside the immersive query (900-1023px band regression otherwise). */
+  .sticky-deck-section {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
   .cs-slide {
     position: relative !important;
     inset: auto !important;

@@ -71,6 +71,10 @@ export default function HeroSection({
     !environment?.reducedMotion;
   const mountVisualStage =
     environment != null &&
+    /* Only mount the WebGL stage where the laptop actually renders — without
+       this, 900-1023px fine-pointer windows paid for an empty GL context
+       while nothing ever revealed #projects (review finding). */
+    environment.desktopScrub &&
     webglAvailable &&
     !environment.coarsePointer &&
     !environment.reducedMotion &&
