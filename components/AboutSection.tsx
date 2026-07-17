@@ -6,6 +6,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import TerminalBlock from "./TerminalBlock";
 import ScrollScrambleText from "./ScrollScrambleText";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 import {
   IMMERSIVE_SCROLL_MEDIA_QUERY,
   TOUCH_MEDIA_QUERY,
@@ -122,7 +123,7 @@ export default function AboutSection() {
         : [];
       gsap.set(words, { color: "rgba(228, 222, 207, 1)" });
       gsap.set(terminalRef.current, { opacity: 1, y: 0, clearProps: "filter" });
-      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+      window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
     }
 
     return () => mm.revert();

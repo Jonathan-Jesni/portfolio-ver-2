@@ -5,6 +5,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { burnControls } from "../lib/burnControls";
 import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/mediaQueries";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -398,7 +399,7 @@ export default function StackTransitions() {
       burnControls.setActive(false);
       burnControls.invalidate();
       delete document.documentElement.dataset.burnActive;
-      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+      window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
     }
 
     return () => mm.revert();

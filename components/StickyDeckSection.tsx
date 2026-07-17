@@ -14,6 +14,7 @@ import { getLenis } from "../lib/lenisInstance";
 import { PROJECT_PHASES } from "../lib/chapterPhases";
 import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/mediaQueries";
 import { trapFocus } from "../lib/trapFocus";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -536,9 +537,9 @@ export default function StickyDeckSection({
       activeIdxRef.current = 0;
     };
 
-    window.addEventListener("portfolio:motion-failed", exposeStaticDeck);
+    window.addEventListener(MOTION_FAILED_EVENT, exposeStaticDeck);
     return () =>
-      window.removeEventListener("portfolio:motion-failed", exposeStaticDeck);
+      window.removeEventListener(MOTION_FAILED_EVENT, exposeStaticDeck);
   }, [sectionRef]);
 
   useGSAP(() => {

@@ -90,9 +90,65 @@ export function resolveAdaptiveQuality(
   };
 }
 
-export function shouldUseSmoothScroll(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY).matches
-  );
+export interface MotionEnvironmentWatchOptions {
+  /**
+   * When true, media-query "change" events are routed through the same
+   * rAF debounce as resize (matches app/page.tsx's original watcher).
+   * When false, media-query changes emit synchronously and only resize
+   * is debounced (matches HeroSection.tsx's original watcher).
+   */
+  debounceAll?: boolean;
+  /** Also react to orientationchange (matches app/page.tsx's watcher). */
+  watchOrientation?: boolean;
+}
+
+/**
+ * Subscribes to the media queries `resolveMotionEnvironment` reads from and
+ * re-emits on every relevant change, rAF-debounced. Encapsulates the
+ * matchMedia + rAF-debounce watcher that used to be hand-rolled separately
+ * in app/page.tsx and components/HeroSection.tsx.
+ */
+export function subscribeMotionEnvironment(
+  onChange: (env: MotionEnvironment) => void,
+  options: MotionEnvironmentWatchOptions = {},
+): () => void {
+  const { debounceAll = false, watchOrientation = false } = options;
+  if (typeof window === "undefined") return () => undefined;
+
+  let frame = 0;
+  const emit = () => onChange(resolveMotionEnvironment());
+  const scheduleEmit = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(emit);
+  };
+  const onMediaChange = debounceAll ? scheduleEmit : emit;
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const pointer = window.matchMedia("(pointer: fine)");
+  const hover = window.matchMedia("(hover: hover)");
+
+  if (debounceAll) {
+    scheduleEmit();
+  } else {
+    emit();
+  }
+
+  reduced.addEventListener("change", onMediaChange);
+  pointer.addEventListener("change", onMediaChange);
+  hover.addEventListener("change", onMediaChange);
+  window.addEventListener("resize", scheduleEmit, { passive: true });
+  if (watchOrientation) {
+    window.addEventListener("orientationchange", scheduleEmit);
+  }
+
+  return () => {
+    cancelAnimationFrame(frame);
+    reduced.removeEventListener("change", onMediaChange);
+    pointer.removeEventListener("change", onMediaChange);
+    hover.removeEventListener("change", onMediaChange);
+    window.removeEventListener("resize", scheduleEmit);
+    if (watchOrientation) {
+      window.removeEventListener("orientationchange", scheduleEmit);
+    }
+  };
 }

@@ -18,10 +18,11 @@ import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
 import { getScrollTargetY, power4InOut, refreshScrollTargets } from "../lib/scrollTarget";
 import {
-  resolveMotionEnvironment,
+  subscribeMotionEnvironment,
   type MotionEnvironment,
 } from "../lib/motionEnvironment";
 import { loaderControls } from "../lib/loaderControls";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -88,30 +89,7 @@ export default function HeroSection({
 
   useEffect(() => {
     if (environmentOverride) return;
-
-    let resizeFrame = 0;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const pointer = window.matchMedia("(pointer: fine)");
-    const hover = window.matchMedia("(hover: hover)");
-    const update = () => setDetectedEnvironment(resolveMotionEnvironment());
-    const scheduleUpdate = () => {
-      cancelAnimationFrame(resizeFrame);
-      resizeFrame = requestAnimationFrame(update);
-    };
-
-    update();
-    reduced.addEventListener("change", update);
-    pointer.addEventListener("change", update);
-    hover.addEventListener("change", update);
-    window.addEventListener("resize", scheduleUpdate, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(resizeFrame);
-      reduced.removeEventListener("change", update);
-      pointer.removeEventListener("change", update);
-      hover.removeEventListener("change", update);
-      window.removeEventListener("resize", scheduleUpdate);
-    };
+    return subscribeMotionEnvironment(setDetectedEnvironment);
   }, [environmentOverride]);
 
   /* ── Magnetic character repulsion (pointer interaction) ── */
@@ -293,7 +271,7 @@ export default function HeroSection({
         [".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
-      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+      window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
     }
   }, {
     scope: runwayRef,
@@ -357,7 +335,7 @@ export default function HeroSection({
         [".hero-tagline", ".hero-sub", ".hero-buttons"],
         { opacity: 1, y: 0 }
       );
-      window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+      window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
     }
 
     return () => mm?.revert();

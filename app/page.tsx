@@ -27,7 +27,7 @@ import { BUILDING } from "../lib/data";
 import { burnControls } from "../lib/burnControls";
 import { getLenis } from "../lib/lenisInstance";
 import {
-  resolveMotionEnvironment,
+  subscribeMotionEnvironment,
   type MotionEnvironment,
 } from "../lib/motionEnvironment";
 import {
@@ -38,6 +38,7 @@ import {
   refreshScrollTargets,
 } from "../lib/scrollTarget";
 import { trapFocus } from "../lib/trapFocus";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
@@ -167,35 +168,16 @@ export default function Home() {
     root.dataset.motionReady = "false";
 
     const onMotionFailure = () => failOpen();
-    window.addEventListener("portfolio:motion-failed", onMotionFailure);
+    window.addEventListener(MOTION_FAILED_EVENT, onMotionFailure);
 
-    let frame = 0;
-    const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const fineQuery = window.matchMedia("(pointer: fine)");
-    const hoverQuery = window.matchMedia("(hover: hover)");
-
-    const updateEnvironment = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        setEnvironment(resolveMotionEnvironment());
-      });
-    };
-
-    updateEnvironment();
-    reducedQuery.addEventListener("change", updateEnvironment);
-    fineQuery.addEventListener("change", updateEnvironment);
-    hoverQuery.addEventListener("change", updateEnvironment);
-    window.addEventListener("resize", updateEnvironment, { passive: true });
-    window.addEventListener("orientationchange", updateEnvironment);
+    const unsubscribe = subscribeMotionEnvironment(setEnvironment, {
+      debounceAll: true,
+      watchOrientation: true,
+    });
 
     return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("portfolio:motion-failed", onMotionFailure);
-      reducedQuery.removeEventListener("change", updateEnvironment);
-      fineQuery.removeEventListener("change", updateEnvironment);
-      hoverQuery.removeEventListener("change", updateEnvironment);
-      window.removeEventListener("resize", updateEnvironment);
-      window.removeEventListener("orientationchange", updateEnvironment);
+      unsubscribe();
+      window.removeEventListener(MOTION_FAILED_EVENT, onMotionFailure);
       delete root.dataset.motionReady;
       root.style.removeProperty("--nav-clearance");
     };

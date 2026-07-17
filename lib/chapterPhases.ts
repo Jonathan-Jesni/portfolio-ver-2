@@ -1,5 +1,6 @@
 export const PROJECT_PHASES = {
   travelSvh: 245,
+  // keep in sync with --runway-featured-projects in app/evolution.css
   runwaySvh: 345,
   // Keep one hold per FEATURED_PROJECTS entry in lib/data.ts.
   holds: [

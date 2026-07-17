@@ -8,7 +8,7 @@
 
 :root {
   --runway-hero: 300svh;
-  --runway-featured-projects: 345svh;
+  --runway-featured-projects: 345svh; /* keep in sync with runwaySvh in lib/chapterPhases.ts */
   --runway-building: 320svh;
   --runway-skills: 310svh;
   --runway-about: 330svh;
@@ -82,7 +82,7 @@
   margin: 24px auto 0;
   perspective: 1100px;
   filter: drop-shadow(0 28px 38px rgba(0, 0, 0, 0.42));
-  animation: poster-laptop-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: poster-laptop-in 1.2s var(--ease-out-expo) both;
 }
 
 .hero-laptop-poster__lid {
@@ -763,7 +763,7 @@ html[data-motion-ready="failed"] .cs-slide {
   }
 }
 
-/* Mirrors TOUCH_OR_REDUCED_MEDIA_QUERY in lib/mediaQueries.ts. */
+/* Mirrors "(max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)" in lib/mediaQueries.ts. */
 /* Natural-flow story on touch/coarse pointer and reduced motion. */
 @media (max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .hero-runway,

@@ -4,6 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { refreshScrollTargets } from "../lib/scrollTarget";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 import {
   IMMERSIVE_SCROLL_MEDIA_QUERY,
   TOUCH_MEDIA_QUERY,
@@ -205,7 +206,7 @@ export default function SpatialSection({
             };
           } catch {
             exposeCompleteContent(content, completeTargets);
-            window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+            window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
           }
         });
 
@@ -256,7 +257,7 @@ export default function SpatialSection({
         );
       } catch {
         exposeCompleteContent(content, completeTargets);
-        window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+        window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
       }
 
       return () => mm.revert();

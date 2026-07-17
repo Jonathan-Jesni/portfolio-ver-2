@@ -8,6 +8,7 @@ import { RollingHeadline } from "./ui/RollingHeadline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "./ui/icons";
 import { burnControls } from "../lib/burnControls";
+import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 import {
   IMMERSIVE_SCROLL_MEDIA_QUERY,
   TOUCH_MEDIA_QUERY,
@@ -167,7 +168,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
           clearProps: "willChange",
         });
         setHeadlineReady(true);
-        window.dispatchEvent(new CustomEvent("portfolio:motion-failed"));
+        window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
       }
 
       return () => mm.revert();
