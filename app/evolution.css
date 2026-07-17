@@ -587,7 +587,10 @@ html[data-motion-ready="failed"] .cs-slide {
   }
 
   html[data-motion-ready="true"] .sp-runway.skills-spatial {
-    --skills-pit-height: clamp(320px, 50svh, 420px);
+    /* Main-parity pit size: full 420px whenever the 100svh sticky frame can
+       fit it after the ~340px of chrome above (sticky padding + header +
+       paragraph); only short viewports (~720p) shrink it. */
+    --skills-pit-height: clamp(320px, calc(100svh - 340px), 420px);
     height: var(--runway-skills);
   }
 
