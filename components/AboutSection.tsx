@@ -99,31 +99,21 @@ export default function AboutSection() {
       mm.add(TOUCH_MEDIA_QUERY, () => {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+        /* Words are immediately visible; terminal fades in once */
         if (textColRef.current) {
           const words = Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"));
           gsap.set(words, { color: "rgba(228, 222, 207, 1)" });
         }
         if (terminalRef.current) {
-          gsap.set(terminalRef.current, { opacity: 0, y: 12 });
-          const reveal = gsap.to(terminalRef.current, {
-            paused: true,
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            ease: "power3.out",
-          });
-          const trigger = ScrollTrigger.create({
+          gsap.set(terminalRef.current, { opacity: 0 });
+          ScrollTrigger.create({
             trigger: runway,
             start: "top 75%",
-            onEnter: () => reveal.play(),
-            onEnterBack: () => reveal.play(),
-            onLeaveBack: () => reveal.reverse(),
+            once: true,
+            onEnter: () => {
+              gsap.to(terminalRef.current, { opacity: 1, duration: 0.4, ease: "power1.out" });
+            },
           });
-          return () => {
-            trigger.kill();
-            reveal.kill();
-            gsap.set(terminalRef.current, { opacity: 1, y: 0 });
-          };
         }
       });
     } catch {

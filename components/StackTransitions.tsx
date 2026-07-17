@@ -4,10 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { burnControls } from "../lib/burnControls";
-import {
-  IMMERSIVE_SCROLL_MEDIA_QUERY,
-  TOUCH_OR_REDUCED_MEDIA_QUERY,
-} from "../lib/mediaQueries";
+import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "../lib/mediaQueries";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -393,84 +390,6 @@ export default function StackTransitions() {
             clearProps: "transform,clipPath,pointerEvents",
           });
         });
-      };
-    });
-
-    /* Touch/coarse-pointer story: DOM-only fades in natural document flow.
-       Building replaces the CRT cue; Contact cross-fades from About. */
-    mm.add(TOUCH_OR_REDUCED_MEDIA_QUERY, () => {
-      const reduced = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-      const building = sections[1];
-      const about = sections[3];
-      const contact = sections[4];
-      if (!building || !about || !contact) return;
-
-      const fadeTargets = [building, about, contact];
-      if (reduced) {
-        gsap.set(fadeTargets, { opacity: 1 });
-        return () => {
-          gsap.set(fadeTargets, { clearProps: "opacity" });
-        };
-      }
-
-      gsap.set([building, contact], { opacity: 0 });
-      gsap.set(about, { opacity: 1 });
-
-      const buildingFade = gsap
-        .timeline({ paused: true })
-        .to(building, {
-          opacity: 1,
-          duration: 0.45,
-          ease: "power2.out",
-        });
-      const contactFade = gsap
-        .timeline({ paused: true })
-        .to(
-          about,
-          {
-            opacity: 0,
-            duration: 0.45,
-            ease: "power2.out",
-          },
-          0,
-        )
-        .to(
-          contact,
-          {
-            opacity: 1,
-            duration: 0.45,
-            ease: "power2.out",
-          },
-          0,
-        );
-
-      const buildingTrigger = ScrollTrigger.create({
-        trigger: building,
-        start: "top 82%",
-        end: "top 18%",
-        onEnter: () => buildingFade.play(),
-        onLeave: () => buildingFade.progress(1).pause(),
-        onEnterBack: () => buildingFade.progress(1).pause(),
-        onLeaveBack: () => buildingFade.reverse(),
-      });
-      const contactTrigger = ScrollTrigger.create({
-        trigger: contact,
-        start: "top 82%",
-        end: "top 18%",
-        onEnter: () => contactFade.play(),
-        onLeave: () => contactFade.progress(1).pause(),
-        onEnterBack: () => contactFade.progress(1).pause(),
-        onLeaveBack: () => contactFade.reverse(),
-      });
-
-      return () => {
-        buildingTrigger.kill();
-        contactTrigger.kill();
-        buildingFade.kill();
-        contactFade.kill();
-        gsap.set(fadeTargets, { clearProps: "opacity" });
       };
     });
 

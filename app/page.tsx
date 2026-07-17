@@ -647,11 +647,7 @@ export default function Home() {
               >
                 <div className="ed-header-row sp-reveal">
                   <span className="ed-eyebrow">03 / Skills</span>
-                  <span className="ed-meta mono">
-                    {environment?.coarsePointer
-                      ? "static toolkit"
-                      : "drag to interact"}
-                  </span>
+                  <span className="ed-meta mono">drag to interact</span>
                 </div>
                 <h2 className="ed-heading ed-heading--md sp-reveal">
                   The <em>stack</em>
@@ -673,23 +669,7 @@ export default function Home() {
               </p>
 
               <div className="sp-reveal" data-chapter-body>
-                {environment === null ? null : environment.coarsePointer ? (
-                  <div
-                    className="gravity-pit gravity-pit--static"
-                    role="list"
-                    aria-label="Skills toolkit"
-                  >
-                    {SKILL_PILLS.map((label) => (
-                      <div
-                        key={label}
-                        className="gravity-pill gravity-pill--static"
-                        role="listitem"
-                      >
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
+                {environment === null ? null : (
                   <InViewMount minHeight={420}>
                     <GravityPit pills={SKILL_PILLS} />
                   </InViewMount>

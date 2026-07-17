@@ -22,7 +22,7 @@ interface ContactSectionProps {
 
 // Three reveal modes, selected by gsap.matchMedia:
 //   · Desktop full-motion — burn-driven static reveal (see branch below).
-//   · Mobile full-motion — a finite opacity/translate entrance.
+//   · Mobile full-motion — an atmospheric shroud-lift reveal.
 //   · Reduced motion — everything appears instantly.
 export default function ContactSection({ animate = true }: ContactSectionProps) {
   // Section container — the ScrollTrigger trigger root
@@ -77,74 +77,82 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
           return () => unsub();
         });
 
-      // Mobile: a lightweight, finite content fade. StackTransitions owns the
-      // single About → Contact section cross-fade at this boundary.
+      // Mobile: main's shroud-lift reveal — the atmospheric mask slides
+      // up off-screen as the section scrolls into view, physically
+      // uncovering the button grid beneath it. No pinning/burn on
+      // mobile, so this keeps the original lift entrance.
         mm.add(
           TOUCH_MEDIA_QUERY,
           () => {
             if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
               return;
             }
+
+            // Initial state: mask fully covers content, buttons are hidden
             gsap.set(mask, {
-              display: "none",
-              clearProps: "transform,willChange",
+              display: "block",
+              yPercent: 0,
+              clearProps: "willChange",
             });
-            gsap.set([buttons, ...links], {
-              opacity: 0,
-              y: 12,
-              filter: "blur(3px)",
-              willChange: "opacity,transform",
-            });
+            gsap.set(buttons, { opacity: 0, y: 30, clearProps: "filter" });
 
+            // Build the master timeline scrubbed by scroll
             const tl = gsap.timeline({
-              paused: true,
-              onComplete: () => {
-                gsap.set([buttons, ...links], { clearProps: "willChange" });
-              },
-              onReverseComplete: () => {
-                setHeadlineReady(false);
-                gsap.set([buttons, ...links], {
-                  willChange: "opacity,transform",
-                });
+              scrollTrigger: {
+                trigger: section,
+                start: "top bottom-=200px",
+                end: "bottom bottom",
+                scrub: 1,
               },
             });
 
+            // Phase 1 (progress 0 → 0.65): Atmospheric shroud lifts upward.
+            // yPercent: 0 → -100 moves the mask completely off-screen above,
+            // physically revealing the contact grid beneath it.
             tl.to(
-              [buttons, ...links],
+              mask,
+              {
+                yPercent: -100,
+                ease: "power2.inOut",
+                duration: 0.65,
+              },
+              0,
+            );
+
+            // Trigger the rolling headline when the sweep passes over the title
+            tl.call(
+              () => {
+                const isForward = tl.scrollTrigger ? tl.scrollTrigger.direction === 1 : true;
+                setHeadlineReady(isForward);
+              },
+              undefined,
+              0.4,
+            );
+
+            // Phase 2 (progress 0.45 → 1.0): Buttons float up and become
+            // visible, delayed so they start appearing after the mask has
+            // lifted halfway.
+            tl.to(
+              buttons,
               {
                 opacity: 1,
                 y: 0,
-                filter: "blur(0px)",
-                duration: 0.42,
-                stagger: 0.05,
                 ease: "power3.out",
+                duration: 0.55,
               },
-              0.08,
+              0.45,
             );
 
-            tl.call(() => setHeadlineReady(true), undefined, 0.12);
-
-            const trigger = ScrollTrigger.create({
-              trigger: section,
-              start: "top 82%",
-              end: "bottom 18%",
-              onEnter: () => tl.play(),
-              onLeave: () => tl.progress(1).pause(),
-              onEnterBack: () => tl.play(),
-              onLeaveBack: () => tl.reverse(),
-            });
-
             return () => {
-              trigger.kill();
+              tl.scrollTrigger?.kill();
               tl.kill();
               gsap.set(mask, {
                 display: "none",
                 clearProps: "transform,willChange",
               });
-              gsap.set([buttons, ...links], {
+              gsap.set(buttons, {
                 opacity: 1,
                 y: 0,
-                filter: "none",
                 clearProps: "willChange",
               });
             };
@@ -210,8 +218,7 @@ export default function ContactSection({ animate = true }: ContactSectionProps) 
             style={{
               // Ensure initial paint state matches GSAP set() — prevents flash
               opacity: 0,
-              transform: "translateY(12px)",
-              filter: "blur(3px)",
+              transform: "translateY(30px)",
               willChange: "opacity, transform",
             }}
           >

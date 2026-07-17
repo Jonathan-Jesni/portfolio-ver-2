@@ -76,10 +76,11 @@ export default function HeroSection({
     !environment.reducedMotion &&
     !stageFailed;
   const showPoster =
-    stageFailed ||
-    (environment !== undefined &&
-      environment !== null &&
-      (!renderLaptop || !webglAvailable));
+    !environment?.coarsePointer &&
+    (stageFailed ||
+      (environment !== undefined &&
+        environment !== null &&
+        (!renderLaptop || !webglAvailable)));
 
   useEffect(() => {
     if (environmentOverride) return;
