@@ -19,6 +19,8 @@ cinematic shader transitions and physics-based interactions.
   in the projects): corner brackets that snap to frame interactive targets with a scrambling
   `[ LABEL · 0.9X ]` confidence readout and a live pointer dot. Fine-pointer only, and disabled
   entirely under `prefers-reduced-motion`.
+- **Mobile-tuned experience** - phones get a terminal-style boot preloader and a name-split
+  scroll hero in place of the WebGL laptop, keeping the entrance cinematic without the GPU cost.
 - **Built to behave** - adaptive DPR, `prefers-reduced-motion` fallbacks, a WebGL-unsupported
   boundary, full SEO (Open Graph / Twitter cards, `robots`, `sitemap`, `theme-color`), and a
   keyboard-visible focus system.
@@ -48,6 +50,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run build` | Production build                     |
 | `npm run start` | Serve the production build           |
 | `npm run lint`  | Run ESLint                           |
+| `npm run test:e2e` | Run Playwright end-to-end tests   |
+| `npm run capture:header` | Regenerate the laptop-screen texture (`bg.jpg`) from the live Projects header — run after any recolor or header change |
+| `npm run images:downscale` | Downscale project images with sharp |
 
 ## Configuration
 
@@ -78,6 +83,8 @@ app/            App Router pages, layout, metadata, robots/sitemap, icons & OG i
 components/     UI + 3D components (InteractiveModel, StickyDeckSection, BurnTransition, …)
 lib/            Content & shared singletons (data.ts, lenisInstance.ts, burnControls.ts)
 public/assets/  GLB model, textures, project images
+scripts/        Asset tooling (header capture for the laptop screen, image downscaling)
+tests/e2e/      Playwright end-to-end tests
 ```
 
 ## Deploy on Vercel
