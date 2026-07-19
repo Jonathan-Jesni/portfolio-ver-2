@@ -26,7 +26,9 @@ export default defineConfig({
           "npm run build && npm run start -- --hostname 127.0.0.1 --port 3100",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        /* The command now includes a cold `next build` before `next start`;
+           120s was calibrated for start alone and a CI build can eat it all. */
+        timeout: 300_000,
       },
   projects: [
     {
@@ -36,6 +38,10 @@ export default defineConfig({
     {
       name: "desktop-1024",
       use: { viewport: { width: 1024, height: 768 } },
+    },
+    {
+      name: "desktop-960",
+      use: { viewport: { width: 960, height: 800 } },
     },
     {
       name: "desktop-wide-short-1536",

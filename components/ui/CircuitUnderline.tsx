@@ -44,6 +44,13 @@ export function CircuitUnderline({
   useGSAP(() => {
     if (!pathRef.current || pathLength === 0 || !animate) return;
 
+    /* Reduced motion: show the line fully drawn, no trace animation —
+       same contract TerminalHighlight honors. */
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(pathRef.current, { strokeDasharray: "none", strokeDashoffset: 0 });
+      return;
+    }
+
     gsap.fromTo(
       pathRef.current,
       { strokeDasharray: pathLength, strokeDashoffset: pathLength },

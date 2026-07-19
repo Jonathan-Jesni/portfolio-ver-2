@@ -3,6 +3,10 @@ import { expect, test, type Locator, type Page } from "playwright/test";
 const DESKTOP_PROJECTS = new Set([
   "desktop-1440",
   "desktop-1024",
+  /* The 768-1023px fine-pointer band runs the immersive scrub story
+     (canvas only >=900) — this band shipped broken once, so it stays
+     under test. */
+  "desktop-960",
   "desktop-wide-short-1536",
   "desktop-short-1150",
 ]);

@@ -1,8 +1,15 @@
 import { probeWebGLSupport } from "./detectGPU";
-import { IMMERSIVE_SCROLL_MEDIA_QUERY } from "./mediaQueries";
+import {
+  IMMERSIVE_SCROLL_MEDIA_QUERY,
+  STAGE_VIEWPORT_MEDIA_QUERY,
+} from "./mediaQueries";
 
 export interface MotionEnvironment {
   desktopScrub: boolean;
+  /* Wide enough for the WebGL laptop stage (>=900px). Separate from
+     desktopScrub: 768-899px runs the scrub story WITHOUT the canvas,
+     exactly like main's split floors. */
+  stageViewport: boolean;
   coarsePointer: boolean;
   reducedMotion: boolean;
   webglAvailable: boolean;
@@ -22,6 +29,7 @@ export function resolveMotionEnvironment(): MotionEnvironment {
   if (typeof window === "undefined") {
     return {
       desktopScrub: false,
+      stageViewport: false,
       coarsePointer: false,
       reducedMotion: false,
       webglAvailable: true,
@@ -37,6 +45,7 @@ export function resolveMotionEnvironment(): MotionEnvironment {
     // Product policy: mobile is DOM-only; this is not a WebGL capability result.
     return {
       desktopScrub: false,
+      stageViewport: false,
       coarsePointer: true,
       reducedMotion,
       webglAvailable: false,
@@ -47,6 +56,7 @@ export function resolveMotionEnvironment(): MotionEnvironment {
 
   return {
     desktopScrub: window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY).matches,
+    stageViewport: window.matchMedia(STAGE_VIEWPORT_MEDIA_QUERY).matches,
     coarsePointer,
     reducedMotion,
     webglAvailable: graphics.available,

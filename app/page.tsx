@@ -27,6 +27,7 @@ import { BUILDING } from "../lib/data";
 import { burnControls } from "../lib/burnControls";
 import { getLenis } from "../lib/lenisInstance";
 import {
+  resolveMotionEnvironment,
   subscribeMotionEnvironment,
   type MotionEnvironment,
 } from "../lib/motionEnvironment";
@@ -118,6 +119,9 @@ const FAILURE_CLEAR_TARGETS = [
   ".name-part-2",
   ".hero-tagline",
   ".hero-sub",
+  /* The coarse-pointer name-split scrub dims this container to 0.55;
+     fail-open must restore it or the hero CTAs stay dimmed forever. */
+  ".hero-sub-content",
   ".hero-buttons",
 ].join(",");
 
@@ -182,6 +186,31 @@ export default function Home() {
       root.style.removeProperty("--nav-clearance");
     };
   }, [failOpen]);
+
+  /* No-WebGL desktop: the immersive media query still matches, but the
+     laptop scrub — the only thing that reveals #projects at desktop
+     widths — can never mount. Fail open immediately so the natural-flow
+     contract (poster hero, everything visible) takes over instead of the
+     pinned runways activating around content nothing will ever reveal. */
+  useEffect(() => {
+    if (!environment || !environment.desktopScrub || environment.webglAvailable) {
+      return;
+    }
+    /* Confirm before failing open: a cold GPU process can make the very
+       first WebGL probe fail transiently (seen under e2e load), and
+       fail-open latches permanently. Re-probe after a beat and only
+       dispatch if WebGL is genuinely unavailable. Dispatch (rather than
+       call failOpen directly) so every component's own listener also
+       runs — StickyDeckSection's exposeStaticDeck is what clears
+       #projects' inline hidden state. */
+    const timer = window.setTimeout(() => {
+      const recheck = resolveMotionEnvironment();
+      if (recheck.desktopScrub && !recheck.webglAvailable) {
+        window.dispatchEvent(new Event(MOTION_FAILED_EVENT));
+      }
+    }, 1_200);
+    return () => window.clearTimeout(timer);
+  }, [environment]);
 
   useEffect(() => {
     const root = document.documentElement;

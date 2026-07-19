@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { LinkedInIcon } from "./ui/icons";
 import { TerminalHighlight } from "./ui/TerminalHighlight";
+import { CircuitUnderline } from "./ui/CircuitUnderline";
 import { HoverScrambleText } from "./ui/HoverScrambleText";
 import { getLenis } from "../lib/lenisInstance";
 import { getScrollTargetY, power4InOut, refreshScrollTargets } from "../lib/scrollTarget";
@@ -64,28 +65,43 @@ export default function HeroSection({
   const environment = environmentOverride ?? detectedEnvironment;
   const motionEnabled =
     motionOverride ?? environment?.desktopScrub ?? false;
+  /* Main played the opposing mask-reveal entrance (and its hidden
+     pre-state) on mobile too — coarse pointers join the desktop story
+     here, while narrow fine-pointer windows and the pre-detection
+     window (environment null) stay on the instant static reveal. */
+  const entranceEnabled =
+    motionEnabled || (environment?.coarsePointer ?? false);
   const webglAvailable = environment?.webglAvailable ?? true;
   const renderLaptop =
     motionEnabled &&
     webglAvailable &&
+    (environment?.stageViewport ?? false) &&
     !environment?.coarsePointer &&
     !environment?.reducedMotion;
   const mountVisualStage =
     environment != null &&
-    /* Only mount the WebGL stage where the laptop actually renders — without
-       this, 900-1023px fine-pointer windows paid for an empty GL context
-       while nothing ever revealed #projects (review finding). */
+    /* Two floors, mirroring main: the scrub story runs from 768px
+       (desktopScrub) but the WebGL stage only exists from 900px
+       (stageViewport). 768-899px runs pinned scrub with a text-only
+       hero — mounting a CSS-hidden canvas there would waste a GL
+       context and feed the preloader a gate that never resolves. */
     environment.desktopScrub &&
+    environment.stageViewport &&
     webglAvailable &&
     !environment.coarsePointer &&
     !environment.reducedMotion &&
     !stageFailed;
+  /* Poster only on NON-immersive fine-pointer tiers (reduced motion,
+     no WebGL, stage crash, sub-768 windows). Inside the immersive story
+     the hero is either the real laptop (>=900) or text-only (768-899),
+     exactly like main. */
   const showPoster =
-    !environment?.coarsePointer &&
+    environment != null &&
+    !environment.coarsePointer &&
     (stageFailed ||
-      (environment !== undefined &&
-        environment !== null &&
-        (!renderLaptop || !webglAvailable)));
+      !webglAvailable ||
+      environment.reducedMotion ||
+      !environment.desktopScrub);
 
   useEffect(() => {
     if (environmentOverride) return;
@@ -246,7 +262,7 @@ export default function HeroSection({
      so the entrance is a pure opposing mask-reveal. */
   useGSAP(() => {
     try {
-      if (!motionEnabled) {
+      if (!entranceEnabled) {
         const allChars = [
           ...topCharRefs.current,
           ...botCharRefs.current,
@@ -275,7 +291,7 @@ export default function HeroSection({
     }
   }, {
     scope: runwayRef,
-    dependencies: [motionEnabled],
+    dependencies: [entranceEnabled],
     revertOnUpdate: true,
   });
 
@@ -283,7 +299,7 @@ export default function HeroSection({
   useGSAP(() => {
     if (!animate) return;
 
-    if (!motionEnabled) return;
+    if (!entranceEnabled) return;
     let mm: ReturnType<typeof gsap.matchMedia> | null = null;
 
     try {
@@ -341,7 +357,7 @@ export default function HeroSection({
     return () => mm?.revert();
   }, {
     scope: runwayRef,
-    dependencies: [animate, motionEnabled],
+    dependencies: [animate, entranceEnabled],
     revertOnUpdate: true,
   });
 
@@ -376,12 +392,15 @@ export default function HeroSection({
 
   /*
    * useGSAP contexts revert in hook order when the immersive media query
-   * changes. This final layout effect runs after those contexts and resolves
+   * changes. This layout effect runs after those contexts and resolves
    * the complete static composition in the same frame, preventing an old
    * entrance or pointer transform from surviving a resize/orientation change.
+   * Gated on entranceEnabled (not motionEnabled): coarse pointers run the
+   * main-parity entrance + fly-apart, so forcing the static pose there
+   * would clobber the hidden pre-state and kill the entrance tweens.
    */
   useLayoutEffect(() => {
-    if (motionEnabled) return;
+    if (entranceEnabled) return;
 
     const chars = [
       ...topCharRefs.current,
@@ -394,7 +413,63 @@ export default function HeroSection({
     gsap.set(groups, { x: 0, y: 0, yPercent: 0 });
     gsap.set(".hero-name-mask", { overflow: "visible" });
     gsap.set(subContentRef.current, { opacity: 1, y: 0 });
-  }, [motionEnabled]);
+  }, [entranceEnabled]);
+
+  /* ── Mobile scroll-out parallax (coarse pointer only) ──
+     Desktop's scroll-out above never fires here (motionEnabled is false
+     for coarsePointer), so this recreates main's hero → Selected Work
+     transition on the mobile pinned runway: evolution.css re-enables the
+     300svh .hero-runway + sticky .hero-sticky for coarse pointers (gated
+     on data-motion-ready="true"), and this scrub is main's exact desktop
+     geometry — fly-apart completes across the pin's first 200svh
+     ("bottom bottom"), leaving the last 100svh for the spent hero to
+     release and Selected Work to scroll in.
+     No opacity:0 is set on the name here, so a failure mid-tween just
+     freezes the current (visible) transform.
+     DECLARED AFTER the static-reset layout effect on purpose: on a
+     fine→coarse environment flip both re-run in declaration order, and the
+     reset's killTweensOf targets these same refs — creating the scrub last
+     keeps its tweens alive (review finding). */
+  useGSAP(() => {
+    if (!environment?.coarsePointer) return;
+    let mm: ReturnType<typeof gsap.matchMedia> | null = null;
+
+    try {
+      mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        /* Main's fly-apart verbatim: the name accelerates apart
+           (power2.in) while the sub-content fades out over the first
+           fifth of the exit. */
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: runwayRef.current,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 2,
+          },
+        });
+
+        tl.to(topGroupRef.current, { y: "-120vh", ease: "power2.in" }, 0)
+          .to(bottomGroupRef.current, { y: "120vh", ease: "power2.in" }, 0)
+          .to(
+            subContentRef.current,
+            { opacity: 0, y: 28, ease: "none", duration: 0.2 },
+            0,
+          );
+      });
+    } catch {
+      mm?.revert();
+      gsap.set([topGroupRef.current, bottomGroupRef.current], { clearProps: "transform" });
+      gsap.set(subContentRef.current, { clearProps: "opacity" });
+      window.dispatchEvent(new CustomEvent(MOTION_FAILED_EVENT));
+    }
+
+    return () => mm?.revert();
+  }, {
+    scope: runwayRef,
+    dependencies: [environment?.coarsePointer, motionEnabled],
+    revertOnUpdate: true,
+  });
 
   return (
     <div ref={runwayRef} className={`hero-runway${motionEnabled ? "" : " hero-runway--static"}`} id="hero">
@@ -475,11 +550,11 @@ export default function HeroSection({
 
               <div ref={subContentRef} className="hero-sub-content">
                 <h2 className="hero-tagline">
-                  I engineer <TerminalHighlight delay={1.2} color="#C9A852" animate={animate && motionEnabled}>self-modifying models, computer vision pipelines, and multi-agent infrastructure</TerminalHighlight> from training through deployment.
+                  I engineer <TerminalHighlight delay={1.1} color="#C9A852" animate={animate}>self-modifying models</TerminalHighlight>, <TerminalHighlight delay={1.35} color="#C9A852" animate={animate}>computer vision pipelines</TerminalHighlight>, and <TerminalHighlight delay={1.6} color="#C9A852" animate={animate}>multi-agent infrastructure</TerminalHighlight> <em>from training through deployment</em>.
                 </h2>
 
                 <p className="hero-sub">
-                  Final-year CS at IIIT Pune, Class of 2027. Open to junior AI/ML roles and internships.
+                  Final-year CS at IIIT Pune, Class of 2027. Open to <CircuitUnderline delay={1.85} color="#C9A852" animate={animate}>junior AI/ML roles</CircuitUnderline> and <TerminalHighlight delay={2.1} color="#8FA8C4" animate={animate}>internships</TerminalHighlight>.
                 </p>
 
                 <div className="hero-buttons">

@@ -59,6 +59,39 @@ const BURN_DURATION_S = 1.5;
 const HERO_HANDOFF_AT = 0.4; // fire onComplete at 40% of the burn (curtain-midpoint parity)
 const READY_LINE = "> SYSTEM READY. [OK]";
 
+/* ── Mobile (coarse-pointer / non-desktopScrub) boot sequence ──
+   The WebGL stage never mounts on these paths, so there is no real asset
+   manifest to gate on — waiting for one is the known FAILSAFE_MS hang trap.
+   This sequence is purely time-based: a fixed set of lines typed out over
+   MOBILE_BOOT_MS, then a plain DOM fade (no shader burn, no canvas). */
+const MOBILE_BOOT_LINES = [
+  "> FETCHING: hardware_laptop.glb ... [OK]",
+  "> FETCHING: Mac Keyboard.jpg ... [OK]",
+  "> FETCHING: bg.jpg ... [OK]",
+  READY_LINE,
+];
+const MOBILE_BOOT_MS = 1700;   // synthetic progress ceiling (~1.6-2s to "100%")
+const MOBILE_BOOT_SETTLE_MS = 150; // let the READY line sit before the fade starts
+const MOBILE_FADE_S = 0.55;    // smooth overlay fade once boot completes
+
+const TERMINAL_TEXT_STYLE: React.CSSProperties = {
+  position: "absolute",
+  left: "24px",
+  bottom: "24px",
+  zIndex: 2,
+  display: "flex",
+  flexDirection: "column",
+  gap: "3px",
+  maxWidth: "min(80vw, 560px)",
+  fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+  fontSize: "12px",
+  lineHeight: 1.5,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "rgba(226, 226, 226, 0.7)",
+  whiteSpace: "nowrap",
+};
+
 /* ── Fullscreen-quad vertex shader: plane spans clip space directly ── */
 const VERTEX = /* glsl */ `
   varying vec2 vUv;
@@ -312,11 +345,22 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     environment.reducedMotion ||
     environment.coarsePointer ||
     /* Must mirror HeroSection's mountVisualStage: when the stage doesn't
-       mount (e.g. 900-1023px fine-pointer band), the full pipeline's asset
-       gate has nothing to wait on and would hang to FAILSAFE_MS. */
+       mount (sub-768 windows, or the 768-899 scrub-without-canvas band),
+       the full pipeline's asset gate has nothing to wait on and would
+       hang to FAILSAFE_MS. */
     !environment.desktopScrub ||
+    !environment.stageViewport ||
     !environment.webglAvailable ||
     loaderSnapshot.failed;
+  /* The tiers that take staticFallback purely because the WebGL stage
+     doesn't mount (touch devices, sub-768 windows, the 768-899
+     scrub-without-canvas band) — not because motion is unwanted or
+     something failed. These get a smooth terminal boot instead of the
+     quick flash below. */
+  const mobileTerminalBoot =
+    (!environment.desktopScrub || !environment.stageViewport) &&
+    !environment.reducedMotion &&
+    !loaderSnapshot.failed;
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const staticOverlayRef = useRef<HTMLDivElement>(null);
@@ -416,6 +460,35 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       return;
     }
 
+    /* ── Coarse pointer / non-desktopScrub: synthetic terminal boot ──
+       Purely time-based (setTimeout, not rAF or asset progress) so a
+       backgrounded tab or a stalled fetch can never stall this — the
+       whole sequence is bounded by MOBILE_BOOT_MS + MOBILE_FADE_S
+       regardless of what's actually happening on the network. */
+    if (mobileTerminalBoot) {
+      const stepMs = MOBILE_BOOT_MS / MOBILE_BOOT_LINES.length;
+      const timers = MOBILE_BOOT_LINES.map((line, i) =>
+        setTimeout(() => {
+          setLines((ls) => [...ls.slice(-39), line]);
+        }, stepMs * (i + 1)),
+      );
+
+      const bootTimer = setTimeout(() => {
+        gsap.to(overlay, {
+          opacity: 0,
+          duration: MOBILE_FADE_S,
+          ease: "power2.out",
+          onComplete: finish,
+        });
+      }, MOBILE_BOOT_MS + MOBILE_BOOT_SETTLE_MS);
+
+      return () => {
+        timers.forEach(clearTimeout);
+        clearTimeout(bootTimer);
+        gsap.killTweensOf(overlay);
+      };
+    }
+
     const fade = gsap.to(overlay, {
       opacity: 0,
       duration: 0.4,
@@ -425,7 +498,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     return () => {
       fade.kill();
     };
-  }, [environment.reducedMotion, isComplete, staticFallback]);
+  }, [environment.reducedMotion, isComplete, staticFallback, mobileTerminalBoot]);
 
   /* ── Honest manifest capture: CHAIN onto the global manager's
         onProgress (fired per itemEnd, i.e. per completed asset).
@@ -565,8 +638,21 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
           background:
             "radial-gradient(circle at 18% 82%, rgba(201,168,82,.12), transparent 42%), radial-gradient(circle at 72% 18%, rgba(143,168,196,.07), transparent 38%), #0D0B09",
           pointerEvents: "none",
+          overflow: "hidden",
         }}
-      />
+      >
+        {mobileTerminalBoot && (
+          <div ref={terminalRef} style={TERMINAL_TEXT_STYLE}>
+            {lines.slice(-12).map((line, i) => (
+              <span key={`${i}-${line}`} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {line}
+              </span>
+            ))}
+            <span style={{ animation: "preloader-caret 1s steps(2) infinite" }}>_</span>
+            <style>{`@keyframes preloader-caret { 50% { opacity: 0; } }`}</style>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -583,26 +669,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       }}
     >
       {/* ── DOM terminal manifest — bottom-left, plain mono, capped ── */}
-      <div
-        ref={terminalRef}
-        style={{
-          position: "absolute",
-          left: "24px",
-          bottom: "24px",
-          zIndex: 2,
-          display: "flex",
-          flexDirection: "column",
-          gap: "3px",
-          maxWidth: "min(80vw, 560px)",
-          fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
-          fontSize: "12px",
-          lineHeight: 1.5,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "rgba(226, 226, 226, 0.7)",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <div ref={terminalRef} style={TERMINAL_TEXT_STYLE}>
         {lines.slice(-12).map((line, i) => (
           <span key={`${i}-${line}`} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
             {line}
