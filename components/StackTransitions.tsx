@@ -21,9 +21,10 @@ if (typeof window !== "undefined") {
    StackTransitions — "String-Tune" boundary choreography
 
    Every element marked [data-stack] becomes a sheet in a deck.
-   At each generic boundary the outgoing section pins to the
-   viewport (pinSpacing: false, so the incoming section keeps
-   flowing and physically slides over it) while a scrub-tied
+   At each generic boundary the outgoing section is held by its own
+   internal CSS sticky (no GSAP pin — see the "Hold strategy" note
+   inside the loop) while the incoming sheet, pulled up by a CSS
+   overlap margin, physically slides over it and a scrub-tied
    timeline:
 
      · scales the outgoing sheet back and nudges it upward

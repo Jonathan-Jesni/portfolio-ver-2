@@ -50,9 +50,10 @@ export default function AboutSection() {
         ? Array.from(textColRef.current.querySelectorAll<HTMLElement>(".reveal-word"))
         : [];
 
-      // Word-by-word color scrub. end is an explicit +=150% (not
-      // "bottom bottom") so words finish in the first 150vh regardless
-      // of the runway's 350vh height (which exists for the burn tail).
+      // Word-by-word color scrub. end is an explicit +=80% of one
+      // viewport (not "bottom bottom") so words finish early in the
+      // runway regardless of its full height (which exists for the
+      // burn tail).
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: runway,

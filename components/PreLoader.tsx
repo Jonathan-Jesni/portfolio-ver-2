@@ -372,6 +372,9 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
   const readyInjectedRef = useRef(false);
   const burnStartedRef = useRef(false);
   const staticExitCompletedRef = useRef(false);
+  /* Guards the early (fade-start) onComplete handoff in the mobile boot
+     against double-firing when finish() runs at fade end. */
+  const staticHandoffFiredRef = useRef(false);
   const handoffCallRef = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
@@ -442,10 +445,15 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
     loaderControls.setActive(false);
     document.getElementById("preloader-mask")?.remove();
 
+    const fireHandoff = () => {
+      if (staticHandoffFiredRef.current) return;
+      staticHandoffFiredRef.current = true;
+      onCompleteRef.current();
+    };
     const finish = () => {
       if (staticExitCompletedRef.current) return;
       staticExitCompletedRef.current = true;
-      onCompleteRef.current();
+      fireHandoff();
       setIsComplete(true);
     };
 
@@ -466,6 +474,7 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
        whole sequence is bounded by MOBILE_BOOT_MS + MOBILE_FADE_S
        regardless of what's actually happening on the network. */
     if (mobileTerminalBoot) {
+      let fadeRaf = 0;
       const stepMs = MOBILE_BOOT_MS / MOBILE_BOOT_LINES.length;
       const timers = MOBILE_BOOT_LINES.map((line, i) =>
         setTimeout(() => {
@@ -474,17 +483,35 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
       );
 
       const bootTimer = setTimeout(() => {
-        gsap.to(overlay, {
-          opacity: 0,
-          duration: MOBILE_FADE_S,
-          ease: "power2.out",
-          onComplete: finish,
+        /* Hand off at fade START (desktop HERO_HANDOFF_AT parity), not
+           fade end: onComplete → preloaderDone → data-motion-ready="true"
+           must all land while the overlay still covers. motion-ready
+           releases the `transform: none !important` failsafe on the name
+           parts — if it flips after the overlay is gone, the settled name
+           is visible for a few frames, then snaps to the hidden entrance
+           pose (the mobile "Jonathan Jesni flash"). setIsComplete stays
+           at fade end: it unmounts the overlay (`isComplete` render gate),
+           which would kill the fade if fired here. */
+        fireHandoff();
+        /* page.tsx flips motion-ready inside its own rAF; hold the fade
+           back a frame past that so not even one partially-faded frame
+           can render before the name failsafe releases. */
+        fadeRaf = requestAnimationFrame(() => {
+          fadeRaf = requestAnimationFrame(() => {
+            gsap.to(overlay, {
+              opacity: 0,
+              duration: MOBILE_FADE_S,
+              ease: "power2.out",
+              onComplete: finish,
+            });
+          });
         });
       }, MOBILE_BOOT_MS + MOBILE_BOOT_SETTLE_MS);
 
       return () => {
         timers.forEach(clearTimeout);
         clearTimeout(bootTimer);
+        cancelAnimationFrame(fadeRaf);
         gsap.killTweensOf(overlay);
       };
     }

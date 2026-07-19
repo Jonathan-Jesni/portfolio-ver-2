@@ -237,13 +237,148 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   border-bottom: 1px solid var(--border-default);
 }
 
+/* Each row is a disclosure: a full-width button header (hover-expand on
+   fine pointers, tap-toggle on touch) over a grid-rows-animated panel
+   with the full description, every link, and an image strip. */
 .more-work-item {
+  border-top: 1px solid var(--border-default);
+}
+
+.more-work-row {
   display: grid;
-  grid-template-columns: 48px minmax(200px, 0.72fr) minmax(0, 1.45fr) minmax(112px, auto);
+  grid-template-columns: 48px minmax(200px, 0.72fr) minmax(0, 1.45fr) 24px;
   align-items: center;
   gap: 28px;
   min-height: 116px;
-  border-top: 1px solid var(--border-default);
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.more-work-title {
+  display: block;
+  min-width: 0;
+}
+
+.more-work-chevron {
+  justify-self: end;
+  color: var(--ink-3);
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  transition: transform 0.3s var(--ease-out-expo), color 0.3s var(--ease-out-expo);
+}
+
+.more-work-item.is-expanded .more-work-chevron {
+  transform: rotate(45deg);
+  color: var(--accent);
+}
+
+/* Collapse/expand via grid-rows so height animates without measuring.
+   visibility keeps the collapsed panel's links out of the tab order. */
+.more-work-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.38s var(--ease-out-expo),
+    opacity 0.3s var(--ease-out-expo),
+    visibility 0s linear 0.38s;
+}
+
+.more-work-item.is-expanded .more-work-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.38s var(--ease-out-expo),
+    opacity 0.3s var(--ease-out-expo) 0.06s,
+    visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-work-panel,
+  .more-work-item.is-expanded .more-work-panel,
+  .more-work-chevron {
+    transition: none;
+  }
+}
+
+.more-work-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Item-scoped to out-rank `.more-work-item p`'s italic serif */
+.more-work-item .more-work-desc {
+  max-width: 68ch;
+  margin: 4px 0 14px;
+  color: var(--ink-2);
+  font: 400 14px/1.65 var(--font-jakarta), sans-serif;
+}
+
+.more-work-item .more-work-tech {
+  margin: 0 0 18px;
+  color: var(--ink-3);
+  font: 500 11px/1.5 var(--font-jetbrains), monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.more-work-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-bottom: 22px;
+}
+
+.more-work-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 26px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Uniform tiles. Fixed width (not width:auto) is what keeps `sizes`
+   honest: the architecture diagrams run up to 7.2:1, so an auto width
+   rendered them ~1085px wide from a ~256px source. object-position
+   anchors left so a diagram shows its entry point, not a mid-slice. */
+.more-work-thumb {
+  flex: 0 0 auto;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+.more-work-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.more-work-strip img {
+  width: 340px;
+  height: 150px;
+  object-fit: cover;
+  object-position: left center;
+  border-radius: 10px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+  transition: border-color 0.25s var(--ease-out-expo);
+}
+
+.more-work-thumb:hover img {
+  border-color: var(--border-subtle);
 }
 
 .more-work-index {
@@ -765,7 +900,8 @@ html[data-motion-ready="failed"] .cs-slide {
   }
 }
 
-/* Mirrors "(max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)" in lib/mediaQueries.ts. */
+/* TOUCH_MEDIA_QUERY in lib/mediaQueries.ts ("(max-width: 767px), (hover: none),
+   (pointer: coarse)") plus reduced motion. Keep the width in sync. */
 /* Natural-flow story on touch/coarse pointer and reduced motion. */
 @media (max-width: 767px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .hero-runway,
@@ -846,6 +982,31 @@ html[data-motion-ready="failed"] .cs-slide {
   .more-work {
     padding-top: clamp(76px, 12vw, 112px);
   }
+
+  /* The Selected Work intro is a full-viewport page for the desktop
+     laptop-dissolve handoff; in natural flow that reads as a huge dead
+     gap between the title and the first card. Collapse it to normal
+     section rhythm and drop the floating scroll cue (it anchors to the
+     bottom of the tall header and would collide with the deck). */
+  .sd-header {
+    min-height: 0 !important;
+    padding-top: calc(var(--nav-clearance) + 24px);
+    padding-bottom: 8px;
+  }
+
+  .sd-header-cue {
+    display: none;
+  }
+
+  /* Contact ships with inline min-height:100vh for the desktop burn
+     tableau; in natural flow the short content floats in a full viewport,
+     leaving a dead zone before the footer. !important beats the
+     non-important inline style. Padding restores section rhythm now that
+     flex-centering has nothing to center within. */
+  .contact-section {
+    min-height: 0 !important;
+    padding-block: clamp(72px, 12svh, 104px);
+  }
 }
 
 /* ── Main-parity mobile hero: pinned 300svh runway ──
@@ -887,19 +1048,26 @@ html[data-motion-ready="failed"] .cs-slide {
     display: none;
   }
 
-  .more-work-item {
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+  .more-work-row {
+    grid-template-columns: 34px minmax(0, 1fr) 22px;
     gap: 12px 16px;
     padding-block: 24px;
+    min-height: 0;
   }
 
-  .more-work-item strong {
+  .more-work-row strong {
     grid-column: 2;
   }
 
-  .more-work-item a {
+  .more-work-chevron {
     grid-column: 3;
     grid-row: 1 / span 2;
+  }
+
+  /* Must track the 260px branch of the <Image> sizes attribute */
+  .more-work-strip img {
+    width: 260px;
+    height: 124px;
   }
 }
 
@@ -921,13 +1089,11 @@ html[data-motion-ready="failed"] .cs-slide {
     margin-top: 12px;
   }
 
-  .more-work-item {
-    grid-template-columns: 34px minmax(0, 1fr);
+  .more-work-row {
+    grid-template-columns: 30px minmax(0, 1fr) 22px;
   }
 
   .more-work-item a {
-    grid-column: 2;
-    grid-row: auto;
     justify-content: flex-start;
   }
 
@@ -950,4 +1116,55 @@ html[data-motion-ready="failed"] .cs-slide {
   .mobile-menu a {
     transition: none !important;
   }
+}
+
+/* ── Entrance reveals (IO-armed, fail-open) ──────────────────────────
+   StickyDeckSection stamps `data-io-armed` right before observing an
+   element and `data-io-in` when it enters the viewport. The hidden
+   state exists ONLY between those stamps — JS dead means neither is
+   ever set and everything renders visible. The !importants are needed
+   to out-rank the touch rescue block's `.cs-slide { opacity: 1
+   !important; transform: none !important }`; this block sits later in
+   the file and carries higher specificity, so it wins while armed and
+   yields the instant `data-io-in` lands. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-io-armed] {
+    transition:
+      opacity 0.65s var(--ease-out-expo),
+      transform 0.65s var(--ease-out-expo);
+  }
+
+  [data-io-armed]:not([data-io-in]) {
+    opacity: 0 !important;
+    transform: translate3d(0, 28px, 0) !important;
+  }
+
+  html[data-motion-ready="failed"] [data-io-armed],
+  html[data-motion-ready="failed"] [data-io-armed]:not([data-io-in]) {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── JS-dead fail-open ────────────────────────────────────────────────
+   Before hydration, `data-motion-ready` does not exist at all (page.tsx
+   stamps "false" in its first effect) — and with JS disabled it never
+   will. Two elements ship inline-hidden for the desktop scrub handoff
+   (#projects via opacity:0/pointer-events:none, .contact-links via
+   opacity:0/translateY) and at fine-pointer desktop widths ONLY JS ever
+   clears them: the touch/<=899px !important rescues don't match there,
+   and the base natural-flow rules lose to inline styles. Verified: a
+   no-JS 1440px render shows an invisible Projects chapter and invisible
+   contact buttons. Scope the CSS override to the attribute's ABSENCE so
+   it can never fight a live-JS mode; the pre-hydration window it also
+   covers sits behind the opaque server-rendered #preloader-mask. */
+html:not([data-motion-ready]) .sticky-deck-section {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+html:not([data-motion-ready]) .contact-links {
+  opacity: 1 !important;
+  transform: none !important;
 }

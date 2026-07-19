@@ -119,8 +119,8 @@ const FAILURE_CLEAR_TARGETS = [
   ".name-part-2",
   ".hero-tagline",
   ".hero-sub",
-  /* The coarse-pointer name-split scrub dims this container to 0.55;
-     fail-open must restore it or the hero CTAs stay dimmed forever. */
+  /* The coarse-pointer name-split scrub fades this container to 0 on
+     exit; fail-open must restore it or the hero CTAs stay hidden. */
   ".hero-sub-content",
   ".hero-buttons",
 ].join(",");

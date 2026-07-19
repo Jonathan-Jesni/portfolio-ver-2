@@ -78,17 +78,205 @@ interface LightboxState {
    would anchor to the transformed .stack-section, not the viewport.
    Pauses Lenis while open and restores focus to the trigger on close.
    ═══════════════════════════════════════════════════════════════════ */
+const MAX_ZOOM = 4;
+const DOUBLE_TAP_ZOOM = 2.5;
+
 function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & { onClose: () => void }) {
   const [i, setI] = useState(start);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const multi = images.length > 1;
 
-  const prev = useCallback(
-    () => setI((v) => (v - 1 + images.length) % images.length),
-    [images.length]
+  /* ── Zoom / pan ──────────────────────────────────────────────────
+     Wide architecture diagrams (up to 7.2:1) fit the 92vw box at only
+     ~50px tall on a phone — unreadable without magnification. Pointer
+     Events cover mouse drag and two-finger pinch with one code path,
+     so there's no library and no touch/mouse branch. */
+  const [zoom, setZoom] = useState({ scale: 1, x: 0, y: 0 });
+  const [animateZoom, setAnimateZoom] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const zoomed = zoom.scale > 1.001;
+  /* Mirrors `zoom` for the pointer handlers, which need the live value
+     without re-subscribing. Synced in an effect (never during render);
+     effects flush before any user event, so handlers never read stale. */
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  /* Live pointers, plus gesture bookkeeping that must not trigger
+     re-renders mid-drag. */
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const gestureRef = useRef<{ dist: number; scale: number; x: number; y: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const lastTapRef = useRef(0);
+  /* Chromium synthesizes a dblclick from a double-TAP as well as from a
+     mouse double-click, so the native handler and the tap detector below
+     would both fire on touch and cancel each other out. This records the
+     device that started the gesture so exactly one path ever runs. */
+  const lastPointerTypeRef = useRef<string>("mouse");
+
+  /* Keep the image overlapping the stage: at scale s the image can move
+     at most (s-1)/2 of its rendered size before an edge crosses centre. */
+  const clamp = useCallback((scale: number, x: number, y: number) => {
+    const rect = stageRef.current?.getBoundingClientRect();
+    if (!rect) return { x, y };
+    const maxX = Math.max(0, (rect.width * scale - rect.width) / 2);
+    const maxY = Math.max(0, (rect.height * scale - rect.height) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, x)),
+      y: Math.min(maxY, Math.max(-maxY, y)),
+    };
+  }, []);
+
+  const resetZoom = useCallback((animate = true) => {
+    setAnimateZoom(animate);
+    setZoom({ scale: 1, x: 0, y: 0 });
+  }, []);
+
+  const applyZoom = useCallback(
+    (nextScale: number, originX = 0, originY = 0) => {
+      const scale = Math.min(MAX_ZOOM, Math.max(1, nextScale));
+      if (scale <= 1.001) {
+        setZoom({ scale: 1, x: 0, y: 0 });
+        return;
+      }
+      setZoom(() => ({ scale, ...clamp(scale, originX, originY) }));
+    },
+    [clamp],
   );
-  const next = useCallback(() => setI((v) => (v + 1) % images.length), [images.length]);
+
+  /* Double click/tap toggles between fit and DOUBLE_TAP_ZOOM, anchored
+     on the pointer so you magnify what you aimed at. */
+  const toggleZoomAt = useCallback(
+    (clientX: number, clientY: number) => {
+      setAnimateZoom(true);
+      if (zoomRef.current.scale > 1.001) {
+        setZoom({ scale: 1, x: 0, y: 0 });
+        return;
+      }
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const dx = rect.left + rect.width / 2 - clientX;
+      const dy = rect.top + rect.height / 2 - clientY;
+      const scale = DOUBLE_TAP_ZOOM;
+      setZoom({ scale, ...clamp(scale, dx * (scale - 1), dy * (scale - 1)) });
+    },
+    [clamp],
+  );
+
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent) => {
+      const pointers = pointersRef.current;
+      lastPointerTypeRef.current = event.pointerType;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        gestureRef.current = {
+          dist: Math.hypot(b.x - a.x, b.y - a.y) || 1,
+          scale: zoomRef.current.scale,
+          x: zoomRef.current.x,
+          y: zoomRef.current.y,
+        };
+        panRef.current = null;
+        return;
+      }
+
+      if (pointers.size === 1) {
+        /* Touch only: mice get native onDoubleClick. Running both paths
+           for a mouse fires two toggles per double-click — zoom in, then
+           straight back out. */
+        if (event.pointerType !== "mouse") {
+          const now = Date.now();
+          if (now - lastTapRef.current < 300) {
+            lastTapRef.current = 0;
+            toggleZoomAt(event.clientX, event.clientY);
+            return;
+          }
+          lastTapRef.current = now;
+        }
+        if (zoomRef.current.scale > 1.001) {
+          setAnimateZoom(false);
+          setDragging(true);
+          panRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+            ox: zoomRef.current.x,
+            oy: zoomRef.current.y,
+          };
+          (event.target as Element).setPointerCapture?.(event.pointerId);
+        }
+      }
+    },
+    [toggleZoomAt],
+  );
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent) => {
+      const pointers = pointersRef.current;
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      const gesture = gestureRef.current;
+      if (pointers.size === 2 && gesture) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        setAnimateZoom(false);
+        applyZoom((dist / gesture.dist) * gesture.scale, gesture.x, gesture.y);
+        return;
+      }
+
+      const pan = panRef.current;
+      if (pan && pointers.size === 1) {
+        const scale = zoomRef.current.scale;
+        setZoom({
+          scale,
+          ...clamp(scale, pan.ox + (event.clientX - pan.x), pan.oy + (event.clientY - pan.y)),
+        });
+      }
+    },
+    [applyZoom, clamp],
+  );
+
+  const endPointer = useCallback((event: React.PointerEvent) => {
+    const pointers = pointersRef.current;
+    pointers.delete(event.pointerId);
+    if (pointers.size < 2) gestureRef.current = null;
+    if (pointers.size === 0) {
+      panRef.current = null;
+      setDragging(false);
+    }
+  }, []);
+
+  /* Ctrl/⌘ + wheel zoom. A native non-passive listener, NOT React's
+     onWheel: React ≥17 delegates wheel through a PASSIVE root listener,
+     so preventDefault() there is a no-op (console warning) and the
+     browser's own ctrl+wheel page-zoom fires alongside the image zoom. */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setAnimateZoom(false);
+      const next = zoomRef.current.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12);
+      applyZoom(next, zoomRef.current.x, zoomRef.current.y);
+    };
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, [applyZoom]);
+
+  /* Changing image always returns to fit — carrying a pan offset onto a
+     differently-shaped image would land you somewhere arbitrary. */
+  const prev = useCallback(() => {
+    resetZoom(false);
+    setI((v) => (v - 1 + images.length) % images.length);
+  }, [images.length, resetZoom]);
+  const next = useCallback(() => {
+    resetZoom(false);
+    setI((v) => (v + 1) % images.length);
+  }, [images.length, resetZoom]);
 
 
   useEffect(() => {
@@ -106,6 +294,11 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
+        /* Esc unwinds one level: zoomed → fit, then fit → closed. */
+        if (zoomRef.current.scale > 1.001) {
+          resetZoom();
+          return;
+        }
         onClose();
         return;
       }
@@ -128,7 +321,7 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
       lenis?.start();
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-  }, [multi, next, onClose, prev]);
+  }, [multi, next, onClose, prev, resetZoom]);
 
   if (typeof document === "undefined") return null;
 
@@ -140,7 +333,12 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
       aria-modal="true"
       aria-label={`${title} screenshots`}
       tabIndex={-1}
-      onClick={onClose}
+      /* While zoomed the backdrop must not dismiss: a pan that ends
+         outside the image would otherwise close the viewer. */
+      onClick={() => {
+        if (zoomRef.current.scale > 1.001) return;
+        onClose();
+      }}
     >
       <button
         ref={closeButtonRef}
@@ -154,7 +352,23 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
       >
         ✕
       </button>
-      <div className="cs-lightbox-stage" style={{ "--card-hue": hue } as React.CSSProperties} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={stageRef}
+        className={`cs-lightbox-stage${zoomed ? " is-zoomed" : ""}${dragging ? " is-dragging" : ""}`}
+        style={{ "--card-hue": hue } as React.CSSProperties}
+        onClick={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          /* Touch already zoomed via the tap detector in onPointerDown;
+             acting on the synthesized dblclick too would undo it. */
+          if (lastPointerTypeRef.current !== "mouse") return;
+          toggleZoomAt(e.clientX, e.clientY);
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
+      >
         {/* quality 95: these are technical result images (detection grids,
             curves) where visible compression artifacts would undercut them.
             width/height are nominal — .cs-lightbox-img CSS (auto + max
@@ -167,6 +381,11 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
           height={1500}
           quality={95}
           sizes="92vw"
+          draggable={false}
+          style={{
+            transform: `translate3d(${zoom.x}px, ${zoom.y}px, 0) scale(${zoom.scale})`,
+            transition: animateZoom ? "transform 0.28s var(--ease-out-expo)" : "none",
+          }}
         />
 
         {multi && (
@@ -186,7 +405,10 @@ function Lightbox({ images, alts, title, hue, start, onClose }: LightboxState & 
                 className={`cs-dot${d === i ? " is-active" : ""}`}
                 aria-label={`Image ${d + 1}`}
                 aria-current={d === i}
-                onClick={(e) => { e.stopPropagation(); setI(d); }}
+                /* Same contract as prev/next: changing image returns to
+                   fit — a pan offset carried onto a differently-shaped
+                   image lands somewhere arbitrary. */
+                onClick={(e) => { e.stopPropagation(); resetZoom(false); setI(d); }}
               />
             ))}
           </div>
@@ -499,6 +721,86 @@ export default function StickyDeckSection({
      reduced-motion, where slides stack in normal flow and all should be
      eager. */
   const [scrubActive, setScrubActive] = useState(false);
+  /* Which "Additional systems" row is expanded (one at a time). Hover
+     drives it on fine pointers, tap on touch. */
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  /* Lazy init, SSR-safe: hoverCapable only gates which event handlers are
+     attached (never serialized markup), so a server false → client true
+     divergence can't cause a hydration mismatch. */
+  const [hoverCapable] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches,
+  );
+
+  /* Expanding a row changes document height above sd-outro, whose bottom
+     edge anchors the boundary-0 CRT trigger (and everything below it on
+     the desktop pinned story). Re-measure once the ~350ms panel
+     transition has finished. Skipped on mount. */
+  const expandRefreshArmedRef = useRef(false);
+  useEffect(() => {
+    if (!expandRefreshArmedRef.current) {
+      expandRefreshArmedRef.current = true;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+      getLenis()?.resize();
+    }, 420);
+    return () => window.clearTimeout(timer);
+  }, [expandedId]);
+
+  /* ── Entrance reveals (fade + rise) ──────────────────────────────
+     IO-driven, fail-open: the hidden state only exists via the
+     `data-io-armed` attribute this effect stamps — JS dead means
+     nothing is ever hidden. The desktop scrub owns .cs-slide opacity
+     per-tick, so slides are only armed on the natural-flow tiers;
+     .more-work-item rows reveal on every tier (they sit below the
+     scrub region in normal flow everywhere). */
+  useEffect(() => {
+    const root = sectionRef.current;
+    if (!root || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const naturalFlow =
+      !scrubActive && !window.matchMedia(IMMERSIVE_SCROLL_MEDIA_QUERY).matches;
+    const targets: HTMLElement[] = [
+      ...root.querySelectorAll<HTMLElement>(".more-work-item"),
+      ...(naturalFlow
+        ? root.querySelectorAll<HTMLElement>(".cs-slide, .sd-header .ed-header")
+        : []),
+    ];
+    if (!targets.length) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        /* Entries landing in the same batch stagger off each other */
+        entries
+          .filter((entry) => entry.isIntersecting)
+          .forEach((entry, batchIndex) => {
+            const el = entry.target as HTMLElement;
+            el.style.transitionDelay = `${batchIndex * 90}ms`;
+            el.dataset.ioIn = "true";
+            io.unobserve(el);
+          });
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
+    );
+
+    targets.forEach((el) => {
+      el.dataset.ioArmed = "true";
+      io.observe(el);
+    });
+
+    return () => {
+      io.disconnect();
+      targets.forEach((el) => {
+        delete el.dataset.ioArmed;
+        delete el.dataset.ioIn;
+        el.style.removeProperty("transition-delay");
+      });
+    };
+  }, [scrubActive, sectionRef]);
 
   const suspendSnap = useCallback((fallbackMs: number) => {
     snapSuspendedRef.current = true;
@@ -874,20 +1176,118 @@ export default function StickyDeckSection({
           </header>
           <div className="more-work-list">
             {SECONDARY_PROJECTS.map((project, index) => {
-              const links = (project as { links?: readonly { label: string; href: string }[] }).links;
-              const link = links?.[0] ?? { label: "View source", href: project.github };
+              const links =
+                (project as { links?: readonly { label: string; href: string }[] }).links ??
+                [{ label: "View Source", href: project.github }];
+              const expanded = expandedId === project.id;
+              const panelId = `more-work-panel-${project.id}`;
               return (
-                <article className="more-work-item" key={project.id}>
-                  <span className="more-work-index mono">{pad(index + 4)}</span>
-                  <div>
-                    <h4>{project.title}</h4>
-                    <p>{project.subtitle}</p>
+                <article
+                  className={`more-work-item${expanded ? " is-expanded" : ""}`}
+                  key={project.id}
+                  /* Fine pointers expand on hover; touch relies on the
+                     row button's click toggle below. */
+                  onMouseEnter={hoverCapable ? () => setExpandedId(project.id) : undefined}
+                  onMouseLeave={
+                    hoverCapable
+                      ? () => {
+                          /* The lightbox portals over the whole viewport, so
+                             opening one fires mouseleave here and would
+                             collapse the row behind it — leaving nothing to
+                             return to on close. Freeze while it's open. */
+                          if (lightbox) return;
+                          setExpandedId((current) => (current === project.id ? null : current));
+                        }
+                      : undefined
+                  }
+                >
+                  <button
+                    type="button"
+                    className="more-work-row"
+                    aria-expanded={expanded}
+                    aria-controls={panelId}
+                    onClick={(event) => {
+                      /* On hover-capable devices hover already governs the
+                         row, so a mouse click would arrive with the panel
+                         ALREADY open and immediately collapse it. Ignore
+                         real clicks there and honour only keyboard
+                         activation (detail === 0), the same idiom the rail
+                         uses in jumpTo. Touch has no hover, so it toggles
+                         normally. */
+                      if (hoverCapable && event.detail !== 0) return;
+                      setExpandedId(expanded ? null : project.id);
+                    }}
+                  >
+                    <span className="more-work-index mono">{pad(index + 4)}</span>
+                    <span className="more-work-title">
+                      <h4>{project.title}</h4>
+                      <p>{project.subtitle}</p>
+                    </span>
+                    <strong>{project.metric}</strong>
+                    <span className="more-work-chevron" aria-hidden="true">+</span>
+                  </button>
+
+                  <div id={panelId} className="more-work-panel">
+                    <div className="more-work-panel-inner">
+                      <p className="more-work-desc">{project.description}</p>
+                      <p className="more-work-tech mono">{project.tech}</p>
+                      <div className="more-work-links">
+                        {links.map((link) => (
+                          <a
+                            key={link.href}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <span>{link.label}</span>
+                            <ArrowUpRightIcon />
+                          </a>
+                        ))}
+                      </div>
+                      <div className="more-work-strip">
+                        {project.images.map((src, imageIndex) => {
+                          const alt = project.imageAlts?.[imageIndex] ?? project.title;
+                          return (
+                            <button
+                              key={src}
+                              type="button"
+                              className="more-work-thumb"
+                              aria-label={`View ${alt} enlarged`}
+                              onClick={(event) => {
+                                /* The row header owns expand/collapse — keep the
+                                   click from bubbling or the disclosure closes
+                                   underneath the lightbox. */
+                                event.stopPropagation();
+                                setLightbox({
+                                  images: [...(project.images as readonly string[])],
+                                  alts: [...((project.imageAlts ?? []) as readonly string[])],
+                                  title: project.title,
+                                  hue: hueOf(project.id),
+                                  start: imageIndex,
+                                });
+                              }}
+                            >
+                              {/* sizes matches the fixed tile width exactly —
+                                  the previous 240px against a width:auto tile
+                                  made 7.2:1 diagrams render ~1085px from a
+                                  ~256px source (the blur). */}
+                              <Image
+                                src={src}
+                                alt={alt}
+                                width={680}
+                                height={300}
+                                quality={95}
+                                loading="lazy"
+                                /* breakpoint mirrors the 900px tile override
+                                   in evolution.css — keep them in sync */
+                                sizes="(max-width: 900px) 260px, 340px"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  <strong>{project.metric}</strong>
-                  <a href={link.href} target="_blank" rel="noopener noreferrer">
-                    <span>{link.label}</span>
-                    <ArrowUpRightIcon />
-                  </a>
                 </article>
               );
             })}

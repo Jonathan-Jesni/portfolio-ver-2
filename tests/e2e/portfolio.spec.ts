@@ -63,7 +63,8 @@ async function expectExposed(locator: Locator) {
   await expect(locator).toBeAttached();
   await locator.scrollIntoViewIfNeeded();
   await expect(locator).toBeVisible();
-  const presentation = await locator.evaluate((element) => {
+
+  const read = () => locator.evaluate((element) => {
     const style = getComputedStyle(element);
     return {
       opacity: Number.parseFloat(style.opacity || "1"),
@@ -72,9 +73,21 @@ async function expectExposed(locator: Locator) {
     };
   });
 
+  /* Poll rather than sample once: scroll-triggered entrance reveals
+     (the IO fade/rise on .cs-slide and .more-work-item) start at
+     opacity 0 and settle over ~0.65s, so an immediate read races the
+     transition. The guarantee under test is that content ENDS UP fully
+     exposed — a element that stays hidden still fails here. */
+  await expect
+    .poll(async () => (await read()).opacity, {
+      message: "Element never reached full opacity",
+      timeout: 5_000,
+    })
+    .toBeGreaterThan(0.9);
+
+  const presentation = await read();
   expect(presentation.display).not.toBe("none");
   expect(presentation.visibility).not.toBe("hidden");
-  expect(presentation.opacity).toBeGreaterThan(0.9);
 }
 
 test("a hard load renders one visual stage and hands off to the cinematic hero", async ({ page }, testInfo) => {
