@@ -487,6 +487,17 @@ export default function Home() {
 
   return (
     <>
+      {/* Server-rendered preloader mask — present in the raw HTML from the
+          first byte so it covers the hero BEFORE any JS runs (PreLoader is
+          dynamic/ssr:false and mounts only after hydration). PreLoader removes
+          it once its own overlay has painted, so there's never a hero flash.
+          Lives here (not the root layout) so non-home routes are never
+          covered by it. */}
+      <div
+        id="preloader-mask"
+        aria-hidden="true"
+        style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0D0B09" }}
+      />
       <PreLoader onComplete={() => setPreloaderDone(true)} />
       <a className="skip-link" href="#main-content">
         Skip to main content
