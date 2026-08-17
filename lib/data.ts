@@ -182,12 +182,12 @@ export const BUILDING = [
   },
   {
     id: "building-roboflow",
-    status: "In Progress",
-    title: "Open Source Contributions (Roboflow)",
+    status: "Contributing",
+    title: "Open Source — Roboflow RF-DETR",
     description:
-      "Working toward first contributions to Roboflow's supervision, an open-source computer vision library. Focus on reusable CV utilities and annotation tooling.",
-    tags: ["Python", "Computer Vision", "Open Source"],
-    steps: ["EXPLORE", "IMPLEMENT", "TEST", "PR", "MERGE"],
+      "Contributing to RF-DETR, Roboflow's real-time detection transformer. First patch merged and shipped in v1.9.2 — strict-typing the save_grids module boundary, credited by name in the release notes. Now working through further type-safety issues in the repo.",
+    tags: ["Python", "Type Safety", "Open Source"],
+    steps: ["ISSUE", "PATCH", "REVIEW", "MERGE", "RELEASE"],
   },
 ] as const;
 
