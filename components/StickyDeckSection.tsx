@@ -733,22 +733,14 @@ export default function StickyDeckSection({
       window.matchMedia("(hover: hover) and (pointer: fine)").matches,
   );
 
-  /* Expanding a row changes document height above sd-outro, whose bottom
-     edge anchors the boundary-0 CRT trigger (and everything below it on
-     the desktop pinned story). Re-measure once the ~350ms panel
-     transition has finished. Skipped on mount. */
-  const expandRefreshArmedRef = useRef(false);
-  useEffect(() => {
-    if (!expandRefreshArmedRef.current) {
-      expandRefreshArmedRef.current = true;
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      ScrollTrigger.refresh();
-      getLenis()?.resize();
-    }, 420);
-    return () => window.clearTimeout(timer);
-  }, [expandedId]);
+  /* NB: expanding a row used to change document height, which moved
+     .sd-outro — and with it the boundary-0 CRT trigger — while scrollY
+     stayed put, so a deferred ScrollTrigger.refresh() lived here to
+     re-measure. On fine pointers the panel is now a flyout (absolute,
+     out of flow; see evolution.css "Fine-pointer flyout"), so document
+     height is constant and there is nothing to re-measure. On touch the
+     accordion is still in flow, but no ScrollTrigger boundary exists on
+     that tier at all — StackTransitions is desktop-only. */
 
   /* ── Entrance reveals (fade + rise) ──────────────────────────────
      IO-driven, fail-open: the hidden state only exists via the
