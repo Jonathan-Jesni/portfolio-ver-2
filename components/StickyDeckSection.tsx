@@ -18,6 +18,20 @@ import { MOTION_FAILED_EVENT } from "../lib/motionEvents";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
+/* ─── "Additional systems" hover intent ────────────────────────────
+   Dwell before opening, a longer grace before closing. Asymmetric on
+   purpose: the panel is a wide target the pointer travels INTO (the
+   image strip sits well below the row), so a hair-trigger close makes
+   it unreachable, while a hair-trigger open is what made the rows fire
+   by accident in the first place. */
+const HOVER_OPEN_MS = 160;
+const HOVER_CLOSE_MS = 250;
+/* How long after the last scroll event a row may open. Lenis carries
+   momentum ~1s past the last wheel tick, and `scroll` fires for every
+   frame of it, so this is measured from the end of the glide — not
+   from the user's last input. */
+const SCROLL_IDLE_MS = 140;
+
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
   "neuro-genesis":  "188, 45%, 52%",  /* cyan  (01) */
@@ -742,6 +756,156 @@ export default function StickyDeckSection({
      accordion is still in flow, but no ScrollTrigger boundary exists on
      that tier at all — StackTransitions is desktop-only. */
 
+  /* ── Hover intent ──────────────────────────────────────────────────
+     A bare onMouseEnter opened rows by accident, because it cannot tell
+     "the user moved the pointer onto a row" from "the page moved a row
+     under a stationary pointer". Both happen constantly here: Lenis
+     glides ~1s past the last wheel tick, and the IO entrance reveal
+     slides each row up 28px under the cursor.
+
+     Three gates, all required before the dwell timer is even armed:
+       · the pointer must have physically MOVED — tracked by comparing
+         client coordinates, because Chrome re-dispatches a move with
+         IDENTICAL coordinates after a scroll purely to recompute the
+         hover target, and a timestamp alone would accept it;
+       · that move must be newer than the last scroll event;
+       · the scroll must have been idle for SCROLL_IDLE_MS.
+     Only then does HOVER_OPEN_MS of dwell commit the open. */
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const pinnedIdRef = useRef<string | null>(null);
+  const expandedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    pinnedIdRef.current = pinnedId;
+  }, [pinnedId]);
+  useEffect(() => {
+    expandedIdRef.current = expandedId;
+  }, [expandedId]);
+
+  const pointerRef = useRef({ x: -1, y: -1, movedAt: 0 });
+  const lastScrollRef = useRef(0);
+  const openTimerRef = useRef<number | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const openTargetRef = useRef<string | null>(null);
+
+  const cancelOpen = useCallback(() => {
+    if (openTimerRef.current !== null) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+    openTargetRef.current = null;
+  }, []);
+
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  /* Arm the dwell timer for `id` if every intent gate passes. */
+  const armOpen = useCallback(
+    (id: string) => {
+      if (!hoverCapable) return;
+      if (expandedIdRef.current === id || openTargetRef.current === id) return;
+      const now = performance.now();
+      /* Page motion, not pointer motion. */
+      if (pointerRef.current.movedAt <= lastScrollRef.current) return;
+      if (now - lastScrollRef.current < SCROLL_IDLE_MS) return;
+      cancelOpen();
+      openTargetRef.current = id;
+      openTimerRef.current = window.setTimeout(() => {
+        openTimerRef.current = null;
+        openTargetRef.current = null;
+        setExpandedId(id);
+        /* Moving to a different row releases a previous pin — the pin
+           resists mouseleave, it does not lock other rows out. */
+        setPinnedId((current) => (current === id ? current : null));
+      }, HOVER_OPEN_MS);
+    },
+    [hoverCapable, cancelOpen],
+  );
+
+  useEffect(() => {
+    if (!hoverCapable) return;
+
+    const onPointerMove = (event: PointerEvent) => {
+      const p = pointerRef.current;
+      /* Scroll-synthesized moves carry the previous coordinates. */
+      if (event.clientX === p.x && event.clientY === p.y) return;
+      p.x = event.clientX;
+      p.y = event.clientY;
+      p.movedAt = performance.now();
+
+      /* Recovery path: if a glide ends with the cursor already resting
+         inside a row, no fresh mouseenter will ever fire — the pointer
+         never crossed a boundary. Re-arm from the move itself so a
+         deliberate nudge still opens the row under the cursor. */
+      const row = (event.target as Element | null)?.closest?.(".more-work-item");
+      const id = row instanceof HTMLElement ? row.dataset.rowId : undefined;
+      if (id) armOpen(id);
+    };
+
+    /* Lenis performs real scrolls, so the native event covers smooth
+       scrolling too. Listening on window rather than through
+       getLenis() also sidesteps effect-ordering: SmoothScroll may not
+       have published the instance yet when this mounts. */
+    const onScroll = () => {
+      lastScrollRef.current = performance.now();
+      cancelOpen();
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [hoverCapable, armOpen, cancelOpen]);
+
+  /* Timers must not outlive the component. */
+  useEffect(
+    () => () => {
+      if (openTimerRef.current !== null) window.clearTimeout(openTimerRef.current);
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
+    },
+    [],
+  );
+
+  const scheduleClose = useCallback(
+    (id: string) => {
+      if (!hoverCapable) return;
+      if (pinnedIdRef.current === id) return; /* pinned rows ignore leave */
+      cancelOpen();
+      cancelClose();
+      closeTimerRef.current = window.setTimeout(() => {
+        closeTimerRef.current = null;
+        setExpandedId((current) => (current === id ? null : current));
+      }, HOVER_CLOSE_MS);
+    },
+    [hoverCapable, cancelOpen, cancelClose],
+  );
+
+  /* Click is the deliberate path: hover previews, click commits. Without
+     it the only way to hold a row open was to keep the mouse perfectly
+     still, which is what made reaching the image strip feel like a
+     tightrope. */
+  const togglePin = useCallback(
+    (id: string, viaKeyboard: boolean) => {
+      cancelOpen();
+      cancelClose();
+      if (pinnedIdRef.current === id) {
+        setPinnedId(null);
+        /* A mouse click leaves the cursor on the row, so hover should
+           keep previewing it; keyboard has no cursor, so collapse. */
+        if (viaKeyboard) setExpandedId(null);
+        return;
+      }
+      setPinnedId(id);
+      setExpandedId(id);
+    },
+    [cancelOpen, cancelClose],
+  );
+
   /* ── Entrance reveals (fade + rise) ──────────────────────────────
      IO-driven, fail-open: the hidden state only exists via the
      `data-io-armed` attribute this effect stamps — JS dead means
@@ -1177,18 +1341,26 @@ export default function StickyDeckSection({
                 <article
                   className={`more-work-item${expanded ? " is-expanded" : ""}`}
                   key={project.id}
-                  /* Fine pointers expand on hover; touch relies on the
+                  /* Read back by the pointermove recovery path above. */
+                  data-row-id={project.id}
+                  /* Fine pointers expand on hover — but only once the
+                     intent gates in armOpen pass; touch relies on the
                      row button's click toggle below. */
-                  onMouseEnter={hoverCapable ? () => setExpandedId(project.id) : undefined}
+                  onMouseEnter={hoverCapable ? () => {
+                    cancelClose();
+                    armOpen(project.id);
+                  } : undefined}
                   onMouseLeave={
                     hoverCapable
                       ? () => {
                           /* The lightbox portals over the whole viewport, so
                              opening one fires mouseleave here and would
                              collapse the row behind it — leaving nothing to
-                             return to on close. Freeze while it's open. */
+                             return to on close. Freeze while it's open.
+                             (Opening one also pins the row, so this is now
+                             belt-and-braces rather than the only guard.) */
                           if (lightbox) return;
-                          setExpandedId((current) => (current === project.id ? null : current));
+                          scheduleClose(project.id);
                         }
                       : undefined
                   }
@@ -1199,15 +1371,17 @@ export default function StickyDeckSection({
                     aria-expanded={expanded}
                     aria-controls={panelId}
                     onClick={(event) => {
-                      /* On hover-capable devices hover already governs the
-                         row, so a mouse click would arrive with the panel
-                         ALREADY open and immediately collapse it. Ignore
-                         real clicks there and honour only keyboard
-                         activation (detail === 0), the same idiom the rail
-                         uses in jumpTo. Touch has no hover, so it toggles
-                         normally. */
-                      if (hoverCapable && event.detail !== 0) return;
-                      setExpandedId(expanded ? null : project.id);
+                      /* Touch has no hover, so it plainly toggles. On
+                         hover-capable devices a click PINS the row open
+                         (and clicking again releases it) rather than being
+                         discarded — see togglePin. `detail === 0` is the
+                         keyboard-activation idiom the rail also uses in
+                         jumpTo. */
+                      if (!hoverCapable) {
+                        setExpandedId(expanded ? null : project.id);
+                        return;
+                      }
+                      togglePin(project.id, event.detail === 0);
                     }}
                   >
                     <span className="more-work-index mono">{pad(index + 4)}</span>
@@ -1248,8 +1422,10 @@ export default function StickyDeckSection({
                               onClick={(event) => {
                                 /* The row header owns expand/collapse — keep the
                                    click from bubbling or the disclosure closes
-                                   underneath the lightbox. */
+                                   underneath the lightbox. Pin the row too, so
+                                   it is still open to return to on close. */
                                 event.stopPropagation();
+                                if (hoverCapable) setPinnedId(project.id);
                                 setLightbox({
                                   images: [...(project.images as readonly string[])],
                                   alts: [...((project.imageAlts ?? []) as readonly string[])],
