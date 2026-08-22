@@ -287,16 +287,22 @@ html[data-burn-active="true"] .hero-3d-layer::before {
 }
 
 /* Collapse/expand via grid-rows so height animates without measuring.
-   visibility keeps the collapsed panel's links out of the tab order. */
+   visibility keeps the collapsed panel's links out of the tab order.
+
+   --ease-drawer, not --ease-out-expo: expo covers ~60% of its travel in
+   the first 15% of the duration, which is right for a 4-20px hover lift
+   and a snap on ~390px of panel. This is the curve built for drawer
+   travel. Touch still animates real height here, so it keeps the longer
+   duration; the fine-pointer flyout below has no height to travel. */
 .more-work-panel {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   visibility: hidden;
   transition:
-    grid-template-rows 0.38s var(--ease-out-expo),
-    opacity 0.3s var(--ease-out-expo),
-    visibility 0s linear 0.38s;
+    grid-template-rows 0.42s var(--ease-drawer),
+    opacity 0.3s var(--ease-drawer),
+    visibility 0s linear 0.42s;
 }
 
 .more-work-item.is-expanded .more-work-panel {
@@ -304,17 +310,9 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   opacity: 1;
   visibility: visible;
   transition:
-    grid-template-rows 0.38s var(--ease-out-expo),
-    opacity 0.3s var(--ease-out-expo) 0.06s,
+    grid-template-rows 0.42s var(--ease-drawer),
+    opacity 0.3s var(--ease-drawer) 0.06s,
     visibility 0s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .more-work-panel,
-  .more-work-item.is-expanded .more-work-panel,
-  .more-work-chevron {
-    transition: none;
-  }
 }
 
 .more-work-panel-inner {
@@ -358,18 +356,22 @@ html[data-burn-active="true"] .hero-3d-layer::before {
     box-shadow: 0 26px 52px -20px rgba(0, 0, 0, 0.78);
     transform: translate3d(0, -10px, 0);
     pointer-events: none;
+    /* Out of flow, so its subtree can no longer dirty the rest of the
+       page — say so and let the engine skip it entirely while closed. */
+    contain: layout paint;
     transition:
-      opacity 0.3s var(--ease-out-expo),
-      transform 0.3s var(--ease-out-expo),
-      visibility 0s linear 0.3s;
+      opacity 0.22s var(--ease-drawer),
+      transform 0.22s var(--ease-drawer),
+      visibility 0s linear 0.22s;
   }
 
   .more-work-item.is-expanded .more-work-panel {
     transform: none;
     pointer-events: auto;
+    will-change: opacity, transform;
     transition:
-      opacity 0.3s var(--ease-out-expo),
-      transform 0.3s var(--ease-out-expo),
+      opacity 0.32s var(--ease-drawer),
+      transform 0.32s var(--ease-drawer),
       visibility 0s;
   }
 
@@ -377,6 +379,62 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   .more-work-panel-inner {
     overflow: visible;
     padding-top: 6px;
+  }
+
+  /* Interior stagger. Everything used to arrive on one frame, which is
+     what made the panel land as a slab rather than open. Copy leads,
+     the image strip trails. Collapse is deliberately un-staggered — on
+     the way out the whole panel should leave at once. */
+  .more-work-panel-inner > * {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    transition:
+      opacity 0.2s var(--ease-drawer),
+      transform 0.2s var(--ease-drawer);
+  }
+
+  .more-work-item.is-expanded .more-work-panel-inner > * {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.24s var(--ease-drawer),
+      transform 0.24s var(--ease-drawer);
+  }
+
+  .more-work-item.is-expanded .more-work-desc {
+    transition-delay: 0.06s;
+  }
+
+  .more-work-item.is-expanded .more-work-tech {
+    transition-delay: 0.085s;
+  }
+
+  .more-work-item.is-expanded .more-work-links {
+    transition-delay: 0.11s;
+  }
+
+  .more-work-item.is-expanded .more-work-strip {
+    transition-delay: 0.14s;
+  }
+}
+
+/* Deliberately placed AFTER both the base accordion and the flyout so it
+   out-ranks either on source order alone — no !important needed. The
+   staggered children matter as much as the panel: a transition-delay
+   left standing would hold them hidden after the panel had opened. */
+@media (prefers-reduced-motion: reduce) {
+  .more-work-panel,
+  .more-work-item.is-expanded .more-work-panel,
+  .more-work-panel-inner > *,
+  .more-work-item.is-expanded .more-work-panel-inner > *,
+  .more-work-chevron {
+    transition: none;
+    transition-delay: 0s;
+  }
+
+  .more-work-panel-inner > * {
+    opacity: 1;
+    transform: none;
   }
 }
 
