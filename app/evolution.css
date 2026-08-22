@@ -237,9 +237,10 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   border-bottom: 1px solid var(--border-default);
 }
 
-/* Each row is a disclosure: a full-width button header (hover-expand on
-   fine pointers, tap-toggle on touch) over a grid-rows-animated panel
-   with the full description, every link, and an image strip. */
+/* Each row is a click-toggled disclosure: a full-width button header
+   over a panel with the full description, every link, and an image
+   strip. Click, not hover — the panel is reference content, and hover
+   made the rows fire by accident while scrolling. */
 .more-work-item {
   position: relative;
   border-top: 1px solid var(--border-default);
@@ -279,6 +280,14 @@ html[data-burn-active="true"] .hero-3d-layer::before {
   font-weight: 300;
   line-height: 1;
   transition: transform 0.3s var(--ease-out-expo), color 0.3s var(--ease-out-expo);
+}
+
+/* Now that click is the ONLY way in, the row has to advertise itself.
+   The chevron lighting up on hover is the whole affordance — without it
+   a first-time user has no signal that the row does anything. */
+.more-work-row:hover .more-work-chevron,
+.more-work-row:focus-visible .more-work-chevron {
+  color: var(--accent);
 }
 
 .more-work-item.is-expanded .more-work-chevron {
@@ -331,7 +340,14 @@ html[data-burn-active="true"] .hero-3d-layer::before {
    so no trigger can go stale and no refresh is needed at all.
 
    Touch keeps the in-flow accordion above: an overlay taller than a
-   phone viewport would be strictly worse there. */
+   phone viewport would be strictly worse there.
+
+   A floating layer has to LOOK like one. The first pass gave the panel
+   background: var(--surface-0) — byte-identical to the page behind it —
+   and a pure-black shadow that is invisible on a #0D0B09 ground, so it
+   read as loose text in a void rather than a panel. On a dark UI
+   elevation comes from lightening the raised surface, not from casting
+   a darker shadow. */
 @media (hover: hover) and (pointer: fine) {
   /* Runway so the LAST row's panel clears the outro CTA rather than
      covering it. Sized for the tallest panel (394px) plus breathing
@@ -340,20 +356,32 @@ html[data-burn-active="true"] .hero-3d-layer::before {
      the CRT window length and its relationship to Building are
      unchanged. */
   .more-work {
-    padding-bottom: 156px;
+    padding-bottom: 176px;
   }
 
   .more-work-panel {
     position: absolute;
     top: 100%;
-    left: 0;
-    right: 0;
+    /* Overhang the row by exactly the inner padding, so the card gets
+       breathing room while its CONTENT stays flush with the row's left
+       edge (the index column). Stays inside .container's own padding. */
+    left: -20px;
+    right: -20px;
     z-index: 4;
     /* display:block retires the grid-rows mechanism above */
     display: block;
-    background: var(--surface-0);
-    border-bottom: 1px solid var(--border-default);
-    box-shadow: 0 26px 52px -20px rgba(0, 0, 0, 0.78);
+    /* Raised surface + hairline, so the edge is readable against the
+       page even before the shadow registers. */
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-top-color: transparent;
+    border-radius: 0 0 14px 14px;
+    /* Warm-tinted rather than pure black — a black shadow on a
+       near-black ground renders as nothing. */
+    box-shadow:
+      0 1px 0 rgba(255, 246, 232, 0.05) inset,
+      0 30px 60px -24px rgba(0, 0, 0, 0.9),
+      0 8px 22px -12px rgba(20, 15, 8, 0.85);
     transform: translate3d(0, -10px, 0);
     pointer-events: none;
     /* Out of flow, so its subtree can no longer dirty the rest of the
@@ -375,10 +403,20 @@ html[data-burn-active="true"] .hero-3d-layer::before {
       visibility 0s;
   }
 
-  /* The clip existed only to hide the grid-rows collapse. */
+  /* The clip existed only to hide the grid-rows collapse. The cap is
+     what keeps a 364px panel usable on a short laptop: at 639px tall
+     the row plus panel did not fit and the image strip fell below the
+     fold with no indication it was there. */
   .more-work-panel-inner {
-    overflow: visible;
-    padding-top: 6px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 56vh;
+    /* Bottom padding is not cosmetic: the interior stagger below starts
+       each child 8px lower, which counts toward scrollable overflow and
+       would flash a scrollbar for the length of every open. The padding
+       absorbs that travel. */
+    padding: 14px 20px 12px;
+    scrollbar-width: thin;
   }
 
   /* Interior stagger. Everything used to arrive on one frame, which is
