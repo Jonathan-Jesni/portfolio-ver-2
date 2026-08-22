@@ -32,6 +32,10 @@ const HOVER_CLOSE_MS = 250;
    from the user's last input. */
 const SCROLL_IDLE_MS = 140;
 
+/* Tiles rendered inline in a row's panel. The rest live one click away
+   in the lightbox, which already handles multi-image nav and zoom. */
+const INLINE_TILES = 3;
+
 /* ─── Accent hues per project ─────────────────────────────────────── */
 const CARD_HUES: Record<string, string> = {
   "neuro-genesis":  "188, 45%, 52%",  /* cyan  (01) */
@@ -1337,6 +1341,25 @@ export default function StickyDeckSection({
                 [{ label: "View Source", href: project.github }];
               const expanded = expandedId === project.id;
               const panelId = `more-work-panel-${project.id}`;
+              /* Only the first few tiles render inline; the rest are one
+                 click away in the lightbox. Eight tiles meant 2804px of
+                 content behind a native scrollbar inside a 1043px strip,
+                 and eight image requests the moment a row first opened. */
+              const inlineImages = project.images.slice(0, INLINE_TILES);
+              const overflowCount = project.images.length - inlineImages.length;
+              const openLightbox = (start: number) => {
+                /* Pin the row so it is still open to return to on close —
+                   the lightbox portals over the viewport and would
+                   otherwise fire mouseleave on the row behind it. */
+                if (hoverCapable) setPinnedId(project.id);
+                setLightbox({
+                  images: [...(project.images as readonly string[])],
+                  alts: [...((project.imageAlts ?? []) as readonly string[])],
+                  title: project.title,
+                  hue: hueOf(project.id),
+                  start,
+                });
+              };
               return (
                 <article
                   className={`more-work-item${expanded ? " is-expanded" : ""}`}
@@ -1411,7 +1434,7 @@ export default function StickyDeckSection({
                         ))}
                       </div>
                       <div className="more-work-strip">
-                        {project.images.map((src, imageIndex) => {
+                        {inlineImages.map((src, imageIndex) => {
                           const alt = project.imageAlts?.[imageIndex] ?? project.title;
                           return (
                             <button
@@ -1422,17 +1445,9 @@ export default function StickyDeckSection({
                               onClick={(event) => {
                                 /* The row header owns expand/collapse — keep the
                                    click from bubbling or the disclosure closes
-                                   underneath the lightbox. Pin the row too, so
-                                   it is still open to return to on close. */
+                                   underneath the lightbox. */
                                 event.stopPropagation();
-                                if (hoverCapable) setPinnedId(project.id);
-                                setLightbox({
-                                  images: [...(project.images as readonly string[])],
-                                  alts: [...((project.imageAlts ?? []) as readonly string[])],
-                                  title: project.title,
-                                  hue: hueOf(project.id),
-                                  start: imageIndex,
-                                });
+                                openLightbox(imageIndex);
                               }}
                             >
                               {/* sizes matches the fixed tile width exactly —
@@ -1448,11 +1463,28 @@ export default function StickyDeckSection({
                                 loading="lazy"
                                 /* breakpoint mirrors the 900px tile override
                                    in evolution.css — keep them in sync */
-                                sizes="(max-width: 900px) 260px, 340px"
+                                sizes="(max-width: 900px) 260px, 290px"
                               />
                             </button>
                           );
                         })}
+
+                        {overflowCount > 0 && (
+                          <button
+                            type="button"
+                            className="more-work-more"
+                            aria-label={`View all ${project.images.length} images of ${project.title}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openLightbox(0);
+                            }}
+                          >
+                            <span className="more-work-more-count mono">
+                              +{overflowCount}
+                            </span>
+                            <span>more</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
