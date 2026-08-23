@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, startTransition } from "react";
+import { useCallback, useEffect, useRef, useState, startTransition } from "react";
 import Matter from "matter-js";
 
 const {
@@ -35,25 +35,38 @@ function pillWidth(text: string, m: PillMetrics) {
 let probeMounts = 0;
 let probeEngines = 0;
 
+/* The reset control's own footprint. Measured with the SAME formula the
+   pills use so the gap reserved below and the button actually rendered
+   can never disagree; the extra room is for the leading glyph. */
+const RESET_LABEL = "Reset";
+const resetWidth = (m: PillMetrics) => pillWidth(RESET_LABEL, m) + 18;
+
 // Lays pills in left-to-right, top-to-bottom rows; returns each
-// pill's top-left corner.
+// pill's top-left corner. `firstRowReserve` shortens ROW 1 only, keeping
+// the pit's top-right corner clear for the reset control — without it a
+// pill can land under the button, and since MouseConstraint shares the
+// container's pointer events, clicking "Reset" would grab and drag it.
 function buildStaticGrid(
   containerW: number,
   m: PillMetrics,
   pills: readonly string[],
+  firstRowReserve = 0,
 ): { x: number; y: number }[] {
   const positions: { x: number; y: number }[] = [];
   let curX = m.PAD;
   let curY = m.PAD;
+  let row = 0;
   const rowH = m.PILL_H + m.GUTTER; // uniform row height
 
   for (const label of pills) {
     const pw = pillWidth(label, m);
+    const limit = containerW - m.PAD - (row === 0 ? firstRowReserve : 0);
 
     /* Wrap to next row if pill doesn't fit */
-    if (curX + pw > containerW - m.PAD && curX > m.PAD) {
+    if (curX + pw > limit && curX > m.PAD) {
       curX = m.PAD;
       curY += rowH;
+      row++;
     }
 
     positions.push({ x: curX, y: curY });
@@ -79,6 +92,22 @@ export default function GravityPit({ pills }: GravityPitProps) {
   const mouseConstraintRef = useRef<Matter.MouseConstraint | null>(null);
   const beforeUpdateRef = useRef<(() => void) | null>(null);
   const staticPos     = useRef<{ x: number; y: number }[]>([]);
+  /* Parked = the pills have been reset to the reading grid and the
+     simulation is suspended. The RAF sync loop rewrites every pill's
+     transform each frame, so parking has to STOP the loop rather than
+     just move the bodies — and gravity (1.6) would drop them straight
+     back out of the grid if the bodies alone were repositioned. */
+  const parkedRef     = useRef(false);
+  const [parked, setParked] = useState(false);
+  /* Handle on the sync loop so it can be restarted from outside
+     activatePhysics(), which is where it is defined. */
+  const syncRef       = useRef<(() => void) | null>(null);
+  /* The reset button's box, published from PHASE 1 so it is derived from
+     the very same metrics + container width that reserved its gap in row
+     1 of the grid. State, not a ref: it is read during render. */
+  const [resetBox, setResetBox] = useState<{
+    top: number; right: number; width: number; height: number; font: number;
+  } | null>(null);
   /* Pill metrics, resolved from viewport width on mount (PHASE 1) and
      reused by the physics setup so layout + bodies stay consistent. */
   const metricsRef    = useRef<PillMetrics>(metricsFor(1280));
@@ -99,8 +128,11 @@ export default function GravityPit({ pills }: GravityPitProps) {
     const m = metricsFor(window.innerWidth);
     metricsRef.current = m;
     const W = container.offsetWidth;
-    const positions = buildStaticGrid(W, m, pills);
+    const positions = buildStaticGrid(W, m, pills, resetWidth(m) + m.GUTTER);
     staticPos.current = positions;
+    setResetBox({
+      top: m.PAD, right: m.PAD, width: resetWidth(m), height: m.PILL_H, font: m.FONT,
+    });
 
     /* Size and position every pill in the static layout */
     pills.forEach((label, i) => {
@@ -228,6 +260,7 @@ export default function GravityPit({ pills }: GravityPitProps) {
         });
         rafIdRef.current = requestAnimationFrame(sync);
       };
+      syncRef.current = sync;
 
       /* Start runner AFTER setting up everything */
       const runner = Runner.create();
@@ -243,6 +276,9 @@ export default function GravityPit({ pills }: GravityPitProps) {
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
+            /* A parked pit stays parked: re-entering the viewport must
+               not restart a simulation the user deliberately stopped. */
+            if (parkedRef.current) return;
             if (rafIdRef.current) return; // already running
             if (runnerRef.current) Runner.run(runnerRef.current, engine);
             rafIdRef.current = requestAnimationFrame(sync);
@@ -267,6 +303,89 @@ export default function GravityPit({ pills }: GravityPitProps) {
     return () => {
       container.removeEventListener("pointerdown", activatePhysics);
     };
+  }, [pills, reducedMotion]);
+
+  /* ── Reset: park the pills back into the reading grid ──────────────
+     Stops the runner and the RAF sync, then hands the pills back to the
+     CSS transition Phase 1 set up (and the sync loop had stamped out
+     with `transition: none`), so they GLIDE home instead of teleporting
+     the way frozen isStatic bodies would. */
+  const resetPit = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !engineRef.current) return;
+
+    const m = metricsRef.current;
+    /* Recompute from the CURRENT width rather than trusting the array
+       captured on mount: Phase 1 never re-runs on resize, so a cached
+       grid can be sized for a viewport that no longer exists. */
+    const positions = buildStaticGrid(
+      container.offsetWidth,
+      m,
+      pills,
+      resetWidth(m) + m.GUTTER,
+    );
+    staticPos.current = positions;
+
+    parkedRef.current = true;
+    cancelAnimationFrame(rafIdRef.current);
+    rafIdRef.current = 0;
+    if (runnerRef.current) Runner.stop(runnerRef.current);
+
+    pills.forEach((label, i) => {
+      const el = pillRefs.current[i];
+      const pos = positions[i];
+      if (!el || !pos) return;
+      /* rotate(0rad) is not optional — bodies accumulate an angle, and a
+         pill left tilted here would snap straight when physics resumes. */
+      el.style.transition = reducedMotion
+        ? "none"
+        : "transform 0.45s var(--ease-drawer)";
+      el.style.transitionDelay = reducedMotion ? "0s" : `${Math.min(i * 6, 150)}ms`;
+      el.style.transform = `translate(${pos.x}px, ${pos.y}px) rotate(0rad)`;
+    });
+
+    setParked(true);
+  }, [pills, reducedMotion]);
+
+  /* ── Resume: the next drag re-shatters the parked grid ─────────────
+     Needs its own listener — the one that first activates physics is
+     `{ once: true }` and is long spent by now. Bodies are snapped to the
+     grid before the runner restarts so the simulation picks up exactly
+     where the pills are sitting, with no jump. */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || reducedMotion) return;
+
+    const resume = () => {
+      if (!parkedRef.current) return;
+      const engine = engineRef.current;
+      if (!engine) return;
+
+      const m = metricsRef.current;
+      const positions = staticPos.current;
+      bodiesRef.current.forEach((body, i) => {
+        const pos = positions[i];
+        if (!pos) return;
+        const pw = pillWidth(pills[i], m);
+        Body.setPosition(body, { x: pos.x + pw / 2, y: pos.y + m.PILL_H / 2 });
+        Body.setAngle(body, 0);
+        Body.setVelocity(body, { x: 0, y: 0 });
+        Body.setAngularVelocity(body, 0);
+      });
+
+      /* The sync loop stamps `transition: none` but never touches the
+         delay, so clear the reset stagger or it lies in wait for the
+         next thing that restores a transition. */
+      pillRefs.current.forEach((el) => el?.style.removeProperty("transition-delay"));
+
+      parkedRef.current = false;
+      setParked(false);
+      if (runnerRef.current) Runner.run(runnerRef.current, engine);
+      if (syncRef.current) rafIdRef.current = requestAnimationFrame(syncRef.current);
+    };
+
+    container.addEventListener("pointerdown", resume);
+    return () => container.removeEventListener("pointerdown", resume);
   }, [pills, reducedMotion]);
 
   /* ── Temporary OOM-investigation probe (inert without ?memprobe) ── */
@@ -350,6 +469,38 @@ export default function GravityPit({ pills }: GravityPitProps) {
         >
           Drag to interact
         </p>
+      )}
+
+      {/* Reset control. Lives in the pit and borrows the pill's visual
+          recipe, but it is not a body and never falls. Only rendered
+          once physics is live and the grid is actually disturbed —
+          before that there is nothing to reset, and a pointerdown here
+          would bubble to the container and ACTIVATE the simulation this
+          button exists to undo. */}
+      {physicsActive && !parked && !reducedMotion && resetBox && (
+        <button
+          type="button"
+          className="gravity-reset"
+          aria-label="Reset skills layout"
+          /* Both, deliberately: pointerdown is what activatePhysics and
+             the resume handler listen on, while Matter's Mouse binds
+             mousedown. Reserving the corner in row 1 already means no
+             body sits under this button, but stopping the event keeps
+             the guarantee from depending on that alone. */
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={resetPit}
+          style={{
+            top:      `${resetBox.top}px`,
+            right:    `${resetBox.right}px`,
+            width:    `${resetBox.width}px`,
+            height:   `${resetBox.height}px`,
+            fontSize: `${resetBox.font}px`,
+          }}
+        >
+          <span aria-hidden="true">↺</span>
+          <span>{RESET_LABEL}</span>
+        </button>
       )}
 
       {pills.map((label, i) => (

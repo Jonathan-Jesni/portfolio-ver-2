@@ -1022,6 +1022,60 @@ select:focus-visible,
   pointer-events: auto;
 }
 
+/* Reset control - borrows the pill recipe above so it reads as one of
+   the set, but it is a real button, not a body: no transform, no
+   physics, and it never falls. Box metrics (top/right/width/height/
+   font-size) come from JS so they track metricsFor() exactly - the same
+   numbers reserve its gap in row 1 of buildStaticGrid. */
+.gravity-reset {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  border-radius: 100px;
+  font-family: var(--font-jetbrains), monospace;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(201, 168, 82, 0.08),
+    inset 0 -1px 0 rgba(13, 11, 9, 0.3),
+    0 1px 2px rgba(13, 11, 9, 0.6);
+  transition:
+    background var(--t-mid),
+    border-color var(--t-mid),
+    color var(--t-mid);
+}
+
+/* Dimmer than a skill pill at rest so it reads as a control rather than
+   data, and brighter than one on hover so it reads as the only thing
+   here that responds to a plain click. */
+@media (hover: hover) and (pointer: fine) {
+  .gravity-reset:hover {
+    background: rgba(var(--accent-rgb), 0.1);
+    border-color: rgba(var(--accent-rgb), 0.32);
+    color: var(--ink-1);
+  }
+}
+
+.gravity-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gravity-reset {
+    transition: none;
+  }
+}
+
 /* Hover state - electric blue micro-accent */
 @media (hover: hover) and (pointer: fine) {
   .gravity-pit.physics-active .gravity-pill:hover {
